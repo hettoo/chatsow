@@ -255,12 +255,36 @@ static void parse_baseline(msg_t *message) {
 static void skip_frame(msg_t *message) {
     int len = read_short(message);
     skip_data(message, len);
-    //read_long(message); // serverTime
-    //read_long(message); // snap number
-    //read_long(message); // delta frame number
-    //read_long(message); // ucmd executed
-    //read_byte(message); // flags
-    //read_byte(message); // suppresscount
+}
+
+static void parse_frame(msg_t *message) {
+    int length = read_short(message); // length
+    int pos = message->readcount;
+    read_long(message); // serverTime
+    read_long(message); // snap number
+    read_long(message); // delta frame number
+    read_long(message); // ucmd executed
+    int flags = read_byte(message);
+    read_byte(message); // suppresscount
+
+    read_byte(message); // svc_gamecommands
+    int framediff;
+    while ((framediff = read_short(message)) != -1) {
+        read_string(message); // command
+        if (flags & FRAMESNAP_FLAG_MULTIPOV) {
+            int numtargets = read_byte(message);
+            skip_data(message, numtargets);
+        }
+    }
+    skip_data(message, length - (message->readcount - pos));
+    //skip_data(message, read_byte(message)); // areabits
+    //read_byte(message); // svc_match
+    //int cmd;
+    //while (cmd = read_byte(message)) {
+    //    // parse playerstate
+    //}
+    //read_byte(message); // svc_packetentities
+    //// parse packetentities
 }
 
 static void parse_message(msg_t *message) {
@@ -308,10 +332,12 @@ static void parse_message(msg_t *message) {
                 parse_baseline(message);
                 break;
             case svc_frame:
-                skip_frame(message);
+                parse_frame(message);
                 break;
+            case -1:
+                return;
             default:
-                //printf("%d\n", cmd);
+                printf("unknown command: %d\n", cmd);
                 return;
         }
     }

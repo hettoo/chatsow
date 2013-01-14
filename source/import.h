@@ -44,6 +44,10 @@ enum svc_ops_e {
 	svc_extension			// for future expansion
 };
 
+#define FRAMESNAP_FLAG_DELTA		( 1<<0 )
+#define FRAMESNAP_FLAG_ALLENTITIES	( 1<<1 )
+#define FRAMESNAP_FLAG_MULTIPOV		( 1<<2 )
+
 #define PM_VECTOR_SNAP 16
 #define   BYTE2ANGLE( x )         ( ( x )*( 360.0/256 ) )
 #define   SHORT2ANGLE( x )        ( ( x )*( 360.0/65536 ) )
