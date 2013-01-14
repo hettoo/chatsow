@@ -1,4 +1,4 @@
-#include "warsow.h"
+#include "import.h"
 
 #if !defined ( ENDIAN_LITTLE ) && !defined ( ENDIAN_BIG )
 short ( *BigShort )(short l);
