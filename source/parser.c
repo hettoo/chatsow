@@ -1,24 +1,18 @@
 #include <stdio.h>
-#include <stdlib.h>
 
 #include "warsow.h"
 
-int die(char *message) {
-    printf("%s", message);
-    exit(1);
+static void read_demo_metadata(FILE *fp) {
 }
 
-void read_demo_metadata(FILE *fp) {
-}
-
-int read_byte(msg_t *message) {
+static int read_byte(msg_t *message) {
     int i = (qbyte)message->data[message->readcount++];
     if (message->readcount > message->cursize)
         return -1;
     return i;
 }
 
-int read_short(msg_t *message)
+static int read_short(msg_t *message)
 {
 	int i;
 	short *sp = (short *)&message->data[message->readcount];
@@ -29,7 +23,7 @@ int read_short(msg_t *message)
 	return i;
 }
 
-int read_long(msg_t *message) {
+static int read_long(msg_t *message) {
 	int i;
 	unsigned int *ip = (unsigned int *)&message->data[message->readcount];
 	i = LittleLong(*ip);
@@ -39,7 +33,7 @@ int read_long(msg_t *message) {
 	return i;
 }
 
-char *read_string(msg_t *message) {
+static char *read_string(msg_t *message) {
 	int l, c;
 	static char string[MAX_MSG_STRING_CHARS];
 
@@ -57,13 +51,13 @@ char *read_string(msg_t *message) {
 	return string;
 }
 
-void read_data(msg_t *message, void *data, size_t length) {
+static void read_data(msg_t *message, void *data, size_t length) {
 	unsigned int i;
 	for (i = 0; i < length; i++)
         ((qbyte *)data)[i] = read_byte(message);
 }
 
-int skip_data(msg_t *message, size_t length) {
+static int skip_data(msg_t *message, size_t length) {
     if (message->readcount + length <= message->cursize) {
         message->readcount += length;
         return 1;
@@ -71,10 +65,13 @@ int skip_data(msg_t *message, size_t length) {
     return 0;
 }
 
-void parse_frame(msg_t *message) {
+static void parse_baseline(msg_t *message) {
 }
 
-void parse_message(msg_t *message) {
+static void parse_frame(msg_t *message) {
+}
+
+static void parse_message(msg_t *message) {
     int cmd;
     while (1) {
         cmd = read_byte(message);
@@ -128,7 +125,7 @@ void parse_message(msg_t *message) {
     }
 }
 
-qboolean read_demo_message(FILE *fp) {
+static qboolean read_demo_message(FILE *fp) {
     int length;
     if (!fread(&length, 4, 1, fp))
         return qfalse;
@@ -146,14 +143,8 @@ qboolean read_demo_message(FILE *fp) {
     return qtrue;
 }
 
-int main(int argc, char *argv[]) {
-    if (argc < 2) {
-        die("No demo given\n");
-    }
-    FILE *fp = fopen(argv[1], "r");
+void parse_demo(FILE *fp) {
     read_demo_metadata(fp);
     while (read_demo_message(fp))
         ;
-    fclose(fp);
-    return 0;
 }
