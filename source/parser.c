@@ -252,7 +252,15 @@ static void parse_baseline(msg_t *message) {
     read_delta_entity(message, &null_state, baselines + num, num, bits);
 }
 
-static void parse_frame(msg_t *message) {
+static void skip_frame(msg_t *message) {
+    int len = read_short(message);
+    skip_data(message, len);
+    //read_long(message); // serverTime
+    //read_long(message); // snap number
+    //read_long(message); // delta frame number
+    //read_long(message); // ucmd executed
+    //read_byte(message); // flags
+    //read_byte(message); // suppresscount
 }
 
 static void parse_message(msg_t *message) {
@@ -299,9 +307,9 @@ static void parse_message(msg_t *message) {
             case svc_spawnbaseline:
                 parse_baseline(message);
                 break;
-            //case svc_frame:
-            //    parse_frame(message);
-            //    break;
+            case svc_frame:
+                skip_frame(message);
+                break;
             default:
                 //printf("%d\n", cmd);
                 return;
