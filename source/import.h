@@ -44,13 +44,81 @@ enum svc_ops_e {
 	svc_extension			// for future expansion
 };
 
+#define   PS_MAX_STATS                    64
+
 #define FRAMESNAP_FLAG_DELTA		( 1<<0 )
 #define FRAMESNAP_FLAG_ALLENTITIES	( 1<<1 )
 #define FRAMESNAP_FLAG_MULTIPOV		( 1<<2 )
 
+#define	PS_M_TYPE	    ( 1<<0 )
+#define	PS_M_ORIGIN0	( 1<<1 )
+#define	PS_M_ORIGIN1	( 1<<2 )
+#define	PS_M_ORIGIN2	( 1<<3 )
+#define	PS_M_VELOCITY0	( 1<<4 )
+#define	PS_M_VELOCITY1	( 1<<5 )
+#define	PS_M_VELOCITY2	( 1<<6 )
+#define PS_MOREBITS1	( 1<<7 )
+
+#define	PS_M_TIME	    ( 1<<8 )
+#define	PS_EVENT	    ( 1<<9 )
+#define	PS_EVENT2	    ( 1<<10 )
+#define	PS_WEAPONSTATE	( 1<<11 )
+#define PS_INVENTORY	( 1<<12 )
+#define	PS_FOV		    ( 1<<13 )
+#define	PS_VIEWANGLES	( 1<<14 )
+#define PS_MOREBITS2	( 1<<15 )
+
+#define	PS_POVNUM	    ( 1<<16 )
+#define	PS_VIEWHEIGHT	( 1<<17 )
+#define PS_PMOVESTATS	( 1<<18 )
+#define	PS_M_FLAGS	    ( 1<<19 )
+#define PS_PLRKEYS	    ( 1<<20 )
+//...
+#define PS_MOREBITS3	( 1<<23 )
+
+#define	PS_M_GRAVITY	    ( 1<<24 )
+#define	PS_M_DELTA_ANGLES0  ( 1<<25 )
+#define	PS_M_DELTA_ANGLES1  ( 1<<26 )
+#define	PS_M_DELTA_ANGLES2  ( 1<<27 )
+#define	PS_PLAYERNUM	    ( 1<<28 )
+
 #define PM_VECTOR_SNAP 16
+#define MAX_PM_STATS 16
+
+enum
+{
+	PM_STAT_FEATURES,
+	PM_STAT_NOUSERCONTROL,
+	PM_STAT_KNOCKBACK,
+	PM_STAT_CROUCHTIME,
+	PM_STAT_ZOOMTIME,
+	PM_STAT_DASHTIME,
+	PM_STAT_WJTIME,
+	PM_STAT_NOAUTOATTACK,
+	PM_STAT_STUN,
+	PM_STAT_MAXSPEED,
+	PM_STAT_JUMPSPEED,
+	PM_STAT_DASHSPEED,
+	PM_STAT_FWDTIME,
+
+	PM_STAT_SIZE = MAX_PM_STATS
+};
+
 #define   BYTE2ANGLE( x )         ( ( x )*( 360.0/256 ) )
 #define   SHORT2ANGLE( x )        ( ( x )*( 360.0/65536 ) )
+
+#define	MAX_CLIENTS					256			// absolute limit
+#define	MAX_EDICTS					1024		// must change protocol to increase more
+#define	MAX_LIGHTSTYLES				256
+#define	MAX_MODELS					256			// these are sent over the net as bytes
+#define	MAX_SOUNDS					256			// so they cannot be blindly increased
+#define	MAX_IMAGES					256
+#define MAX_SKINFILES				256
+#define MAX_ITEMS					64			// 16x4
+#define MAX_GENERAL					( MAX_CLIENTS )	// general config strings
+
+#define SNAP_INVENTORY_LONGS			((MAX_ITEMS + 31) / 32)
+#define SNAP_STATS_LONGS				((PS_MAX_STATS + 31) / 32)
 
 #define ET_INVERSE	128
 
