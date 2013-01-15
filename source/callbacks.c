@@ -2,6 +2,6 @@
 
 #include "callbacks.h"
 
-void command(char *cmd) {
+void command(char *cmd, qbyte *targets, int target_count) {
     printf("%s\n", cmd);
 }

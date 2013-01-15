@@ -413,12 +413,14 @@ static void parse_frame(msg_t *msg) {
     int framediff;
     while ((framediff = read_short(msg)) != -1) {
         char *cmd = read_string(msg);
+        int numtargets = 0;
+        static qbyte targets[MAX_CLIENTS / 8];
         if (flags & FRAMESNAP_FLAG_MULTIPOV) {
-            int numtargets = read_byte(msg);
-            skip_data(msg, numtargets);
+            numtargets = read_byte(msg);
+            read_data(msg, targets, numtargets);
         }
         if (frame > last_frame + framediff)
-            command(cmd);
+            command(cmd, targets, numtargets);
     }
     skip_data(msg, length - (msg->readcount - pos));
     /*
@@ -453,7 +455,7 @@ static void parse_message(msg_t *msg) {
                 break;
             case svc_servercmd:
                 read_long(msg); // command number
-                command(read_string(msg));
+                command(read_string(msg), NULL, 0);
                 break;
             case svc_serverdata:
                 read_long(msg); // protocol version
@@ -472,7 +474,7 @@ static void parse_message(msg_t *msg) {
                 }
                 break;
             case svc_servercs:
-                command(read_string(msg));
+                command(read_string(msg), NULL, 0);
                 break;
             case svc_spawnbaseline:
                 parse_baseline(msg);
