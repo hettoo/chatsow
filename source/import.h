@@ -107,6 +107,55 @@ enum
 #define   BYTE2ANGLE( x )         ( ( x )*( 360.0/256 ) )
 #define   SHORT2ANGLE( x )        ( ( x )*( 360.0/65536 ) )
 
+#define CS_HOSTNAME			0
+#define CS_TVSERVER			1
+#define	CS_MAXCLIENTS		2
+#define CS_MODMANIFEST		3
+
+#define SERVER_PROTECTED_CONFIGSTRINGS 5
+
+#define	CS_MESSAGE			5
+#define	CS_MAPNAME			6
+#define	CS_AUDIOTRACK		7
+#define CS_SKYBOX			8
+#define CS_STATNUMS			9
+#define CS_POWERUPEFFECTS	10
+#define CS_GAMETYPETITLE	11
+#define CS_GAMETYPENAME		12
+#define CS_GAMETYPEVERSION	13
+#define CS_GAMETYPEAUTHOR	14
+#define CS_AUTORECORDSTATE	15
+
+#define CS_SCB_PLAYERTAB_LAYOUT 16
+#define CS_SCB_PLAYERTAB_TITLES 17
+
+#define CS_TEAM_SPECTATOR_NAME 18
+#define CS_TEAM_PLAYERS_NAME 19
+#define CS_TEAM_ALPHA_NAME	20
+#define CS_TEAM_BETA_NAME	21
+
+#define CS_MATCHNAME		22
+#define CS_MATCHSCORE		23
+#define CS_MATCHUUID		24
+
+#define CS_WORLDMODEL		30
+#define	CS_MAPCHECKSUM		31		// for catching cheater maps
+
+//precache stuff begins here
+#define	CS_MODELS			32
+#define	CS_SOUNDS			( CS_MODELS+MAX_MODELS )
+#define	CS_IMAGES			( CS_SOUNDS+MAX_SOUNDS )
+#define	CS_SKINFILES		( CS_IMAGES+MAX_IMAGES )
+#define	CS_LIGHTS			( CS_SKINFILES+MAX_SKINFILES )
+#define	CS_ITEMS			( CS_LIGHTS+MAX_LIGHTSTYLES )
+#define	CS_PLAYERINFOS		( CS_ITEMS+MAX_ITEMS )
+#define CS_GAMECOMMANDS		( CS_PLAYERINFOS+MAX_CLIENTS )
+#define CS_LOCATIONS		( CS_GAMECOMMANDS+MAX_GAMECOMMANDS )
+#define CS_WEAPONDEFS		( CS_LOCATIONS+MAX_LOCATIONS )
+#define CS_GENERAL			( CS_WEAPONDEFS+MAX_WEAPONDEFS )
+
+#define	MAX_CONFIGSTRINGS	( CS_GENERAL+MAX_GENERAL )
+
 #define	MAX_CLIENTS					256			// absolute limit
 #define	MAX_EDICTS					1024		// must change protocol to increase more
 #define	MAX_LIGHTSTYLES				256
@@ -116,6 +165,9 @@ enum
 #define MAX_SKINFILES				256
 #define MAX_ITEMS					64			// 16x4
 #define MAX_GENERAL					( MAX_CLIENTS )	// general config strings
+
+#define	MAX_GAME_STATS	16
+#define MAX_GAME_LONGSTATS 8
 
 #define SNAP_INVENTORY_LONGS			((MAX_ITEMS + 31) / 32)
 #define SNAP_STATS_LONGS				((PS_MAX_STATS + 31) / 32)

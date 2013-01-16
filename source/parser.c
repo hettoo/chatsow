@@ -260,6 +260,24 @@ static void parse_baseline(msg_t *msg) {
     read_delta_entity(msg, &null_state, baselines + num, num, bits);
 }
 
+static void parse_delta_game_state(msg_t *msg) {
+    qbyte bits = read_byte(msg);
+    short statbits = read_short(msg);
+    int i;
+    if (bits) {
+        for (i = 0; i < MAX_GAME_LONGSTATS; i++) {
+            if (bits & (1<<i))
+                read_long(msg);
+        }
+    }
+    if (statbits) {
+        for (i = 0; i < MAX_GAME_STATS; i++) {
+            if (statbits & (1<<i))
+                read_short(msg);
+        }
+    }
+}
+
 static void parse_playerstate(msg_t *msg) {
 	int flags;
 	int i, b;
@@ -329,12 +347,9 @@ static void parse_playerstate(msg_t *msg) {
 
 	if( flags & PS_VIEWANGLES )
 	{
-		//read_angle16( msg );
-		//read_angle16( msg );
-		//read_angle16( msg );
-        read_short(msg);
-        read_short(msg);
-        read_short(msg);
+		read_angle16( msg );
+		read_angle16( msg );
+		read_angle16( msg );
 	}
 
 	if( flags & PS_M_GRAVITY )
@@ -350,7 +365,7 @@ static void parse_playerstate(msg_t *msg) {
         read_byte(msg);
 
 	if( flags & PS_PLAYERNUM )
-        read_byte(msg);
+        printf("playernum: %d\n", read_byte(msg));
 
 	if( flags & PS_VIEWHEIGHT )
         read_char(msg);
@@ -385,9 +400,8 @@ static void parse_playerstate(msg_t *msg) {
 		read_byte( msg );
 
 	// parse stats
-	for( i = 0; i < SNAP_STATS_LONGS; i++ ) {
+	for( i = 0; i < SNAP_STATS_LONGS; i++ )
 		read_long( msg );
-	}
 
 	for( i = 0; i < PS_MAX_STATS; i++ )
 	{
@@ -422,16 +436,21 @@ static void parse_frame(msg_t *msg) {
         if (frame > last_frame + framediff)
             command(cmd, targets, numtargets);
     }
-    skip_data(msg, length - (msg->readcount - pos));
-    /*
     skip_data(msg, read_byte(msg)); // areabits
     read_byte(msg); // svc_match
-    int cmd;
-    while ((cmd = read_byte(msg))) // svc_playerinfo
-        parse_playerstate(msg);
-    read_byte(msg); // svc_packetentities
-    parse_packet_entities(msg);
-    */
+    //parse_delta_game_state(msg);
+    //int cmd;
+    //while ((cmd = read_byte(msg))) // svc_playerinfo
+    //{
+    //    printf("%d %d\n", cmd, svc_playerinfo);
+    //    if (cmd != svc_playerinfo)
+    //        exit(1);
+    //    parse_playerstate(msg);
+    //}
+    //int b = read_byte(msg); // svc_packetentities
+    //printf("%d %d\n", b, svc_packetentities);
+    //parse_packet_entities(msg);
+    skip_data(msg, length - (msg->readcount - pos));
     last_frame = frame;
 }
 
@@ -441,12 +460,17 @@ static void parse_message(msg_t *msg) {
         cmd = read_byte(msg);
         switch (cmd) {
             case svc_demoinfo:
-                read_long(msg);
-                read_long(msg);
+                read_long(msg); // length
+                read_long(msg); // meta data offset
                 read_long(msg); // basetime
                 size_t meta_data_realsize = read_long(msg);
                 size_t meta_data_maxsize = read_long(msg);
-                skip_data(msg, meta_data_realsize); // metadata
+                size_t end = msg->readcount + meta_data_realsize;
+                while (msg->readcount < end) {
+                    demoinfo_key(read_string(msg));
+                    demoinfo_value(read_string(msg));
+                }
+                //skip_data(msg, meta_data_realsize); // metadata
                 skip_data(msg, meta_data_maxsize - meta_data_realsize);
                 break;
             case svc_clcack:
@@ -454,7 +478,8 @@ static void parse_message(msg_t *msg) {
                 read_long(msg); // ucmd acknowledged
                 break;
             case svc_servercmd:
-                read_long(msg); // command number
+                //read_long(msg); // command number, unreliable only
+            case svc_servercs:
                 command(read_string(msg), NULL, 0);
                 break;
             case svc_serverdata:
@@ -472,9 +497,6 @@ static void parse_message(msg_t *msg) {
                     read_long(msg); // checksum
                     pure--;
                 }
-                break;
-            case svc_servercs:
-                command(read_string(msg), NULL, 0);
                 break;
             case svc_spawnbaseline:
                 parse_baseline(msg);
