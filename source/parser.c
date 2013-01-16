@@ -24,6 +24,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "callbacks.h"
 
 static int last_frame = -1;
+static int bitflags = 0;
 
 static void parse_frame(msg_t *msg) {
     int length = read_short(msg); // length
@@ -76,7 +77,8 @@ static void parse_message(msg_t *msg) {
                 read_long(msg); // ucmd acknowledged
                 break;
             case svc_servercmd:
-                //read_long(msg); // command number, unreliable only
+                if (!(bitflags & SV_BITFLAGS_RELIABLE))
+                    read_long(msg); // command number
             case svc_servercs:
                 command(read_string(msg), NULL, 0);
                 break;
@@ -88,7 +90,7 @@ static void parse_message(msg_t *msg) {
                 read_string(msg); // game
                 read_short(msg); // player entity number
                 read_string(msg); // level name
-                read_byte(msg); // server bitflags
+                bitflags = read_byte(msg); // server bitflags
                 int pure = read_short(msg);
                 while (pure > 0) {
                     read_string(msg); // pure pk3 name

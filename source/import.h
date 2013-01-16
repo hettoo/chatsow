@@ -66,6 +66,10 @@ enum svc_ops_e {
 
 #define   PS_MAX_STATS                    64
 
+#define SV_BITFLAGS_PURE		( 1<<0 )
+#define SV_BITFLAGS_RELIABLE		( 1<<1 )
+#define SV_BITFLAGS_TVSERVER		( 1<<2 )
+
 #define FRAMESNAP_FLAG_DELTA		( 1<<0 )
 #define FRAMESNAP_FLAG_ALLENTITIES	( 1<<1 )
 #define FRAMESNAP_FLAG_MULTIPOV		( 1<<2 )
