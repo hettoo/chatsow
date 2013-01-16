@@ -1,5 +1,25 @@
-#ifndef WDP_WARSOW_H
-#define WDP_WARSOW_H
+/*
+Copyright (C) 1997-2001 Id Software, Inc.
+
+This program is free software; you can redistribute it and/or
+modify it under the terms of the GNU General Public License
+as published by the Free Software Foundation; either version 2
+of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+
+See the GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+
+*/
+
+#ifndef WDP_IMPORT_H
+#define WDP_IMPORT_H
 
 #include <string.h>
 
@@ -333,5 +353,24 @@ extern float ( *LittleFloat )(float l);
 #endif
 
 void	Swap_Init( void );
+
+#define read_coord( sb ) ( (float)read_int3( ( sb ) )*( 1.0/PM_VECTOR_SNAP ) )
+#define read_coord_dummy( sb ) ( read_int3( ( sb ) ) )
+#define read_pos( sb, pos ) ( ( pos )[0] = read_coord( ( sb ) ), ( pos )[1] = read_coord( ( sb ) ), ( pos )[2] = read_coord( ( sb ) ) )
+#define read_pos_dummy( sb, pos ) ( read_coord_dummy( ( sb ) ), read_coord_dummy( ( sb ) ), read_coord_dummy( ( sb ) ) )
+#define read_angle( sb ) ( BYTE2ANGLE( read_byte( ( sb ) ) ) )
+#define read_angle_dummy( sb ) ( read_byte( ( sb ) ) )
+#define read_angle16( sb ) ( SHORT2ANGLE( read_short( ( sb ) ) ) )
+#define read_angle16_dummy( sb ) ( read_short( ( sb ) ) )
+
+int read_byte(msg_t *msg);
+int read_short(msg_t *msg);
+int read_long(msg_t *msg);
+int read_int3(msg_t *msg);
+char *read_string(msg_t *msg);
+void read_data(msg_t *msg, void *data, size_t length);
+unsigned read_entity_bits(msg_t *msg);
+void read_delta_entity(msg_t *msg, unsigned bits);
+int skip_data(msg_t *msg, size_t length);
 
 #endif
