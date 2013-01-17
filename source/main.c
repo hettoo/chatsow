@@ -18,11 +18,11 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 */
 
-#include "ui.h"
-#include "parser.h"
-
 #include <stdlib.h>
 #include <stdio.h>
+
+#include "ui.h"
+#include "client.h"
 
 int die(char *message) {
     printf("%s", message);
@@ -37,11 +37,19 @@ int max(int a, int b) {
     return a > b ? a : b;
 }
 
+void finish() {
+    ui_stop();
+    client_stop();
+}
+
 int main(int argc, char *argv[]) {
     if (argc < 2)
         die("No host given\n");
 
-    ui_start();
+    ui_init();
+    client_start();
+    ui_run();
+    finish();
 
     return 0;
 }

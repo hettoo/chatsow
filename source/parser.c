@@ -53,7 +53,7 @@ static void parse_frame(msg_t *msg) {
     last_frame = frame;
 }
 
-static void parse_message(msg_t *msg) {
+void parse_message(msg_t *msg) {
     int cmd;
     while (1) {
         cmd = read_byte(msg);
@@ -69,7 +69,6 @@ static void parse_message(msg_t *msg) {
                     demoinfo_key(read_string(msg));
                     demoinfo_value(read_string(msg));
                 }
-                //skip_data(msg, meta_data_realsize); // metadata
                 skip_data(msg, meta_data_maxsize - meta_data_realsize);
                 break;
             case svc_clcack:

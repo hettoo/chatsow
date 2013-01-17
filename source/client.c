@@ -18,12 +18,19 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 */
 
-#ifndef WDP_PARSER_H
-#define WDP_PARSER_H
 
-#include <stdio.h>
+#include <pthread.h>
 
-void parse_message(msg_t *msg);
-void parse_demo(FILE *fp);
+static pthread_t thread;
 
-#endif
+static void *client_run(void *args) {
+    return NULL;
+}
+
+void client_start() {
+    pthread_create(&thread, NULL, client_run, NULL);
+}
+
+void client_stop() {
+    pthread_join(thread, NULL);
+}

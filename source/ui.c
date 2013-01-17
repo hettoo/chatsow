@@ -22,8 +22,11 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <string.h>
 #include <curses.h>
 #include <signal.h>
+#include <pthread.h>
 
 #include "main.h"
+
+static pthread_mutex_t mutex;
 
 static WINDOW *mainwin;
 static WINDOW *outwin;
@@ -36,8 +39,13 @@ static int buffer_count = 0;
 static char commandline[512];
 static int commandline_length = 0;
 
-static void finish(int sig) {
+void ui_stop() {
+    pthread_mutex_destroy(&mutex);
     endwin();
+}
+
+static void interrupt(int sig) {
+    finish();
     exit(sig);
 }
 
@@ -45,7 +53,6 @@ static void init_colors() {
     if (has_colors()) {
         start_color();
 
-        init_pair(0, COLOR_BLACK, COLOR_BLACK);
         init_pair(1, COLOR_RED, COLOR_BLACK);
         init_pair(2, COLOR_GREEN, COLOR_BLACK);
         init_pair(3, COLOR_YELLOW, COLOR_BLACK);
@@ -55,7 +62,8 @@ static void init_colors() {
         init_pair(7, COLOR_WHITE, COLOR_BLACK);
         init_pair(8, COLOR_YELLOW, COLOR_BLACK);
         init_pair(9, COLOR_WHITE, COLOR_BLACK);
-        init_pair(10, COLOR_BLACK, COLOR_WHITE);
+        init_pair(10, COLOR_BLACK, COLOR_BLACK);
+        init_pair(11, COLOR_BLACK, COLOR_WHITE);
     }
 }
 
@@ -63,12 +71,14 @@ static void draw_outwin(bool refresh) {
     werase(outwin);
     int outheight = LINES - 2;
     int i;
+    pthread_mutex_lock(&mutex);
     int start = max(0, buffer_count - outheight);
     int displayable = buffer_count - start;
     for (i = start; i < buffer_count; i++) {
         wmove(outwin, i - start + outheight - displayable, 0);
         waddstr(outwin, buffer[i]);
     }
+    pthread_mutex_unlock(&mutex);
     if (refresh)
         wrefresh(outwin);
 }
@@ -87,7 +97,7 @@ static void draw_statuswin(bool refresh) {
 static void draw_inwin(bool refresh) {
     werase(inwin);
     wattron(inwin, A_BOLD);
-    waddstr(inwin, ">");
+    waddstr(inwin, "> ");
     wattroff(inwin, A_BOLD);
     int i;
     for (i = 0; i < commandline_length; i++)
@@ -97,12 +107,18 @@ static void draw_inwin(bool refresh) {
 }
 
 void ui_output(char *output) {
+    pthread_mutex_lock(&mutex);
     strcpy(buffer[buffer_count++], output);
+    pthread_mutex_unlock(&mutex);
 }
 
-void ui_start() {
-    signal(SIGINT, finish);
-    signal(SIGSEGV, finish);
+void ui_init() {
+    pthread_mutex_init(&mutex, NULL);
+}
+
+void ui_run() {
+    signal(SIGINT, interrupt);
+    signal(SIGSEGV, interrupt);
 
     mainwin = initscr();
     nonl();
@@ -115,7 +131,7 @@ void ui_start() {
     scrollok(outwin, TRUE);
 
     statuswin = subwin(mainwin, 1, COLS, LINES - 2, 0);
-    wattrset(statuswin, COLOR_PAIR(10));
+    wattrset(statuswin, COLOR_PAIR(11));
 
     inwin = subwin(mainwin, 1, COLS, LINES - 1, 0);
     keypad(inwin, TRUE);
@@ -145,6 +161,4 @@ void ui_start() {
         }
         draw_inwin(TRUE);
     }
-
-    finish(0);
 }

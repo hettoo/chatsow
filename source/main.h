@@ -21,6 +21,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #ifndef WDP_MAIN_H
 #define WDP_MAIN_H
 
+void finish();
+
 int die(char *message);
 int min(int a, int b);
 int max(int a, int b);

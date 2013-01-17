@@ -1,7 +1,7 @@
 CC = gcc
 DEBUG = -g
 CFLAGS = -O2 -Wall -c $(DEBUG)
-LFLAGS = -O2 -Wall -lncurses -lm $(DEBUG)
+LFLAGS = -O2 -Wall -lncurses -lpthread -lm $(DEBUG)
 
 PROGRAM = wrlc
 

@@ -18,12 +18,5 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 */
 
-#ifndef WDP_PARSER_H
-#define WDP_PARSER_H
-
-#include <stdio.h>
-
-void parse_message(msg_t *msg);
-void parse_demo(FILE *fp);
-
-#endif
+void client_start();
+void client_stop();
