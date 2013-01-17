@@ -25,6 +25,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <pthread.h>
 
 #include "main.h"
+#include "utils.h"
+#include "client.h"
 
 static pthread_mutex_t mutex;
 
@@ -45,7 +47,7 @@ void ui_stop() {
 }
 
 static void interrupt(int sig) {
-    finish();
+    shutdown();
     exit(sig);
 }
 
@@ -151,7 +153,7 @@ void ui_run() {
             case KEY_ENTER:
             case 13:
                 commandline[commandline_length] = '\0';
-                ui_output(commandline);
+                execute(commandline);
                 commandline_length = 0;
                 draw_outwin(TRUE);
                 break;

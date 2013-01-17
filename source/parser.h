@@ -18,8 +18,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 */
 
-#ifndef WDP_PARSER_H
-#define WDP_PARSER_H
+#ifndef WRLC_PARSER_H
+#define WRLC_PARSER_H
 
 #include <stdio.h>
 

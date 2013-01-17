@@ -18,8 +18,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 */
 
-#ifndef WDP_CALLBACKS_H
-#define WDP_CALLBACKS_H
+#ifndef WRLC_CALLBACKS_H
+#define WRLC_CALLBACKS_H
 
 #include "import.h"
 

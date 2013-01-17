@@ -18,8 +18,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 */
 
-#ifndef WDP_IMPORT_H
-#define WDP_IMPORT_H
+#ifndef WRLC_IMPORT_H
+#define WRLC_IMPORT_H
 
 #include <string.h>
 

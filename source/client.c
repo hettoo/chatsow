@@ -21,6 +21,10 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include <pthread.h>
 
+#include "import.h"
+#include "ui.h"
+
+static qboolean started = qfalse;
 static pthread_t thread;
 
 static void *client_run(void *args) {
@@ -29,8 +33,14 @@ static void *client_run(void *args) {
 
 void client_start() {
     pthread_create(&thread, NULL, client_run, NULL);
+    started = qtrue;
 }
 
 void client_stop() {
-    pthread_join(thread, NULL);
+    if (started)
+        pthread_join(thread, NULL);
+}
+
+void execute(char *command) {
+    ui_output(command);
 }

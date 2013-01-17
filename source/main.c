@@ -18,26 +18,10 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 */
 
-#include <stdlib.h>
-#include <stdio.h>
-
 #include "ui.h"
 #include "client.h"
 
-int die(char *message) {
-    printf("%s", message);
-    exit(1);
-}
-
-int min(int a, int b) {
-    return a < b ? a : b;
-}
-
-int max(int a, int b) {
-    return a > b ? a : b;
-}
-
-void finish() {
+void shutdown() {
     ui_stop();
     client_stop();
 }
@@ -49,7 +33,7 @@ int main(int argc, char *argv[]) {
     ui_init();
     client_start();
     ui_run();
-    finish();
+    shutdown();
 
     return 0;
 }

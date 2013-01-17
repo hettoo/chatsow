@@ -18,11 +18,21 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 */
 
-#ifndef WRLC_CLIENT_H
-#define WRLC_CLIENT_H
+#include <stdlib.h>
+#include <stdio.h>
 
-void client_start();
-void client_stop();
-void execute();
+#include "main.h"
 
-#endif
+int die(char *message) {
+    printf("%s", message);
+    shutdown();
+    exit(1);
+}
+
+int min(int a, int b) {
+    return a < b ? a : b;
+}
+
+int max(int a, int b) {
+    return a > b ? a : b;
+}

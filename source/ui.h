@@ -18,8 +18,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 */
 
-#ifndef WDP_UI_H
-#define WDP_UI_H
+#ifndef WRLC_UI_H
+#define WRLC_UI_H
 
 void ui_init();
 void ui_run();
