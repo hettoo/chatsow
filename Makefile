@@ -3,7 +3,7 @@ DEBUG = -g
 CFLAGS = -O2 -Wall -c $(DEBUG)
 LFLAGS = -O2 -Wall -lm $(DEBUG)
 
-PROGRAM = wdparser
+PROGRAM = rlc
 
 SOURCE = source/
 BUILD = build/
@@ -20,7 +20,7 @@ clean:
 	rm -rf $(BUILD)
 
 test: $(BUILD)$(PROGRAM)
-	./$(BUILD)$(PROGRAM) test.wd15
+	./$(BUILD)$(PROGRAM) 127.0.0.1
 
 $(BUILD)$(PROGRAM): $(OBJS)
 	$(CC) $(LFLAGS) $(OBJS) -o $@
