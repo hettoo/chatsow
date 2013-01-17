@@ -19,15 +19,21 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
 #include <stdlib.h>
+#include <string.h>
 #include <curses.h>
 #include <signal.h>
+
+#include "main.h"
 
 static WINDOW *mainwin;
 static WINDOW *outwin;
 static WINDOW *statuswin;
 static WINDOW *inwin;
 
-static char commandline[500];
+static char buffer[512][128];
+static int buffer_count = 0;
+
+static char commandline[512];
 static int commandline_length = 0;
 
 static void finish(int sig) {
@@ -53,6 +59,20 @@ static void init_colors() {
     }
 }
 
+static void draw_outwin(bool refresh) {
+    werase(outwin);
+    int outheight = LINES - 2;
+    int i;
+    int start = max(0, buffer_count - outheight);
+    int displayable = buffer_count - start;
+    for (i = start; i < buffer_count; i++) {
+        wmove(outwin, i - start + outheight - displayable, 0);
+        waddstr(outwin, buffer[i]);
+    }
+    if (refresh)
+        wrefresh(outwin);
+}
+
 static void draw_statuswin(bool refresh) {
     werase(statuswin);
     int i = 0;
@@ -76,6 +96,10 @@ static void draw_inwin(bool refresh) {
         wrefresh(inwin);
 }
 
+void ui_output(char *output) {
+    strcpy(buffer[buffer_count++], output);
+}
+
 void ui_start() {
     signal(SIGINT, finish);
     signal(SIGSEGV, finish);
@@ -89,7 +113,6 @@ void ui_start() {
 
     outwin = subwin(mainwin, LINES - 2, COLS, 0, 0);
     scrollok(outwin, TRUE);
-    wattron(outwin, A_BOLD);
 
     statuswin = subwin(mainwin, 1, COLS, LINES - 2, 0);
     wattrset(statuswin, COLOR_PAIR(10));
@@ -97,6 +120,7 @@ void ui_start() {
     inwin = subwin(mainwin, 1, COLS, LINES - 1, 0);
     keypad(inwin, TRUE);
 
+    draw_outwin(TRUE);
     draw_statuswin(TRUE);
     draw_inwin(TRUE);
 
@@ -110,7 +134,10 @@ void ui_start() {
                 break;
             case KEY_ENTER:
             case 13:
+                commandline[commandline_length] = '\0';
+                ui_output(commandline);
                 commandline_length = 0;
+                draw_outwin(TRUE);
                 break;
             default:
                 commandline[commandline_length++] = c;

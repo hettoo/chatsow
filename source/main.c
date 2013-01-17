@@ -29,6 +29,14 @@ int die(char *message) {
     exit(1);
 }
 
+int min(int a, int b) {
+    return a < b ? a : b;
+}
+
+int max(int a, int b) {
+    return a > b ? a : b;
+}
+
 int main(int argc, char *argv[]) {
     if (argc < 2)
         die("No host given\n");
