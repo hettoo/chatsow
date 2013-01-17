@@ -30,10 +30,8 @@ int die(char *message) {
 
 int main(int argc, char *argv[]) {
     if (argc < 2) {
-        die("No demo given\n");
+        die("No host given\n");
     }
-    FILE *fp = fopen(argv[1], "r");
-    parse_demo(fp);
-    fclose(fp);
+
     return 0;
 }

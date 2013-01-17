@@ -3,7 +3,7 @@ DEBUG = -g
 CFLAGS = -O2 -Wall -c $(DEBUG)
 LFLAGS = -O2 -Wall -lm $(DEBUG)
 
-PROGRAM = rlc
+PROGRAM = wrlc
 
 SOURCE = source/
 BUILD = build/
