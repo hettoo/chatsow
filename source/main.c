@@ -18,10 +18,11 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 */
 
-#include <stdio.h>
-#include <stdlib.h>
-
+#include "ui.h"
 #include "parser.h"
+
+#include <stdlib.h>
+#include <stdio.h>
 
 int die(char *message) {
     printf("%s", message);
@@ -29,9 +30,10 @@ int die(char *message) {
 }
 
 int main(int argc, char *argv[]) {
-    if (argc < 2) {
+    if (argc < 2)
         die("No host given\n");
-    }
+
+    ui_start();
 
     return 0;
 }
