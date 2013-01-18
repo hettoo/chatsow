@@ -377,4 +377,13 @@ unsigned read_entity_bits(msg_t *msg);
 void read_delta_entity(msg_t *msg, unsigned bits);
 int skip_data(msg_t *msg, size_t length);
 
+void write_data( msg_t *msg, const void *data, size_t length );
+void write_char( msg_t *msg, int c );
+void write_byte( msg_t *msg, int c );
+void write_short( msg_t *msg, int c );
+void write_int3( msg_t *msg, int c );
+void write_long( msg_t *msg, int c );
+void write_float( msg_t *msg, float f );
+void write_string( msg_t *msg, const char *s );
+
 #endif

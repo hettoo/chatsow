@@ -312,3 +312,50 @@ int skip_data(msg_t *msg, size_t length) {
     }
     return 0;
 }
+
+void write_data( msg_t *msg, const void *data, size_t length ) {
+    memcpy(msg->data + msg->cursize, data, length);
+    msg->cursize += length;
+}
+
+void write_char( msg_t *msg, int c ) {
+    msg->data[msg->cursize++] = (char)c;
+}
+
+void write_byte( msg_t *msg, int c ) {
+    msg->data[msg->cursize++] = (qbyte)(c & 0xff);
+}
+
+void write_short( msg_t *msg, int c ) {
+    msg->data[msg->cursize++] = (qbyte)(c & 0xff);
+    msg->data[msg->cursize++] = (qbyte)((c >> 8) & 0xff);
+}
+
+void write_int3( msg_t *msg, int c ) {
+    msg->data[msg->cursize++] = (qbyte)(c & 0xff);
+    msg->data[msg->cursize++] = (qbyte)((c >> 8) & 0xff);
+    msg->data[msg->cursize++] = (qbyte)((c >> 16) & 0xff);
+}
+
+void write_long( msg_t *msg, int c ) {
+	unsigned int *ip = (unsigned int *)msg->data + msg->cursize;
+	*ip = LittleLong( c );
+    msg->cursize += 4;
+}
+
+void write_float( msg_t *msg, float f ) {
+	union {
+		float f;
+		int l;
+	} dat;
+
+	dat.f = f;
+	write_long( msg, dat.l );
+}
+
+void write_string( msg_t *msg, const char *s ) {
+	if( !s )
+		write_data( msg, "", 1 );
+	else
+		write_data( msg, s, strlen(s) + 1 );
+}
