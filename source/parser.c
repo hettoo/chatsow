@@ -106,7 +106,7 @@ void parse_message(msg_t *msg) {
             case -1:
                 return;
             default:
-                printf("unknown command: %d\n", cmd);
+                ui_output("unknown command: %d\n", cmd);
                 return;
         }
     }

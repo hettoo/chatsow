@@ -338,7 +338,7 @@ void write_int3( msg_t *msg, int c ) {
 }
 
 void write_long( msg_t *msg, int c ) {
-	unsigned int *ip = (unsigned int *)msg->data + msg->cursize;
+	unsigned int *ip = (unsigned int *)(msg->data + msg->cursize);
 	*ip = LittleLong( c );
     msg->cursize += 4;
 }

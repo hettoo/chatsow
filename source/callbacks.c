@@ -21,19 +21,20 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <stdio.h>
 
 #include "callbacks.h"
+#include "ui.h"
 
 void demoinfo_key(char *key) {
-    printf("demoinfo key %s\n", key);
+    ui_output("demoinfo key %s\n", key);
 }
 
 void demoinfo_value(char *value) {
-    printf("demoinfo value %s\n", value);
+    ui_output("demoinfo value %s\n", value);
 }
 
 void command(char *cmd, qbyte *targets, int target_count) {
-    printf("cmd %d", target_count);
+    ui_output("cmd %d", target_count);
     int i;
     for (i = 0; i < target_count; i++)
-        printf(" %d", targets[i]);
-    printf(" %s\n", cmd);
+        ui_output(" %d", targets[i]);
+    ui_output(" %s\n", cmd);
 }

@@ -44,6 +44,8 @@ typedef struct {
 	qboolean compressed;
 } msg_t;
 
+#define       FRAGMENT_BIT            ( 1<<31 )
+
 enum svc_ops_e {
 	svc_bad,
 
@@ -62,6 +64,16 @@ enum svc_ops_e {
 	svc_frame,
 	svc_demoinfo,
 	svc_extension			// for future expansion
+};
+
+enum clc_ops_e
+{
+	clc_bad,
+	clc_nop,
+	clc_move,				// [[usercmd_t]
+	clc_svcack,
+	clc_clientcommand,      // [string] message
+	clc_extension
 };
 
 #define   PS_MAX_STATS                    64

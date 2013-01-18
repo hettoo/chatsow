@@ -108,10 +108,14 @@ static void draw_inwin(bool refresh) {
         wrefresh(inwin);
 }
 
-void ui_output(char *output) {
+void ui_output(char *format, ...) {
+	va_list	argptr;
+	va_start(argptr, format);
     pthread_mutex_lock(&mutex);
-    strcpy(buffer[buffer_count++], output);
+    sprintf(buffer[buffer_count++], format, argptr);
     pthread_mutex_unlock(&mutex);
+	va_end(argptr);
+    draw_outwin(TRUE);
 }
 
 void ui_init() {

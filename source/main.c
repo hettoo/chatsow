@@ -28,11 +28,11 @@ void shutdown() {
 }
 
 int main(int argc, char *argv[]) {
-    if (argc < 2)
-        die("No host given");
+    if (argc < 3)
+        die("No host or port given");
 
     ui_init();
-    client_start(argv[1]);
+    client_start(argv[1], argv[2]);
     ui_run();
     shutdown();
 
