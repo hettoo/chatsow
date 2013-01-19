@@ -37,6 +37,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 static qboolean started = qfalse;
 static pthread_t thread;
+static pthread_mutex_t mutex;
+static qboolean stopping = qfalse;
 
 static char *host;
 static char *port;
@@ -172,8 +174,14 @@ static void *client_run(void *args) {
     while (1) {
         client_recv(&msg);
         parse_message(&msg);
+        pthread_mutex_lock(&mutex);
+        if (stopping)
+            break;
+        pthread_mutex_unlock(&mutex);
     }
+    pthread_mutex_unlock(&mutex);
 
+    client_command("disconnect");
     close(sockfd);
 
     return NULL;
@@ -183,16 +191,20 @@ void client_start(char *new_host, char *new_port) {
     host = new_host;
     port = new_port;
     port_int = atoi(port);
+    pthread_mutex_init(&mutex, NULL);
+    stopping = qfalse;
     pthread_create(&thread, NULL, client_run, NULL);
     started = qtrue;
 }
 
 void client_stop() {
     if (started) {
+        pthread_mutex_lock(&mutex);
+        stopping = qtrue;
+        pthread_mutex_unlock(&mutex);
         pthread_join(thread, NULL);
         started = qfalse;
-
-        client_command("disconnect");
+        pthread_mutex_destroy(&mutex);
     }
 }
 
