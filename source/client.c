@@ -198,7 +198,6 @@ static void *client_run(void *args) {
 
     client_command("configstrings %d 0", spawn_count());
     client_command("baselines %d", spawn_count());
-    client_command("precache %d", spawn_count());
     client_command("begin %d", spawn_count());
 
     while (1) {
@@ -241,7 +240,6 @@ void client_stop() {
 }
 
 void execute(char *command) {
-    ui_output(command);
-    ui_output("\n");
+    ui_output("%s\n", command);
     client_command(command);
 }

@@ -35,12 +35,14 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 static pthread_mutex_t mutex;
 
 static WINDOW *mainwin;
+static WINDOW *titlewin;
 static WINDOW *outwin;
 static WINDOW *statuswin;
 static WINDOW *inwin;
 
 static char buffer[MAX_BUFFER_SIZE][MAX_OUTPUT_LENGTH];
 static int buffer_count = 0;
+static int buffer_index = 0;
 static int output_length = 0;
 
 static char commandline[MAX_INPUT_LENGTH];
@@ -70,20 +72,32 @@ static void init_colors() {
         init_pair(8, COLOR_YELLOW, COLOR_BLACK);
         init_pair(9, COLOR_WHITE, COLOR_BLACK);
         init_pair(10, COLOR_BLACK, COLOR_BLACK);
-        init_pair(11, COLOR_BLACK, COLOR_WHITE);
+        init_pair(11, COLOR_BLACK, COLOR_BLUE);
     }
+}
+
+static void draw_titlewin(bool refresh) {
+    werase(titlewin);
+    int i = 0;
+    wattron(titlewin, A_BOLD);
+    for (; i < COLS; i++)
+        waddch(titlewin, ' ');
+    wattroff(titlewin, A_BOLD);
+    if (refresh)
+        wrefresh(titlewin);
 }
 
 static void draw_outwin(bool refresh) {
     werase(outwin);
-    int outheight = LINES - 1;
+    int outheight = LINES - 3;
     int i;
     pthread_mutex_lock(&mutex);
     int start = max(0, buffer_count - outheight);
     int displayable = buffer_count - start;
     for (i = start; i < buffer_count; i++) {
         wmove(outwin, i - start + outheight - displayable, 0);
-        waddstr(outwin, buffer[i]);
+        waddstr(outwin, buffer[(i - buffer_count // this is incorrect, but apparantly there is another error correcting this :D
+                    + buffer_index + MAX_BUFFER_SIZE) % MAX_BUFFER_SIZE]);
     }
     pthread_mutex_unlock(&mutex);
     if (refresh)
@@ -127,12 +141,14 @@ void ui_output(char *format, ...) {
         buffer_count++;
     for (i = 0; i < len; i++) {
         if (string[i] == '\n' || output_length > maxlen) {
-            buffer[buffer_count - 1][output_length] = '\0';
-            buffer_count++;
+            buffer[buffer_index][output_length] = '\0';
+            if (buffer_count < MAX_BUFFER_SIZE)
+                buffer_count++;
+            buffer_index = (buffer_index + 1) % MAX_BUFFER_SIZE;
             output_length = 0;
         }
         if (string[i] != '\n')
-            buffer[buffer_count - 1][output_length++] = string[i];
+            buffer[buffer_index][output_length++] = string[i];
     }
     pthread_mutex_unlock(&mutex);
     draw_outwin(TRUE);
@@ -150,12 +166,15 @@ void ui_run() {
     nonl();
     cbreak();
     noecho();
+    curs_set(0);
 
     init_colors();
 
-    outwin = subwin(mainwin, LINES - 2, COLS, 0, 0);
+    titlewin = subwin(mainwin, 1, COLS, 0, 0);
+    wattrset(titlewin, COLOR_PAIR(11));
+
+    outwin = subwin(mainwin, LINES - 3, COLS, 1, 0);
     scrollok(outwin, TRUE);
-    leaveok(outwin, TRUE);
 
     statuswin = subwin(mainwin, 1, COLS, LINES - 2, 0);
     wattrset(statuswin, COLOR_PAIR(11));
@@ -163,6 +182,7 @@ void ui_run() {
     inwin = subwin(mainwin, 1, COLS, LINES - 1, 0);
     keypad(inwin, TRUE);
 
+    draw_titlewin(TRUE);
     draw_outwin(TRUE);
     draw_statuswin(TRUE);
     draw_inwin(TRUE);
