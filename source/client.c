@@ -138,6 +138,11 @@ static void client_recv(msg_t *msg) {
         static qbyte buffer[MAX_MSGLEN];
         short fragment_start = read_short(msg);
         short fragment_length = read_short(msg);
+        if (fragment_start != fragment_total) {
+            msg->readcount = 0;
+            msg->cursize = 0;
+            return;
+        }
         qboolean last = qfalse;
         if (fragment_length & FRAGMENT_LAST) {
             fragment_length &= ~FRAGMENT_LAST;
@@ -242,4 +247,20 @@ void client_stop() {
 void execute(char *command) {
     ui_output("%s\n", command);
     client_command(command);
+}
+
+void demoinfo_key(char *key) {
+    ui_output("demoinfo key %s\n", key);
+}
+
+void demoinfo_value(char *value) {
+    ui_output("demoinfo value %s\n", value);
+}
+
+void command(char *cmd, qbyte *targets, int target_count) {
+    ui_output("cmd %d", target_count);
+    int i;
+    for (i = 0; i < target_count; i++)
+        ui_output(" %d", targets[i]);
+    ui_output(" %s\n", cmd);
 }

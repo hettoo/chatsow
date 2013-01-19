@@ -32,6 +32,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define MAX_OUTPUT_LENGTH 128
 #define MAX_INPUT_LENGTH 128
 
+#define SCROLL_SPEED 10
+
 static pthread_mutex_t mutex;
 
 static WINDOW *mainwin;
@@ -44,6 +46,7 @@ static char buffer[MAX_BUFFER_SIZE][MAX_OUTPUT_LENGTH];
 static int buffer_count = 0;
 static int buffer_index = 0;
 static int output_length = 0;
+static int scroll_up = 0;
 
 static char commandline[MAX_INPUT_LENGTH];
 static int commandline_length = 0;
@@ -92,12 +95,16 @@ static void draw_outwin(bool refresh) {
     int outheight = LINES - 3;
     int i;
     pthread_mutex_lock(&mutex);
+    if (scroll_up >= buffer_count - outheight)
+        scroll_up = buffer_count - outheight - 1;
+    if (scroll_up < 0)
+        scroll_up = 0;
     int start = max(0, buffer_count - outheight);
     int displayable = buffer_count - start;
     for (i = start; i < buffer_count; i++) {
         wmove(outwin, i - start + outheight - displayable, 0);
         waddstr(outwin, buffer[(i - buffer_count // this is incorrect, but apparantly there is another error correcting this :D
-                    + buffer_index + MAX_BUFFER_SIZE) % MAX_BUFFER_SIZE]);
+                    + buffer_index + MAX_BUFFER_SIZE - scroll_up) % MAX_BUFFER_SIZE]);
     }
     pthread_mutex_unlock(&mutex);
     if (refresh)
@@ -145,6 +152,8 @@ void ui_output(char *format, ...) {
             if (buffer_count < MAX_BUFFER_SIZE)
                 buffer_count++;
             buffer_index = (buffer_index + 1) % MAX_BUFFER_SIZE;
+            if (scroll_up)
+                scroll_up++;
             output_length = 0;
         }
         if (string[i] != '\n')
@@ -189,6 +198,22 @@ void ui_run() {
 
     for (;;) {
         int c = wgetch(inwin);
+        qboolean handled = qtrue;
+        switch (c) {
+            case KEY_PPAGE:
+                scroll_up += SCROLL_SPEED;
+                break;
+            case KEY_NPAGE:
+                scroll_up -= SCROLL_SPEED;
+                break;
+            default:
+                handled = qfalse;
+                break;
+        }
+        if (handled) {
+            draw_outwin(TRUE);
+            continue;
+        }
         switch (c) {
             case KEY_BACKSPACE:
             case 127:
@@ -198,8 +223,11 @@ void ui_run() {
             case KEY_ENTER:
             case 13:
                 commandline[commandline_length] = '\0';
-                execute(commandline);
-                commandline_length = 0;
+                scroll_up = 0;
+                if (commandline_length > 0) {
+                    execute(commandline);
+                    commandline_length = 0;
+                }
                 draw_outwin(TRUE);
                 break;
             default:

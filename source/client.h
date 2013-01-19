@@ -21,8 +21,14 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #ifndef WRLC_CLIENT_H
 #define WRLC_CLIENT_H
 
+#include "import.h"
+
 void client_start(char *new_host, char *new_port);
 void client_stop();
 void execute();
+
+void demoinfo_key(char *key);
+void demoinfo_value(char *value);
+void command(char *cmd, qbyte *targets, int target_count);
 
 #endif
