@@ -225,7 +225,7 @@ void ui_run() {
                 commandline[commandline_length] = '\0';
                 scroll_up = 0;
                 if (commandline_length > 0) {
-                    execute(commandline);
+                    execute(commandline, NULL, 0);
                     commandline_length = 0;
                 }
                 draw_outwin(TRUE);

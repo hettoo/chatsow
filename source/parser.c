@@ -63,7 +63,7 @@ static void parse_frame(msg_t *msg) {
             read_data(msg, targets, numtargets);
         }
         if (frame > last_frame + framediff)
-            command(cmd, targets, numtargets);
+            execute(cmd, targets, numtargets);
     }
     skip_data(msg, length - (msg->readcount - pos));
     last_frame = frame;
@@ -103,7 +103,7 @@ void parse_message(msg_t *msg) {
                     client_ack(cmd_num);
                 }
             case svc_servercs:
-                command(read_string(msg), NULL, 0);
+                execute(read_string(msg), NULL, 0);
                 break;
             case svc_serverdata:
                 read_long(msg); // protocol version

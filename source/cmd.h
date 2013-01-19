@@ -18,17 +18,15 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 */
 
-#ifndef WRLC_CLIENT_H
-#define WRLC_CLIENT_H
+#ifndef WRLC_CMD_H
+#define WRLC_CMD_H
 
-#include "import.h"
+void cmd_execute(char *cmd);
+int cmd_argc();
+char *cmd_argv(int index);
+char *cmd_args(int start);
+char *cmd_args_stripped(int start);
 
-void client_start(char *new_host, char *new_port);
-void client_ack(int num);
-void client_stop();
-
-void demoinfo_key(char *key);
-void demoinfo_value(char *value);
-void execute(char *cmd, qbyte *targets, int target_count);
+void cmd_add(char *name, void (*f)());
 
 #endif
