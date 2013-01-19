@@ -21,13 +21,14 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <stdio.h>
 
 #include "import.h"
+#include "client.h"
 #include "ui.h"
-#include "callbacks.h"
 
 static int last_frame = -1;
 static int bitflags = 0;
 static qboolean reliable = qfalse;
 static int servercount = 0;
+static int entity = 0;
 
 qboolean connection_reliable() {
     return reliable;
@@ -35,6 +36,10 @@ qboolean connection_reliable() {
 
 int spawn_count() {
     return servercount;
+}
+
+int player_num() {
+    return entity;
 }
 
 static void parse_frame(msg_t *msg) {
@@ -106,7 +111,7 @@ void parse_message(msg_t *msg) {
                 read_short(msg); // snap frametime
                 read_string(msg); // base game
                 read_string(msg); // game
-                read_short(msg); // player entity number
+                entity = read_short(msg) + 1;
                 read_string(msg); // level name
                 bitflags = read_byte(msg); // server bitflags
                 reliable = (bitflags & SV_BITFLAGS_RELIABLE) != 0;

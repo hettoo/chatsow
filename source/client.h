@@ -24,6 +24,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "import.h"
 
 void client_start(char *new_host, char *new_port);
+void client_ack(int num);
 void client_stop();
 void execute();
 

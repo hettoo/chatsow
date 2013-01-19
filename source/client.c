@@ -258,9 +258,15 @@ void demoinfo_value(char *value) {
 }
 
 void command(char *cmd, qbyte *targets, int target_count) {
-    ui_output("cmd %d", target_count);
-    int i;
-    for (i = 0; i < target_count; i++)
-        ui_output(" %d", targets[i]);
-    ui_output(" %s\n", cmd);
+    if (target_count > 0) {
+        int i;
+        qboolean found = qfalse;
+        for (i = 0; i < target_count; i++) {
+            if (targets[i] == player_num())
+                found = qtrue;
+        }
+        if (!found)
+            return;
+    }
+    ui_output("%s\n", cmd);
 }
