@@ -242,5 +242,6 @@ void client_stop() {
 
 void execute(char *command) {
     ui_output(command);
+    ui_output("\n");
     client_command(command);
 }

@@ -88,7 +88,13 @@ void parse_message(msg_t *msg) {
                 break;
             case svc_servercmd:
                 if (!reliable) {
-                    int cmd_num = read_long(msg); // command number
+                    static int last_cmd_num = 0;
+                    int cmd_num = read_long(msg);
+                    if (cmd_num != last_cmd_num + 1) {
+                        read_string(msg);
+                        break;
+                    }
+                    last_cmd_num = cmd_num;
                     client_ack(cmd_num);
                 }
             case svc_servercs:
@@ -121,11 +127,6 @@ void parse_message(msg_t *msg) {
                 return;
             default:
                 ui_output("unknown command: %d\n", cmd);
-                int i;
-                for (i = 0; i < msg->cursize; i++) {
-                    if (msg->data[i])
-                        ui_output("%i -> %i (%i): %c\n", msg->readcount, i, msg->cursize - msg->readcount, msg->data[i]);
-                }
                 return;
         }
     }

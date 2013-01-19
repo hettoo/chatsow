@@ -28,6 +28,10 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "utils.h"
 #include "client.h"
 
+#define MAX_BUFFER_SIZE 512
+#define MAX_OUTPUT_LENGTH 128
+#define MAX_INPUT_LENGTH 128
+
 static pthread_mutex_t mutex;
 
 static WINDOW *mainwin;
@@ -35,10 +39,11 @@ static WINDOW *outwin;
 static WINDOW *statuswin;
 static WINDOW *inwin;
 
-static char buffer[512][128];
+static char buffer[MAX_BUFFER_SIZE][MAX_OUTPUT_LENGTH];
 static int buffer_count = 0;
+static int output_length = 0;
 
-static char commandline[512];
+static char commandline[MAX_INPUT_LENGTH];
 static int commandline_length = 0;
 
 void ui_stop() {
@@ -71,7 +76,7 @@ static void init_colors() {
 
 static void draw_outwin(bool refresh) {
     werase(outwin);
-    int outheight = LINES - 2;
+    int outheight = LINES - 1;
     int i;
     pthread_mutex_lock(&mutex);
     int start = max(0, buffer_count - outheight);
@@ -109,12 +114,27 @@ static void draw_inwin(bool refresh) {
 }
 
 void ui_output(char *format, ...) {
+    static char string[65536];
 	va_list	argptr;
 	va_start(argptr, format);
-    pthread_mutex_lock(&mutex);
-    vsprintf(buffer[buffer_count++], format, argptr);
-    pthread_mutex_unlock(&mutex);
+    vsprintf(string, format, argptr);
 	va_end(argptr);
+    int len = strlen(string);
+    int i;
+    int maxlen = min(COLS, MAX_OUTPUT_LENGTH - 2);
+    pthread_mutex_lock(&mutex);
+    if (buffer_count == 0)
+        buffer_count++;
+    for (i = 0; i < len; i++) {
+        if (string[i] == '\n' || output_length > maxlen) {
+            buffer[buffer_count - 1][output_length] = '\0';
+            buffer_count++;
+            output_length = 0;
+        }
+        if (string[i] != '\n')
+            buffer[buffer_count - 1][output_length++] = string[i];
+    }
+    pthread_mutex_unlock(&mutex);
     draw_outwin(TRUE);
 }
 
