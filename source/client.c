@@ -37,8 +37,9 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 static qboolean started = qfalse;
 static pthread_t thread;
-static pthread_mutex_t mutex;
+static pthread_mutex_t stop_mutex;
 static qboolean stopping = qfalse;
+static pthread_mutex_t command_mutex;
 
 static char *host;
 static char *port;
@@ -88,6 +89,7 @@ static void client_send(msg_t *msg) {
 }
 
 static void client_command(char *format, ...) {
+    pthread_mutex_lock(&command_mutex);
     static int n = 1;
     static char string[MAX_MSGLEN];
 	va_list	argptr;
@@ -100,6 +102,15 @@ static void client_command(char *format, ...) {
     if (!connection_reliable())
         write_long(&msg, n++);
     write_string(&msg, string);
+    client_send(&msg);
+    pthread_mutex_unlock(&command_mutex);
+}
+
+void client_ack(int num) {
+    msg_t msg;
+    msg_init(&msg);
+    write_byte(&msg, clc_svcack);
+    write_long(&msg, num);
     client_send(&msg);
 }
 
@@ -123,9 +134,26 @@ static void client_recv(msg_t *msg) {
         }
     }
     if (fragmented) {
-        //die("fragmented");
-        msg->cursize = 0;
+        static int fragment_total = 0;
+        static qbyte buffer[MAX_MSGLEN];
+        short fragment_start = read_short(msg);
+        short fragment_length = read_short(msg);
+        qboolean last = qfalse;
+        if (fragment_length & FRAGMENT_LAST) {
+            fragment_length &= ~FRAGMENT_LAST;
+            last = qtrue;
+        }
+        memcpy(buffer + fragment_total, msg->data + msg->readcount, fragment_length);
+        fragment_total += fragment_length;
         msg->readcount = 0;
+        if (last) {
+            memcpy(msg->data, buffer, fragment_total);
+            msg->cursize = fragment_total;
+            fragment_total = 0;
+        } else {
+            msg->cursize = 0;
+            return;
+        }
     }
     if (compressed && msg->cursize - msg->readcount > 0) {
         static qbyte temp[MAX_MSGLEN];
@@ -169,17 +197,19 @@ static void *client_run(void *args) {
     parse_message(&msg);
 
     client_command("configstrings %d 0", spawn_count());
+    client_command("baselines %d", spawn_count());
+    client_command("precache %d", spawn_count());
     client_command("begin %d", spawn_count());
 
     while (1) {
         client_recv(&msg);
         parse_message(&msg);
-        pthread_mutex_lock(&mutex);
+        pthread_mutex_lock(&stop_mutex);
         if (stopping)
             break;
-        pthread_mutex_unlock(&mutex);
+        pthread_mutex_unlock(&stop_mutex);
     }
-    pthread_mutex_unlock(&mutex);
+    pthread_mutex_unlock(&stop_mutex);
 
     client_command("disconnect");
     close(sockfd);
@@ -191,7 +221,8 @@ void client_start(char *new_host, char *new_port) {
     host = new_host;
     port = new_port;
     port_int = atoi(port);
-    pthread_mutex_init(&mutex, NULL);
+    pthread_mutex_init(&stop_mutex, NULL);
+    pthread_mutex_init(&command_mutex, NULL);
     stopping = qfalse;
     pthread_create(&thread, NULL, client_run, NULL);
     started = qtrue;
@@ -199,15 +230,17 @@ void client_start(char *new_host, char *new_port) {
 
 void client_stop() {
     if (started) {
-        pthread_mutex_lock(&mutex);
+        pthread_mutex_lock(&stop_mutex);
         stopping = qtrue;
-        pthread_mutex_unlock(&mutex);
+        pthread_mutex_unlock(&stop_mutex);
         pthread_join(thread, NULL);
         started = qfalse;
-        pthread_mutex_destroy(&mutex);
+        pthread_mutex_destroy(&stop_mutex);
+        pthread_mutex_destroy(&command_mutex);
     }
 }
 
 void execute(char *command) {
     ui_output(command);
+    client_command(command);
 }

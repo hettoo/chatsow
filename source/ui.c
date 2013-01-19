@@ -135,6 +135,7 @@ void ui_run() {
 
     outwin = subwin(mainwin, LINES - 2, COLS, 0, 0);
     scrollok(outwin, TRUE);
+    leaveok(outwin, TRUE);
 
     statuswin = subwin(mainwin, 1, COLS, LINES - 2, 0);
     wattrset(statuswin, COLOR_PAIR(11));

@@ -87,8 +87,10 @@ void parse_message(msg_t *msg) {
                 read_long(msg); // ucmd acknowledged
                 break;
             case svc_servercmd:
-                if (!reliable)
-                    read_long(msg); // command number
+                if (!reliable) {
+                    int cmd_num = read_long(msg); // command number
+                    client_ack(cmd_num);
+                }
             case svc_servercs:
                 command(read_string(msg), NULL, 0);
                 break;

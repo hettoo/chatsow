@@ -46,6 +46,8 @@ typedef struct {
 
 #define       FRAGMENT_BIT            ( 1<<31 )
 
+#define       FRAGMENT_LAST           ( 1<<14 )
+
 enum svc_ops_e {
 	svc_bad,
 
