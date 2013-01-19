@@ -21,10 +21,21 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <stdio.h>
 
 #include "import.h"
+#include "ui.h"
 #include "callbacks.h"
 
 static int last_frame = -1;
 static int bitflags = 0;
+static qboolean reliable = qfalse;
+static int servercount = 0;
+
+qboolean connection_reliable() {
+    return reliable;
+}
+
+int spawn_count() {
+    return servercount;
+}
 
 static void parse_frame(msg_t *msg) {
     int length = read_short(msg); // length
@@ -76,20 +87,21 @@ void parse_message(msg_t *msg) {
                 read_long(msg); // ucmd acknowledged
                 break;
             case svc_servercmd:
-                if (!(bitflags & SV_BITFLAGS_RELIABLE))
+                if (!reliable)
                     read_long(msg); // command number
             case svc_servercs:
                 command(read_string(msg), NULL, 0);
                 break;
             case svc_serverdata:
                 read_long(msg); // protocol version
-                read_long(msg); // servercount
+                servercount = read_long(msg);
                 read_short(msg); // snap frametime
                 read_string(msg); // base game
                 read_string(msg); // game
                 read_short(msg); // player entity number
                 read_string(msg); // level name
                 bitflags = read_byte(msg); // server bitflags
+                reliable = (bitflags & SV_BITFLAGS_RELIABLE) != 0;
                 int pure = read_short(msg);
                 while (pure > 0) {
                     read_string(msg); // pure pk3 name
@@ -107,6 +119,11 @@ void parse_message(msg_t *msg) {
                 return;
             default:
                 ui_output("unknown command: %d\n", cmd);
+                int i;
+                for (i = 0; i < msg->cursize; i++) {
+                    if (msg->data[i])
+                        ui_output("%i -> %i (%i): %c\n", msg->readcount, i, msg->cursize - msg->readcount, msg->data[i]);
+                }
                 return;
         }
     }

@@ -23,6 +23,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include <stdio.h>
 
+qboolean connection_reliable();
+int spawn_count();
 void parse_message(msg_t *msg);
 void parse_demo(FILE *fp);
 

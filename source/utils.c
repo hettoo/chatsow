@@ -20,12 +20,17 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <stdarg.h>
 
 #include "main.h"
 
-int die(char *message) {
+int die(char *format, ...) {
     shutdown();
-    printf("%s\n", message);
+	va_list	argptr;
+	va_start(argptr, format);
+    vprintf(format, argptr);
+	va_end(argptr);
+    printf("\n");
     exit(1);
 }
 

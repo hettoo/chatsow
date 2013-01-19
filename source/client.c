@@ -26,6 +26,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <sys/socket.h>
 #include <unistd.h>
 #include <stdlib.h>
+#include <stdarg.h>
 #include <string.h>
 #include "zlib.h"
 
@@ -84,6 +85,22 @@ static void client_send(msg_t *msg) {
         die("sendto");
 }
 
+static void client_command(char *format, ...) {
+    static int n = 1;
+    static char string[MAX_MSGLEN];
+	va_list	argptr;
+	va_start(argptr, format);
+    vsprintf(string, format, argptr);
+	va_end(argptr);
+    msg_t msg;
+    msg_init(&msg);
+    write_byte(&msg, clc_clientcommand);
+    if (!connection_reliable())
+        write_long(&msg, n++);
+    write_string(&msg, string);
+    client_send(&msg);
+}
+
 static void client_recv(msg_t *msg) {
     msg_clear(msg);
     if ((msg->cursize = recvfrom(sockfd, msg->data, msg->maxsize, 0, (struct sockaddr*)&serv_addr, &slen)) == -1)
@@ -103,11 +120,18 @@ static void client_recv(msg_t *msg) {
             compressed = qtrue;
         }
     }
-    if (compressed) {
-        die("compressed");
-    }
     if (fragmented) {
-        die("fragmented");
+        //die("fragmented");
+        msg->cursize = 0;
+        msg->readcount = 0;
+    }
+    if (compressed && msg->cursize - msg->readcount > 0) {
+        static qbyte temp[MAX_MSGLEN];
+        unsigned long new_size = MAX_MSGLEN;
+        uncompress(temp, &new_size, msg->data + msg->readcount, msg->cursize - msg->readcount);
+        memcpy(msg->data, temp, new_size);
+        msg->readcount = 0;
+        msg->cursize = new_size;
     }
 }
 
@@ -133,10 +157,17 @@ static void *client_run(void *args) {
     msg.cursize--;
     write_string(&msg, challenge);
     msg.cursize--;
-    write_string(&msg, " \"\\name\\chattoo\" 0\n");
+    write_string(&msg, " \"\\name\\chattoo\" 0");
     client_send(&msg);
 
     client_recv(&msg); // client_connect
+
+    client_command("new");
+    client_recv(&msg);
+    parse_message(&msg);
+
+    client_command("configstrings %d 0", spawn_count());
+    client_command("begin %d", spawn_count());
 
     while (1) {
         client_recv(&msg);
@@ -161,11 +192,7 @@ void client_stop() {
         pthread_join(thread, NULL);
         started = qfalse;
 
-        msg_t msg;
-        msg_init(&msg);
-        write_byte(&msg, clc_clientcommand);
-        write_string(&msg, "cmd disconnect");
-        client_send(&msg);
+        client_command("disconnect");
     }
 }
 
