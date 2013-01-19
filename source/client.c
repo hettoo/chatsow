@@ -136,6 +136,8 @@ static void *client_run(void *args) {
     write_string(&msg, " \"\\name\\chattoo\" 0\n");
     client_send(&msg);
 
+    client_recv(&msg); // client_connect
+
     while (1) {
         client_recv(&msg);
         parse_message(&msg);

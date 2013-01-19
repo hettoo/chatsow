@@ -112,7 +112,7 @@ void ui_output(char *format, ...) {
 	va_list	argptr;
 	va_start(argptr, format);
     pthread_mutex_lock(&mutex);
-    sprintf(buffer[buffer_count++], format, argptr);
+    vsprintf(buffer[buffer_count++], format, argptr);
     pthread_mutex_unlock(&mutex);
 	va_end(argptr);
     draw_outwin(TRUE);
