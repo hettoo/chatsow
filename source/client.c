@@ -222,7 +222,15 @@ static void *client_run(void *args) {
     return NULL;
 }
 
+void cmd_nop() {
+}
+
 void client_start(char *new_host, char *new_port) {
+    cmd_add("cs", cmd_nop);
+    cmd_add("plstats", cmd_nop);
+    cmd_add("scb", cmd_nop);
+    cmd_add("cvarinfo", cmd_nop);
+
     host = new_host;
     port = new_port;
     port_int = atoi(port);

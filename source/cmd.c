@@ -20,6 +20,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include "import.h"
 #include "ui.h"
+#include "cmd.h"
 
 #define MAX_CMDS 128
 #define MAX_ARGC 512
@@ -51,6 +52,7 @@ void parse_cmd() {
             case '\t':
             case '\n':
                 if (o > 0) {
+                    argv[argc][o] = '\0';
                     argc++;
                     o = 0;
                 }
@@ -60,6 +62,7 @@ void parse_cmd() {
                 if (escaped) {
                 } else if (quote == args[i]) {
                     quote = '\0';
+                    argv[argc][o] = '\0';
                     argc++;
                     o = 0;
                     break;
@@ -79,8 +82,10 @@ void parse_cmd() {
                 break;
         }
     }
-    if (o > 0)
+    if (o > 0) {
+        argv[argc][o] = '\0';
         argc++;
+    }
 }
 
 void cmd_execute(char *cmd) {
@@ -89,7 +94,7 @@ void cmd_execute(char *cmd) {
     parse_cmd();
     int i;
     for (i = 0; i < cmd_count; i++) {
-        if (!strcmp(cmd, cmds[i].name)) {
+        if (!strcmp(cmd_argv(0), cmds[i].name)) {
             cmds[i].f();
             return;
         }
@@ -98,13 +103,13 @@ void cmd_execute(char *cmd) {
 }
 
 int cmd_argc() {
-    return 0;
+    return argc;
 }
 
 char *cmd_argv(int index) {
     if (index >= argc)
         return "";
-    return "";
+    return argv[index];
 }
 
 char *cmd_args(int start) {
