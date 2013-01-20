@@ -414,11 +414,11 @@ void cmd_nop() {
 }
 
 void cmd_pr() {
-    ui_output("%s", cmd_argv(1));
+    ui_output("%s^7", cmd_argv(1));
 }
 
 void cmd_ch() {
-    ui_output("%s: %s\n", player_name(atoi(cmd_argv(1))), cmd_argv(2));
+    ui_output("%s^7: %s^7\n", player_name(atoi(cmd_argv(1))), cmd_argv(2));
 }
 
 void cmd_players() {
@@ -426,7 +426,7 @@ void cmd_players() {
     for (i = 1; i <= MAX_CLIENTS; i++) {
         char *name = player_name(i);
         if (name && *name)
-            ui_output("%s\n", name);
+            ui_output("%s^7\n", name);
     }
 }
 

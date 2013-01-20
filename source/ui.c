@@ -70,13 +70,13 @@ static void init_colors() {
         init_pair(1, COLOR_RED, COLOR_BLACK);
         init_pair(2, COLOR_GREEN, COLOR_BLACK);
         init_pair(3, COLOR_YELLOW, COLOR_BLACK);
-        init_pair(4, COLOR_BLUE, COLOR_BLACK);
+        init_pair(4, COLOR_BLUE, COLOR_WHITE);
         init_pair(5, COLOR_CYAN, COLOR_BLACK);
         init_pair(6, COLOR_MAGENTA, COLOR_BLACK);
         init_pair(7, COLOR_WHITE, COLOR_BLACK);
         init_pair(8, COLOR_YELLOW, COLOR_BLACK);
         init_pair(9, COLOR_WHITE, COLOR_BLACK);
-        init_pair(10, COLOR_BLACK, COLOR_BLACK);
+        init_pair(10, COLOR_BLACK, COLOR_WHITE);
         init_pair(11, COLOR_BLACK, COLOR_BLUE);
     }
 }
@@ -97,6 +97,7 @@ static void draw_outwin(bool refresh) {
     int outheight = LINES - 3;
     int i;
     pthread_mutex_lock(&mutex);
+    wattrset(outwin, COLOR_PAIR(7));
     if (scroll_up > buffer_count - outheight)
         scroll_up = buffer_count - outheight;
     if (scroll_up < 0)
@@ -111,7 +112,26 @@ static void draw_outwin(bool refresh) {
         index -= scroll_up;
         index += MAX_BUFFER_SIZE * 2; // negative modulo prevention
         index %= MAX_BUFFER_SIZE;
-        waddstr(outwin, buffer[index]);
+        int j;
+        qboolean set_color = qfalse;
+        for (j = 0; buffer[index][j]; j++) {
+            if (set_color) {
+                set_color = qfalse;
+                if (buffer[index][j] >= '0' && buffer[index][j] <= '9') {
+                    int color = buffer[index][j] - '0';
+                    if (color == 0)
+                        color = 10;
+                    wattrset(outwin, COLOR_PAIR(color));
+                    continue;
+                } else {
+                    waddch(outwin, '^');
+                }
+            } else if (buffer[index][j] == '^') {
+                set_color = qtrue;
+                continue;
+            }
+            waddch(outwin, buffer[index][j]);
+        }
     }
     pthread_mutex_unlock(&mutex);
     if (refresh)
