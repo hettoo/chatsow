@@ -25,6 +25,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define MAX_CMDS 128
 #define MAX_ARGC 512
 #define MAX_ARG_SIZE 512
+#define MAX_ARGS_SIZE (MAX_ARGC * MAX_ARG_SIZE)
 
 typedef struct cmd_s {
     char *name;
@@ -35,9 +36,9 @@ static int cmd_count = 0;
 
 static int argc = 0;
 static char argv[MAX_ARGC][MAX_ARG_SIZE];
-static char *args;
+static char args[MAX_ARGS_SIZE];
 static int args_index[MAX_ARGC];
-static char args_stripped[MAX_ARGC * MAX_ARG_SIZE];
+static char args_stripped[MAX_ARGS_SIZE];
 static int args_stripped_index[MAX_ARGC];
 
 void parse_cmd() {
@@ -46,43 +47,56 @@ void parse_cmd() {
     char quote = '\0';
     int len = strlen(args);
     int o = 0;
+    int start = 0;
     for (i = 0; i < len; i++) {
-        switch (args[i]) {
-            case ' ':
-            case '\t':
-            case '\n':
-                if (o > 0) {
-                    argv[argc][o] = '\0';
-                    argc++;
-                    o = 0;
-                }
-                break;
-            case '\'':
-            case '"':
-                if (escaped) {
-                } else if (quote == args[i]) {
-                    quote = '\0';
-                    argv[argc][o] = '\0';
-                    argc++;
-                    o = 0;
+        qboolean normal = qfalse;
+        qboolean skip = qfalse;
+        if (escaped) {
+            escaped = qfalse;
+            normal = qtrue;
+        } else {
+            switch (args[i]) {
+                case '\\':
+                    escaped = qtrue;
                     break;
-                } else if (quote != '\0') {
-                    quote = args[i];
+                case ' ':
+                case '\t':
+                case '\n':
+                    if (quote != '\0')
+                        normal = qtrue;
+                    else if (o > 0)
+                        skip = qtrue;
+                    else
+                        start = i + 1;
                     break;
-                }
-            case '\\':
-                if (args[i] == '\\') {
-                    escaped = !escaped;
-                    if (escaped)
-                        break;
-                }
-            default:
-                if (o < MAX_ARG_SIZE - 1)
-                    argv[argc][o++] = args[i];
-                break;
+                case '\'':
+                case '"':
+                    if (quote == args[i])
+                        skip = qtrue;
+                    else if (quote == '\0')
+                        quote = args[i];
+                    else
+                        normal = qtrue;
+                    break;
+                default:
+                    normal = qtrue;
+                    break;
+            }
+        }
+        if (skip) {
+            args_index[argc] = start;
+            argv[argc][o] = '\0';
+            argc++;
+            o = 0;
+            start = i + 1;
+        }
+        if (normal) {
+            if (o < MAX_ARG_SIZE - 1)
+                argv[argc][o++] = args[i];
         }
     }
     if (o > 0) {
+        args_index[argc] = start;
         argv[argc][o] = '\0';
         argc++;
     }
@@ -90,7 +104,7 @@ void parse_cmd() {
 
 void cmd_execute(char *cmd) {
     argc = 0;
-    args = cmd;
+    strcpy(args, cmd);
     parse_cmd();
     int i;
     for (i = 0; i < cmd_count; i++) {
@@ -99,7 +113,7 @@ void cmd_execute(char *cmd) {
             return;
         }
     }
-    ui_output("%s\n", cmd);
+    ui_output("Unrecognized command: %s\n", cmd);
 }
 
 int cmd_argc() {
@@ -115,7 +129,7 @@ char *cmd_argv(int index) {
 char *cmd_args(int start) {
     if (start >= argc)
         return "";
-    return "";
+    return args + args_index[start];
 }
 
 char *cmd_args_stripped(int start) {

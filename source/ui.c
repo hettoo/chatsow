@@ -26,7 +26,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include "main.h"
 #include "utils.h"
-#include "client.h"
+#include "cmd.h"
 
 #define MAX_BUFFER_SIZE 512
 #define MAX_OUTPUT_LENGTH 128
@@ -165,9 +165,7 @@ void ui_output(char *format, ...) {
 
 void ui_init() {
     pthread_mutex_init(&mutex, NULL);
-}
 
-void ui_run() {
     signal(SIGINT, interrupt);
     signal(SIGSEGV, interrupt);
 
@@ -195,10 +193,12 @@ void ui_run() {
     draw_outwin(TRUE);
     draw_statuswin(TRUE);
     draw_inwin(TRUE);
+}
 
+void ui_run() {
     for (;;) {
         int c = wgetch(inwin);
-        qboolean handled = qtrue;
+        bool handled = TRUE;
         switch (c) {
             case KEY_PPAGE:
                 scroll_up += SCROLL_SPEED;
@@ -207,7 +207,7 @@ void ui_run() {
                 scroll_up -= SCROLL_SPEED;
                 break;
             default:
-                handled = qfalse;
+                handled = FALSE;
                 break;
         }
         if (handled) {
@@ -225,7 +225,7 @@ void ui_run() {
                 commandline[commandline_length] = '\0';
                 scroll_up = 0;
                 if (commandline_length > 0) {
-                    execute(commandline, NULL, 0);
+                    cmd_execute(commandline);
                     commandline_length = 0;
                 }
                 draw_outwin(TRUE);

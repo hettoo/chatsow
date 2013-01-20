@@ -25,12 +25,14 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <unistd.h>
+#include <errno.h>
 #include <stdlib.h>
 #include <stdarg.h>
 #include <string.h>
 #include "zlib.h"
 
 #include "import.h"
+#include "config.h"
 #include "utils.h"
 #include "ui.h"
 #include "parser.h"
@@ -52,6 +54,21 @@ static socklen_t slen = sizeof(serv_addr);
 static int outseq = 1;
 static int inseq = 0;
 
+static msg_t smsg;
+
+typedef enum client_state_s {
+    CA_DISCONNECTED,
+    CA_SETUP,
+    CA_CHALLENGING,
+    CA_CONNECTING,
+    CA_CONNECTED,
+    CA_LOADING,
+    CA_CONFIGURING,
+    CA_ACTIVE
+} client_state_t;
+
+static client_state_t state;
+
 static void msg_clear(msg_t *msg) {
     msg->readcount = 0;
     msg->cursize = 0;
@@ -60,6 +77,9 @@ static void msg_clear(msg_t *msg) {
 }
 
 static void client_connect() {
+    if (state != CA_DISCONNECTED)
+        die("not disconnected");
+
     if ((sockfd = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) == -1)
         die("socket");
 
@@ -70,6 +90,8 @@ static void client_connect() {
 
     if (inet_aton(host, &serv_addr.sin_addr) == 0)
         die("inet_aton");
+
+    state = CA_SETUP;
 }
 
 static void msg_init(msg_t *msg) {
@@ -115,33 +137,40 @@ void client_ack(int num) {
     client_send(&msg);
 }
 
-static void client_recv(msg_t *msg) {
-    msg_clear(msg);
-    if ((msg->cursize = recvfrom(sockfd, msg->data, msg->maxsize, 0, (struct sockaddr*)&serv_addr, &slen)) == -1)
+static void client_recv() {
+    static msg_t msg;
+    msg_clear(&msg);
+    if ((msg.cursize = recvfrom(sockfd, msg.data, msg.maxsize, MSG_DONTWAIT, (struct sockaddr*)&serv_addr, &slen)) == -1) {
+        if (errno == EAGAIN)
+            return;
         die("recvfrom");
-    int seq = read_long(msg);
+    }
+    int seq = read_long(&msg);
+    //ui_output("%d %d\n", msg.cursize, seq);
+    if (seq == -1) {
+        cmd_execute(read_string(&msg));
+        return;
+    }
     qboolean compressed = qfalse;
     qboolean fragmented = qfalse;
-    if (seq != -1) {
-        if (seq & FRAGMENT_BIT) {
-            seq &= ~FRAGMENT_BIT;
-            fragmented = qtrue;
-        }
-        inseq = seq;
-        int ack = read_long(msg);
-        if (ack & FRAGMENT_BIT) {
-            ack &= ~FRAGMENT_BIT;
-            compressed = qtrue;
-        }
+    if (seq & FRAGMENT_BIT) {
+        seq &= ~FRAGMENT_BIT;
+        fragmented = qtrue;
+    }
+    inseq = seq;
+    int ack = read_long(&msg);
+    if (ack & FRAGMENT_BIT) {
+        ack &= ~FRAGMENT_BIT;
+        compressed = qtrue;
     }
     if (fragmented) {
         static int fragment_total = 0;
         static qbyte buffer[MAX_MSGLEN];
-        short fragment_start = read_short(msg);
-        short fragment_length = read_short(msg);
+        short fragment_start = read_short(&msg);
+        short fragment_length = read_short(&msg);
         if (fragment_start != fragment_total) {
-            msg->readcount = 0;
-            msg->cursize = 0;
+            msg.readcount = 0;
+            msg.cursize = 0;
             return;
         }
         qboolean last = qfalse;
@@ -149,66 +178,50 @@ static void client_recv(msg_t *msg) {
             fragment_length &= ~FRAGMENT_LAST;
             last = qtrue;
         }
-        memcpy(buffer + fragment_total, msg->data + msg->readcount, fragment_length);
+        memcpy(buffer + fragment_total, msg.data + msg.readcount, fragment_length);
         fragment_total += fragment_length;
-        msg->readcount = 0;
+        msg.readcount = 0;
         if (last) {
-            memcpy(msg->data, buffer, fragment_total);
-            msg->cursize = fragment_total;
+            memcpy(msg.data, buffer, fragment_total);
+            msg.cursize = fragment_total;
             fragment_total = 0;
         } else {
-            msg->cursize = 0;
+            msg.cursize = 0;
             return;
         }
     }
-    if (compressed && msg->cursize - msg->readcount > 0) {
+    if (compressed && msg.cursize - msg.readcount > 0) {
         static qbyte temp[MAX_MSGLEN];
         unsigned long new_size = MAX_MSGLEN;
-        uncompress(temp, &new_size, msg->data + msg->readcount, msg->cursize - msg->readcount);
-        memcpy(msg->data, temp, new_size);
-        msg->readcount = 0;
-        msg->cursize = new_size;
+        uncompress(temp, &new_size, msg.data + msg.readcount, msg.cursize - msg.readcount);
+        memcpy(msg.data, temp, new_size);
+        msg.readcount = 0;
+        msg.cursize = new_size;
+    }
+    parse_message(&msg);
+}
+
+static void client_frame() {
+    if (state == CA_LOADING && player_num() != 0) {
+        ui_output("requesting configstrings\n");
+        state = CA_CONFIGURING;
+        client_command("configstrings %d 0", spawn_count());
     }
 }
 
 static void *client_run(void *args) {
     client_connect();
 
+    ui_output("requesting challenge\n");
     msg_t msg;
     msg_init_outofband(&msg);
     write_string(&msg, "getchallenge");
     client_send(&msg);
-
-    client_recv(&msg);
-    skip_data(&msg, 10);
-    char challenge[50];
-    strcpy(challenge, (char *)msg.data + msg.readcount);
-
-    msg_init_outofband(&msg);
-    write_string(&msg, "connect 15 ");
-    msg.cursize--;
-    write_string(&msg, port);
-    msg.cursize--;
-    write_string(&msg, " ");
-    msg.cursize--;
-    write_string(&msg, challenge);
-    msg.cursize--;
-    write_string(&msg, " \"\\name\\chattoo\" 0");
-    client_send(&msg);
-
-    client_recv(&msg); // client_connect
-
-    client_command("new");
-    client_recv(&msg);
-    parse_message(&msg);
-
-    client_command("configstrings %d 0", spawn_count());
-    client_command("baselines %d", spawn_count());
-    client_command("begin %d", spawn_count());
+    state = CA_CHALLENGING;
 
     while (1) {
-        client_recv(&msg);
-        parse_message(&msg);
+        client_recv();
+        client_frame();
         pthread_mutex_lock(&stop_mutex);
         if (stopping)
             break;
@@ -216,24 +229,79 @@ static void *client_run(void *args) {
     }
     pthread_mutex_unlock(&stop_mutex);
 
-    client_command("disconnect");
+    int i;
+    for (i = 0; i < CERTAINTY; i++)
+        client_command("disconnect");
     close(sockfd);
 
     return NULL;
 }
 
+void cmd_challenge() {
+    if (state != CA_CHALLENGING)
+        die("not challenging");
+
+    ui_output("sending connection request\n");
+    msg_init_outofband(&smsg);
+    write_string(&smsg, "connect 15 ");
+    smsg.cursize--;
+    write_string(&smsg, port);
+    smsg.cursize--;
+    write_string(&smsg, " ");
+    smsg.cursize--;
+    write_string(&smsg, cmd_argv(1));
+    smsg.cursize--;
+    write_string(&smsg, " \"\\name\\chattoo\" 0");
+    client_send(&smsg);
+
+    state = CA_CONNECTING;
+}
+
+void cmd_client_connect() {
+    if (state != CA_CONNECTING)
+        die("not connecting");
+
+    ui_output("sending serverdata request\n");
+    client_command("new");
+    state = CA_LOADING;
+}
+
+void cmd_cs() {
+}
+
+void cmd_cmd() {
+    client_command("%s", cmd_args(1));
+}
+
+void cmd_precache() {
+    ui_output("entering the game\n");
+    client_command("begin %d", spawn_count());
+}
+
 void cmd_nop() {
 }
 
+void cmd_pr() {
+    ui_output("%s", cmd_argv(1));
+}
+
 void client_start(char *new_host, char *new_port) {
-    cmd_add("cs", cmd_nop);
+    cmd_add("challenge", cmd_challenge);
+    cmd_add("client_connect", cmd_client_connect);
+    cmd_add("cs", cmd_cs);
+    cmd_add("cmd", cmd_cmd);
+    cmd_add("precache", cmd_precache);
+
     cmd_add("plstats", cmd_nop);
     cmd_add("scb", cmd_nop);
     cmd_add("cvarinfo", cmd_nop);
 
+    cmd_add("pr", cmd_pr);
+
     host = new_host;
     port = new_port;
     port_int = atoi(port);
+    state = CA_DISCONNECTED;
     pthread_mutex_init(&stop_mutex, NULL);
     pthread_mutex_init(&command_mutex, NULL);
     stopping = qfalse;
