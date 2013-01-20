@@ -25,29 +25,9 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "ui.h"
 
 static int last_frame;
-static int bitflags;
-static qboolean reliable;
-static int servercount;
-static int entity;
 
 void parser_reset() {
     last_frame = -1;
-    bitflags = 0;
-    reliable = qfalse;
-    servercount = 0;
-    entity = 0;
-}
-
-qboolean connection_reliable() {
-    return reliable;
-}
-
-int spawn_count() {
-    return servercount;
-}
-
-int player_num() {
-    return entity;
 }
 
 static void parse_frame(msg_t *msg) {
@@ -98,9 +78,10 @@ void parse_message(msg_t *msg) {
             case svc_clcack:
                 read_long(msg); // reliable acknownledge
                 read_long(msg); // ucmd acknowledged
+                client_activate();
                 break;
             case svc_servercmd:
-                if (!reliable) {
+                if (!(get_bitflags() & SV_BITFLAGS_RELIABLE)) {
                     static int last_cmd_num = 0;
                     int cmd_num = read_long(msg);
                     if (cmd_num != last_cmd_num + 1) {
@@ -114,15 +95,14 @@ void parse_message(msg_t *msg) {
                 execute(read_string(msg), NULL, 0);
                 break;
             case svc_serverdata:
-                read_long(msg); // protocol version
-                servercount = read_long(msg);
+                set_protocol(read_long(msg));
+                set_spawn_count(read_long(msg));
                 read_short(msg); // snap frametime
                 read_string(msg); // base game
-                read_string(msg); // game
-                entity = read_short(msg) + 1;
-                read_string(msg); // level name
-                bitflags = read_byte(msg); // server bitflags
-                reliable = (bitflags & SV_BITFLAGS_RELIABLE) != 0;
+                set_game(read_string(msg));
+                set_playernum(read_short(msg) + 1);
+                set_level(read_string(msg)); // level name
+                set_bitflags(read_byte(msg));
                 int pure = read_short(msg);
                 while (pure > 0) {
                     read_string(msg); // pure pk3 name

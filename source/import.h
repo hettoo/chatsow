@@ -80,6 +80,8 @@ enum clc_ops_e
 
 #define	MAX_QPATH					64			// max length of a quake game pathname
 
+#define   MAX_STRING_CHARS                        1024
+
 #define MAX_GAMECOMMANDS	64		// command names for command completion
 #define MAX_LOCATIONS		64
 #define MAX_WEAPONDEFS		MAX_ITEMS

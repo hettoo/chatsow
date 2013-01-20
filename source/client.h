@@ -24,11 +24,20 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "import.h"
 
 void client_start(char *new_host, char *new_port);
+void client_activate();
 void client_ack(int num);
 void client_stop();
 
 void demoinfo_key(char *key);
 void demoinfo_value(char *value);
 void execute(char *cmd, qbyte *targets, int target_count);
+
+void set_protocol(int new_protocol);
+void set_spawn_count(int new_spawn_count);
+int get_bitflags();
+void set_bitflags(int new_bitflags);
+void set_game(char *new_game);
+void set_playernum(int new_playernum);
+void set_level(char *new_level);
 
 #endif

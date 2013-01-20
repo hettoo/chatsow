@@ -39,7 +39,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "cmd.h"
 #include "cs.h"
 
-#define TIMEOUT 500
+#define TIMEOUT 1000
 
 static qboolean started = qfalse;
 static pthread_t thread;
@@ -61,6 +61,13 @@ static msg_t smsg;
 
 static unsigned int resend = 0;
 
+static int bitflags;
+static int protocol;
+static int spawn_count;
+static int playernum;
+static char game[MAX_STRING_CHARS];
+static char level[MAX_STRING_CHARS];
+
 typedef enum client_state_s {
     CA_DISCONNECTED,
     CA_SETUP,
@@ -69,10 +76,49 @@ typedef enum client_state_s {
     CA_CONNECTED,
     CA_LOADING,
     CA_CONFIGURING,
+    CA_ENTERING,
     CA_ACTIVE
 } client_state_t;
 
 static client_state_t state;
+
+static void reset() {
+    parser_reset();
+    protocol = 0;
+    bitflags = 0;
+    spawn_count = 0;
+    playernum = 0;
+    game[0] = '\0';
+    level[0] = '\0';
+}
+
+int get_bitflags() {
+    return bitflags;
+}
+
+void set_spawn_count(int new_spawn_count) {
+    spawn_count = new_spawn_count;
+}
+
+void set_protocol(int new_protocol) {
+    protocol = new_protocol;
+}
+
+void set_bitflags(int new_bitflags) {
+    bitflags = new_bitflags;
+}
+
+void set_game(char *new_game) {
+    strcpy(game, new_game);
+}
+
+void set_playernum(int new_playernum) {
+    playernum = new_playernum;
+}
+
+void set_level(char *new_level) {
+    strcpy(level, new_level);
+}
 
 static void msg_clear(msg_t *msg) {
     msg->readcount = 0;
@@ -127,7 +173,7 @@ static void client_command(char *format, ...) {
     msg_t msg;
     msg_init(&msg);
     write_byte(&msg, clc_clientcommand);
-    if (!connection_reliable())
+    if (!(bitflags & SV_BITFLAGS_RELIABLE))
         write_long(&msg, n++);
     write_string(&msg, string);
     client_send(&msg);
@@ -234,6 +280,14 @@ static void connection_request() {
     resend = millis() + TIMEOUT;
 }
 
+static void enter() {
+    ui_output("entering the game\n");
+    client_command("begin %d", spawn_count);
+
+    state = CA_ENTERING;
+    resend = millis() + TIMEOUT;
+}
+
 static void client_frame() {
     switch (state) {
         case CA_CHALLENGING:
@@ -245,7 +299,7 @@ static void client_frame() {
                 connection_request();
         break;
         case CA_LOADING:
-            if (player_num() != 0) {
+            if (playernum != 0) {
                 ui_output("requesting configstrings\n");
                 cs_init();
                 state = CA_CONFIGURING;
@@ -253,9 +307,13 @@ static void client_frame() {
             }
         case CA_CONFIGURING:
             if (millis() >= resend) {
-                client_command("configstrings %d 0", spawn_count());
+                client_command("configstrings %d 0", spawn_count);
                 resend = millis() + TIMEOUT;
             }
+            break;
+        case CA_ENTERING:
+            if (millis() >= resend)
+                enter();
             break;
         default:
             break;
@@ -264,7 +322,7 @@ static void client_frame() {
 
 static void client_connect() {
     socket_connect();
-    parser_reset();
+    reset();
     challenge();
 }
 
@@ -329,9 +387,13 @@ void cmd_precache() {
     if (state != CA_CONFIGURING)
         return;
 
-    ui_output("entering the game\n");
+    enter();
+}
+
+void client_activate() {
+    if (state != CA_ENTERING)
+        return;
     state = CA_ACTIVE;
-    client_command("begin %d", spawn_count());
 }
 
 void cmd_disconnect() {
@@ -407,7 +469,7 @@ void execute(char *cmd, qbyte *targets, int target_count) {
         int i;
         qboolean found = qfalse;
         for (i = 0; i < target_count; i++) {
-            if (targets[i] == player_num())
+            if (targets[i] == playernum)
                 found = qtrue;
         }
         if (!found)
