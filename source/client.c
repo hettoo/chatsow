@@ -310,6 +310,12 @@ static void enter() {
 }
 
 static void client_frame() {
+    static unsigned int last_time = 0;
+    int m = millis();
+    if (last_time == 0 || m >= last_time + 1000) {
+        draw_status(name);
+        last_time = m;
+    }
     switch (state) {
         case CA_CHALLENGING:
             if (millis() >= resend)
@@ -418,7 +424,7 @@ void client_activate() {
         return;
 
     state = CA_ACTIVE;
-    set_title("%s (%s @ %s)", cs_get(0), game, level);
+    set_title("%s (hosting %s on %s @ %s)", cs_get(0), level, game, host);
     cmd_execute("players");
 }
 

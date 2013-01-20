@@ -21,6 +21,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdarg.h>
+#include <string.h>
+#include <time.h>
 #include <sys/time.h>
 
 #include "main.h"
@@ -50,4 +52,11 @@ unsigned int millis() {
 	gettimeofday( &tp, &tzp );
 
 	return tp.tv_sec * 1000 + tp.tv_usec / 1000;
+}
+
+int timestring(char *string) {
+    time_t raw_time;
+    time(&raw_time);
+    strftime(string, 6, "%H:%M", localtime(&raw_time));
+    return strlen(string);
 }

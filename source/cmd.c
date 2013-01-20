@@ -111,17 +111,19 @@ void cmd_execute(char *cmd) {
     argc = 0;
     strcpy(args, cmd);
     parse_cmd();
-    int i;
-    for (i = 0; i < cmd_count; i++) {
-        if (!strcmp(cmd_argv(0), cmds[i].name)) {
-            cmds[i].f();
-            return;
+    if (argc) {
+        int i;
+        for (i = 0; i < cmd_count; i++) {
+            if (!strcmp(cmd_argv(0), cmds[i].name)) {
+                cmds[i].f();
+                return;
+            }
         }
-    }
-    for (i = CS_GAMECOMMANDS; i < CS_GAMECOMMANDS + MAX_GAMECOMMANDS; i++) {
-        if (!strcmp(cmd_argv(0), cs_get(i))) {
-            client_command("%s", cmd_args(0));
-            return;
+        for (i = CS_GAMECOMMANDS; i < CS_GAMECOMMANDS + MAX_GAMECOMMANDS; i++) {
+            if (!strcmp(cmd_argv(0), cs_get(i))) {
+                client_command("%s", cmd_args(0));
+                return;
+            }
         }
     }
     ui_output("Unrecognized command: %s\n", cmd);

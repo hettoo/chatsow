@@ -160,14 +160,26 @@ static void draw_outwin() {
     pthread_mutex_unlock(&mutex);
 }
 
-static void draw_statuswin() {
+void draw_status(char *name) {
     pthread_mutex_lock(&mutex);
     werase(statuswin);
-    int i = 0;
+    static char string[32];
+    int i = 2;
+    waddstr(statuswin, " [");
+    i += timestring(string);
     wattron(statuswin, A_BOLD);
+    waddstr(statuswin, string);
+    wattroff(statuswin, A_BOLD);
+    waddstr(statuswin, "] ");
+    i += 2;
+    wattron(statuswin, A_BOLD);
+    if (name != NULL) {
+        waddstr(statuswin, name);
+        i += strlen(name);
+    }
+    wattroff(statuswin, A_BOLD);
     for (; i < COLS; i++)
         waddch(statuswin, ' ');
-    wattroff(statuswin, A_BOLD);
     wrefresh(statuswin);
     pthread_mutex_unlock(&mutex);
 }
@@ -228,12 +240,12 @@ void ui_output_real(char *string) {
 
 void ui_output(char *format, ...) {
     static char string[65536];
-    int len = 0;
+    string[0] = '^';
+    string[1] = '7';
+    int len = 2;
     if (allow_time) {
-        time_t raw_time;
-        time(&raw_time);
-        strftime(string, sizeof(string), "^7%H:%M ", localtime(&raw_time));
-        len = strlen(string);
+        len += timestring(string + len);
+        string[len++] = ' ';
     }
 
 	va_list	argptr;
@@ -274,7 +286,7 @@ void ui_init() {
 
     draw_titlewin();
     draw_outwin();
-    draw_statuswin();
+    draw_status(NULL);
     draw_inwin();
 }
 
@@ -309,6 +321,7 @@ void ui_run() {
                 scroll_up = 0;
                 if (commandline_length > 0) {
                     if (commandline[0] == '/') {
+                        ui_output("%s\n", commandline);
                         cmd_execute(commandline + 1);
                     } else {
                         if (client_ready())

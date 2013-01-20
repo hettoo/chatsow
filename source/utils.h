@@ -25,5 +25,6 @@ int die(char *format, ...);
 int min(int a, int b);
 int max(int a, int b);
 unsigned int millis();
+int timestring(char *string);
 
 #endif

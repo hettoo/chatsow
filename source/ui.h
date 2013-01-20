@@ -26,5 +26,7 @@ void ui_run();
 void ui_stop();
 void ui_output(char *format, ...);
 void set_title(char *format, ...);
+void update_status(char *name);
+void draw_status(char *name);
 
 #endif
