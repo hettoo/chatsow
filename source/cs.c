@@ -29,15 +29,43 @@ void cs_init() {
 }
 
 void cs_set(int index, char *string) {
-    //strcpy(css[index], string);
+    strcpy(css[index], string);
 }
 
 char *cs_get(int index) {
     return css[index];
 }
 
+static char *playerinfo_token(char *playerinfo, char *name) {
+    int len = strlen(playerinfo);
+    int i;
+    static char token[MAX_CONFIGSTRING_CHARS];
+    int o = 0;
+    qboolean value = qfalse;
+    qboolean final = qfalse;
+    for (i = 0; i < len; i++) {
+        switch (playerinfo[i]) {
+            case '\\':
+                if (i != 0) {
+                    token[o] = '\0';
+                    if (!value && !strcmp(token, name))
+                        final = qtrue;
+                    else if (value && final)
+                        return token;
+                    value = !value;
+                    o = 0;
+                }
+                break;
+            default:
+                token[o++] = playerinfo[i];
+                break;
+        }
+    }
+    return "";
+}
+
 char *player_name(int num) {
     if (num == 0)
         return "console";
-    return "?";
+    return playerinfo_token(cs_get(CS_PLAYERINFOS + num - 1), "name");
 }

@@ -49,6 +49,7 @@ static pthread_mutex_t command_mutex;
 
 static char *host;
 static char *port;
+static char *name;
 static int port_int;
 static struct sockaddr_in serv_addr;
 static int sockfd;
@@ -162,7 +163,7 @@ static void client_send(msg_t *msg) {
         die("sendto");
 }
 
-static void client_command(char *format, ...) {
+void client_command(char *format, ...) {
     pthread_mutex_lock(&command_mutex);
     static int n = 1;
     static char string[MAX_MSGLEN];
@@ -273,7 +274,11 @@ static void connection_request() {
     smsg.cursize--;
     write_string(&smsg, cmd_argv(1));
     smsg.cursize--;
-    write_string(&smsg, " \"\\name\\chattoo\" 0");
+    write_string(&smsg, " \"\\name\\");
+    smsg.cursize--;
+    write_string(&smsg, name);
+    smsg.cursize--;
+    write_string(&smsg, "\" 0");
     client_send(&smsg);
 
     state = CA_CONNECTING;
@@ -380,11 +385,12 @@ void cmd_cs() {
 }
 
 void cmd_cmd() {
+    resend = millis() + TIMEOUT;
     client_command("%s", cmd_args(1));
 }
 
 void cmd_precache() {
-    if (state != CA_CONFIGURING)
+    if (state != CA_CONFIGURING && cs_get(0)[0] != '\0')
         return;
 
     enter();
@@ -415,7 +421,16 @@ void cmd_ch() {
     ui_output("%s: %s\n", player_name(atoi(cmd_argv(1))), cmd_argv(2));
 }
 
-void client_start(char *new_host, char *new_port) {
+void cmd_players() {
+    int i;
+    for (i = 1; i <= MAX_CLIENTS; i++) {
+        char *name = player_name(i);
+        if (name && *name)
+            ui_output("%s\n", name);
+    }
+}
+
+void client_start(char *new_host, char *new_port, char *new_name) {
     cmd_add("challenge", cmd_challenge);
     cmd_add("client_connect", cmd_client_connect);
     cmd_add("cs", cmd_cs);
@@ -429,12 +444,17 @@ void client_start(char *new_host, char *new_port) {
     cmd_add("plstats", cmd_nop);
     cmd_add("scb", cmd_nop);
     cmd_add("cvarinfo", cmd_nop);
+    cmd_add("obry", cmd_nop);
 
     cmd_add("pr", cmd_pr);
+    cmd_add("cp", cmd_pr);
     cmd_add("ch", cmd_ch);
+
+    cmd_add("players", cmd_players);
 
     host = new_host;
     port = new_port;
+    name = new_name;
     port_int = atoi(port);
     state = CA_DISCONNECTED;
     pthread_mutex_init(&stop_mutex, NULL);

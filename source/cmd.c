@@ -19,6 +19,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
 #include "import.h"
+#include "cs.h"
+#include "client.h"
 #include "ui.h"
 #include "cmd.h"
 
@@ -51,7 +53,10 @@ void parse_cmd() {
     for (i = 0; i < len; i++) {
         qboolean normal = qfalse;
         qboolean skip = qfalse;
+        char add = '\0';
         if (escaped) {
+            if (quote != args[i] && args[i] != '\\')
+                add = '\\';
             escaped = qfalse;
             normal = qtrue;
         } else {
@@ -90,10 +95,10 @@ void parse_cmd() {
             o = 0;
             start = i + 1;
         }
-        if (normal) {
-            if (o < MAX_ARG_SIZE - 1)
-                argv[argc][o++] = args[i];
-        }
+        if (add != '\0' && o < MAX_ARG_SIZE - 1)
+            argv[argc][o++] = add;
+        if (normal && o < MAX_ARG_SIZE - 1)
+            argv[argc][o++] = args[i];
     }
     if (o > 0) {
         args_index[argc] = start;
@@ -110,6 +115,12 @@ void cmd_execute(char *cmd) {
     for (i = 0; i < cmd_count; i++) {
         if (!strcmp(cmd_argv(0), cmds[i].name)) {
             cmds[i].f();
+            return;
+        }
+    }
+    for (i = CS_GAMECOMMANDS; i < CS_GAMECOMMANDS + MAX_GAMECOMMANDS; i++) {
+        if (!strcmp(cmd_argv(0), cs_get(i))) {
+            client_command("%s", cmd_args(0));
             return;
         }
     }

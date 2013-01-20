@@ -26,6 +26,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include "main.h"
 #include "utils.h"
+#include "client.h"
 #include "cmd.h"
 
 #define MAX_BUFFER_SIZE 512
@@ -225,7 +226,10 @@ void ui_run() {
                 commandline[commandline_length] = '\0';
                 scroll_up = 0;
                 if (commandline_length > 0) {
-                    cmd_execute(commandline);
+                    if (commandline[0] == '/')
+                        cmd_execute(commandline + 1);
+                    else
+                        client_command("say %s", commandline);
                     commandline_length = 0;
                 }
                 draw_outwin(TRUE);

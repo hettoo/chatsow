@@ -23,9 +23,10 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include "import.h"
 
-void client_start(char *new_host, char *new_port);
+void client_start(char *new_host, char *new_port, char *new_name);
 void client_activate();
 void client_ack(int num);
+void client_command(char *format, ...);
 void client_stop();
 
 void demoinfo_key(char *key);

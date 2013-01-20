@@ -20,7 +20,7 @@ clean:
 	rm -rf $(BUILD)
 
 test: $(BUILD)$(PROGRAM)
-	./$(BUILD)$(PROGRAM) 127.0.0.1 44400
+	./$(BUILD)$(PROGRAM) 127.0.0.1 44400 chatter
 
 $(BUILD)$(PROGRAM): $(OBJS)
 	$(CC) $(LFLAGS) $(OBJS) -o $@
