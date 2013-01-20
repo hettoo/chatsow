@@ -25,5 +25,6 @@ void ui_init();
 void ui_run();
 void ui_stop();
 void ui_output(char *format, ...);
+void set_title(char *format, ...);
 
 #endif

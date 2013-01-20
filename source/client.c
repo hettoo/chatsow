@@ -109,10 +109,6 @@ void set_protocol(int new_protocol) {
     protocol = new_protocol;
 }
 
-void set_bitflags(int new_bitflags) {
-    bitflags = new_bitflags;
-}
-
 void set_game(char *new_game) {
     strcpy(game, new_game);
 }
@@ -123,6 +119,14 @@ void set_playernum(int new_playernum) {
 
 void set_level(char *new_level) {
     strcpy(level, new_level);
+}
+
+void set_bitflags(int new_bitflags) {
+    bitflags = new_bitflags;
+}
+
+static void initial_title() {
+    set_title("Not connected");
 }
 
 static void msg_clear(msg_t *msg) {
@@ -165,6 +169,7 @@ static void msg_init_outofband(msg_t *msg) {
 static void force_disconnect() {
     close(sockfd);
     state = CA_DISCONNECTED;
+    initial_title();
 }
 
 static void client_send(msg_t *msg) {
@@ -402,7 +407,7 @@ void cmd_cmd() {
 }
 
 void cmd_precache() {
-    if (state != CA_CONFIGURING && cs_get(0)[0] != '\0')
+    if (state != CA_CONFIGURING || cs_get(0)[0] == '\0')
         return;
 
     enter();
@@ -411,7 +416,10 @@ void cmd_precache() {
 void client_activate() {
     if (state != CA_ENTERING)
         return;
+
     state = CA_ACTIVE;
+    set_title("%s (%s @ %s)", cs_get(0), game, level);
+    cmd_execute("players");
 }
 
 void cmd_disconnect() {
@@ -435,11 +443,18 @@ void cmd_ch() {
 
 void cmd_players() {
     int i;
+    qboolean first = qtrue;
     for (i = 1; i <= MAX_CLIENTS; i++) {
         char *name = player_name(i);
-        if (name && *name)
-            ui_output("%s^7\n", name);
+        if (name && *name) {
+            if (first) {
+                ui_output("^5Online players:^7");
+                first = qfalse;
+            }
+            ui_output(" %s^7", name);
+        }
     }
+    ui_output("\n");
 }
 
 void client_start(char *new_host, char *new_port, char *new_name) {
@@ -469,6 +484,7 @@ void client_start(char *new_host, char *new_port, char *new_name) {
     name = new_name;
     port_int = atoi(port);
     state = CA_DISCONNECTED;
+    initial_title();
     pthread_mutex_init(&stop_mutex, NULL);
     pthread_mutex_init(&command_mutex, NULL);
     stopping = qfalse;

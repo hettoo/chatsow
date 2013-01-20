@@ -30,6 +30,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "cmd.h"
 #include "ui.h"
 
+#define MAX_FULLLENGTH 512
 #define MAX_BUFFER_SIZE 512
 #define MAX_OUTPUT_LENGTH 128
 #define MAX_INPUT_LENGTH 128
@@ -43,6 +44,8 @@ static WINDOW *titlewin;
 static WINDOW *outwin;
 static WINDOW *statuswin;
 static WINDOW *inwin;
+
+static char title[MAX_FULLLENGTH];
 
 static char buffer[MAX_BUFFER_SIZE][MAX_OUTPUT_LENGTH];
 static int buffer_count = 0;
@@ -78,26 +81,41 @@ static void init_colors() {
         init_pair(8, COLOR_YELLOW, COLOR_BLACK);
         init_pair(9, COLOR_WHITE, COLOR_BLACK);
         init_pair(10, COLOR_BLACK, COLOR_WHITE);
-        init_pair(11, COLOR_BLACK, COLOR_BLUE);
+        init_pair(11, COLOR_WHITE, COLOR_BLUE);
     }
 }
 
-static void draw_titlewin(bool refresh) {
+static void draw_titlewin() {
     werase(titlewin);
-    int i = 0;
+    int i;
     wattron(titlewin, A_BOLD);
-    for (; i < COLS; i++)
-        waddch(titlewin, ' ');
+    waddch(titlewin, ' ');
+    qboolean end = qfalse;
+    for (i = 0; i < COLS - 1; i++) {
+        if (!title[i])
+            end = qtrue;
+        if (end)
+            waddch(titlewin, ' ');
+        else
+            waddch(titlewin, title[i]);
+    }
     wattroff(titlewin, A_BOLD);
-    if (refresh)
-        wrefresh(titlewin);
+    wrefresh(titlewin);
 }
 
-static void draw_outwin(bool refresh) {
+void set_title(char *format, ...) {
+	va_list	argptr;
+	va_start(argptr, format);
+    vsprintf(title, format, argptr);
+	va_end(argptr);
+    draw_titlewin();
+}
+
+static void draw_outwin() {
+    pthread_mutex_lock(&mutex);
     werase(outwin);
     int outheight = LINES - 3;
     int i;
-    pthread_mutex_lock(&mutex);
     wattrset(outwin, COLOR_PAIR(7));
     if (scroll_up > buffer_count - outheight)
         scroll_up = buffer_count - outheight;
@@ -134,23 +152,24 @@ static void draw_outwin(bool refresh) {
             waddch(outwin, buffer[index][j]);
         }
     }
+    wrefresh(outwin);
     pthread_mutex_unlock(&mutex);
-    if (refresh)
-        wrefresh(outwin);
 }
 
-static void draw_statuswin(bool refresh) {
+static void draw_statuswin() {
+    pthread_mutex_lock(&mutex);
     werase(statuswin);
     int i = 0;
     wattron(statuswin, A_BOLD);
     for (; i < COLS; i++)
         waddch(statuswin, ' ');
     wattroff(statuswin, A_BOLD);
-    if (refresh)
-        wrefresh(statuswin);
+    wrefresh(statuswin);
+    pthread_mutex_unlock(&mutex);
 }
 
-static void draw_inwin(bool refresh) {
+static void draw_inwin() {
+    pthread_mutex_lock(&mutex);
     werase(inwin);
     wattrset(inwin, COLOR_PAIR(7));
     wattron(inwin, A_BOLD);
@@ -161,8 +180,9 @@ static void draw_inwin(bool refresh) {
     int i;
     for (i = 0; i < commandline_length; i++)
         waddch(inwin, commandline[i]);
-    if (refresh)
-        wrefresh(inwin);
+    waddch(inwin, '_');
+    wrefresh(inwin);
+    pthread_mutex_unlock(&mutex);
 }
 
 void ui_output(char *format, ...) {
@@ -195,10 +215,12 @@ void ui_output(char *format, ...) {
         }
     }
     pthread_mutex_unlock(&mutex);
-    draw_outwin(TRUE);
+    draw_outwin();
 }
 
 void ui_init() {
+    title[0] = '\0';
+
     pthread_mutex_init(&mutex, NULL);
 
     signal(SIGINT, interrupt);
@@ -224,10 +246,10 @@ void ui_init() {
     inwin = subwin(mainwin, 1, COLS, LINES - 1, 0);
     keypad(inwin, TRUE);
 
-    draw_titlewin(TRUE);
-    draw_outwin(TRUE);
-    draw_statuswin(TRUE);
-    draw_inwin(TRUE);
+    draw_titlewin();
+    draw_outwin();
+    draw_statuswin();
+    draw_inwin();
 }
 
 void ui_run() {
@@ -246,7 +268,7 @@ void ui_run() {
                 break;
         }
         if (handled) {
-            draw_outwin(TRUE);
+            draw_outwin();
             continue;
         }
         switch (c) {
@@ -270,12 +292,12 @@ void ui_run() {
                     }
                     commandline_length = 0;
                 }
-                draw_outwin(TRUE);
+                draw_outwin();
                 break;
             default:
                 commandline[commandline_length++] = c;
                 break;
         }
-        draw_inwin(TRUE);
+        draw_inwin();
     }
 }
