@@ -28,6 +28,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "utils.h"
 #include "client.h"
 #include "cmd.h"
+#include "ui.h"
 
 #define MAX_BUFFER_SIZE 512
 #define MAX_OUTPUT_LENGTH 128
@@ -151,9 +152,12 @@ static void draw_statuswin(bool refresh) {
 
 static void draw_inwin(bool refresh) {
     werase(inwin);
+    wattrset(inwin, COLOR_PAIR(7));
     wattron(inwin, A_BOLD);
     waddstr(inwin, "> ");
     wattroff(inwin, A_BOLD);
+    if (commandline[0] != '/')
+        wattrset(inwin, COLOR_PAIR(2));
     int i;
     for (i = 0; i < commandline_length; i++)
         waddch(inwin, commandline[i]);
@@ -256,10 +260,14 @@ void ui_run() {
                 commandline[commandline_length] = '\0';
                 scroll_up = 0;
                 if (commandline_length > 0) {
-                    if (commandline[0] == '/')
+                    if (commandline[0] == '/') {
                         cmd_execute(commandline + 1);
-                    else
-                        client_command("say %s", commandline);
+                    } else {
+                        if (client_ready())
+                            client_command("say %s", commandline);
+                        else
+                            ui_output("not connected\n");
+                    }
                     commandline_length = 0;
                 }
                 draw_outwin(TRUE);

@@ -93,6 +93,10 @@ static void reset() {
     level[0] = '\0';
 }
 
+qboolean client_ready() {
+    return state == CA_ACTIVE;
+}
+
 int get_bitflags() {
     return bitflags;
 }
@@ -158,9 +162,16 @@ static void msg_init_outofband(msg_t *msg) {
     write_long(msg, -1);
 }
 
+static void force_disconnect() {
+    close(sockfd);
+    state = CA_DISCONNECTED;
+}
+
 static void client_send(msg_t *msg) {
-    if (sendto(sockfd, msg->data, msg->cursize, 0, (struct sockaddr*)&serv_addr, slen) == -1)
+    if (sendto(sockfd, msg->data, msg->cursize, 0, (struct sockaddr*)&serv_addr, slen) == -1) {
+        force_disconnect();
         die("sendto");
+    }
 }
 
 void client_command(char *format, ...) {
@@ -333,11 +344,12 @@ static void client_connect() {
 
 static void disconnect() {
     ui_output("disconnecting\n");
-    int i;
-    for (i = 0; i < CERTAINTY; i++)
-        client_command("disconnect");
-    close(sockfd);
-    state = CA_DISCONNECTED;
+    if (state >= CA_CONNECTING) {
+        int i;
+        for (i = 0; i < CERTAINTY; i++)
+            client_command("disconnect");
+    }
+    force_disconnect();
 }
 
 static void reconnect() {
@@ -418,7 +430,7 @@ void cmd_pr() {
 }
 
 void cmd_ch() {
-    ui_output("%s^7: %s^7\n", player_name(atoi(cmd_argv(1))), cmd_argv(2));
+    ui_output("%s^7: ^2%s^7\n", player_name(atoi(cmd_argv(1))), cmd_argv(2));
 }
 
 void cmd_players() {
