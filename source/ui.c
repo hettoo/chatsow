@@ -48,6 +48,7 @@ static int buffer_count = 0;
 static int buffer_index = 0;
 static int output_length = 0;
 static int scroll_up = 0;
+static qboolean next_line = qfalse;
 
 static char commandline[MAX_INPUT_LENGTH];
 static int commandline_length = 0;
@@ -96,16 +97,21 @@ static void draw_outwin(bool refresh) {
     int outheight = LINES - 3;
     int i;
     pthread_mutex_lock(&mutex);
-    if (scroll_up >= buffer_count - outheight)
-        scroll_up = buffer_count - outheight - 1;
+    if (scroll_up > buffer_count - outheight)
+        scroll_up = buffer_count - outheight;
     if (scroll_up < 0)
         scroll_up = 0;
     int start = max(0, buffer_count - outheight);
     int displayable = buffer_count - start;
     for (i = start; i < buffer_count; i++) {
         wmove(outwin, i - start + outheight - displayable, 0);
-        waddstr(outwin, buffer[(i - buffer_count // this is incorrect, but apparantly there is another error correcting this :D
-                    + buffer_index + MAX_BUFFER_SIZE - scroll_up) % MAX_BUFFER_SIZE]);
+        int index = i;
+        index -= buffer_count - 1; // replace the last buffer with
+        index += buffer_index; // the selected one
+        index -= scroll_up;
+        index += MAX_BUFFER_SIZE * 2; // negative modulo prevention
+        index %= MAX_BUFFER_SIZE;
+        waddstr(outwin, buffer[index]);
     }
     pthread_mutex_unlock(&mutex);
     if (refresh)
@@ -148,17 +154,21 @@ void ui_output(char *format, ...) {
     if (buffer_count == 0)
         buffer_count++;
     for (i = 0; i < len; i++) {
-        if (string[i] == '\n' || output_length > maxlen) {
-            buffer[buffer_index][output_length] = '\0';
+        if (next_line) {
             if (buffer_count < MAX_BUFFER_SIZE)
                 buffer_count++;
             buffer_index = (buffer_index + 1) % MAX_BUFFER_SIZE;
             if (scroll_up)
                 scroll_up++;
             output_length = 0;
+            next_line = qfalse;
         }
-        if (string[i] != '\n')
+        if (string[i] == '\n' || output_length > maxlen) {
+            buffer[buffer_index][output_length] = '\0';
+            next_line = qtrue;
+        } else {
             buffer[buffer_index][output_length++] = string[i];
+        }
     }
     pthread_mutex_unlock(&mutex);
     draw_outwin(TRUE);
