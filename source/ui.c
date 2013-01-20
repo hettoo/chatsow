@@ -23,6 +23,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <curses.h>
 #include <signal.h>
 #include <pthread.h>
+#include <time.h>
 
 #include "main.h"
 #include "utils.h"
@@ -49,10 +50,12 @@ static char title[MAX_FULLLENGTH];
 
 static char buffer[MAX_BUFFER_SIZE][MAX_OUTPUT_LENGTH];
 static int buffer_count = 0;
+static qboolean ghost_line = qfalse;
 static int buffer_index = 0;
 static int output_length = 0;
 static int scroll_up = 0;
 static qboolean next_line = qfalse;
+static qboolean allow_time = qtrue;
 
 static char commandline[MAX_INPUT_LENGTH];
 static int commandline_length = 0;
@@ -117,13 +120,14 @@ static void draw_outwin() {
     int outheight = LINES - 3;
     int i;
     wattrset(outwin, COLOR_PAIR(7));
-    if (scroll_up > buffer_count - outheight)
-        scroll_up = buffer_count - outheight;
+    int actual_buffer_count = buffer_count - (ghost_line ? 1 : 0);
+    if (scroll_up > actual_buffer_count - outheight)
+        scroll_up = actual_buffer_count - outheight;
     if (scroll_up < 0)
         scroll_up = 0;
-    int start = max(0, buffer_count - outheight);
-    int displayable = buffer_count - start;
-    for (i = start; i < buffer_count; i++) {
+    int start = max(0, actual_buffer_count - outheight);
+    int displayable = actual_buffer_count - start;
+    for (i = start; i < actual_buffer_count; i++) {
         wmove(outwin, i - start + outheight - displayable, 0);
         int index = i;
         index -= buffer_count - 1; // replace the last buffer with
@@ -185,12 +189,7 @@ static void draw_inwin() {
     pthread_mutex_unlock(&mutex);
 }
 
-void ui_output(char *format, ...) {
-    static char string[65536];
-	va_list	argptr;
-	va_start(argptr, format);
-    vsprintf(string, format, argptr);
-	va_end(argptr);
+void ui_output_real(char *string) {
     int len = strlen(string);
     int i;
     int maxlen = min(COLS, MAX_OUTPUT_LENGTH - 2);
@@ -210,11 +209,38 @@ void ui_output(char *format, ...) {
         if (string[i] == '\n' || output_length > maxlen) {
             buffer[buffer_index][output_length] = '\0';
             next_line = qtrue;
+            allow_time = string[i] == '\n';
         } else {
             buffer[buffer_index][output_length++] = string[i];
+            if (((i >= 1 && len > i + 1 && string[i - 1] == '\n' && string[i] == '^'
+                        && string[i + 1] >= '0' && string[i + 1] <= '9')
+                    || (i >= 2 && string[i - 2] == '\n' && string[i - 1] == '^'
+                        && string[i] >= '0' && string[i] <= '9'))) {
+                ghost_line = qtrue;
+            } else {
+                ghost_line = qfalse;
+                allow_time = qfalse;
+            }
         }
     }
     pthread_mutex_unlock(&mutex);
+}
+
+void ui_output(char *format, ...) {
+    static char string[65536];
+    int len = 0;
+    if (allow_time) {
+        time_t raw_time;
+        time(&raw_time);
+        strftime(string, sizeof(string), "^7%H:%M ", localtime(&raw_time));
+        len = strlen(string);
+    }
+
+	va_list	argptr;
+	va_start(argptr, format);
+    vsprintf(string + len, format, argptr);
+	va_end(argptr);
+    ui_output_real(string);
     draw_outwin();
 }
 
