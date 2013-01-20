@@ -38,8 +38,9 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "parser.h"
 #include "cmd.h"
 #include "cs.h"
+#include "client.h"
 
-#define TIMEOUT 1000
+#define TIMEOUT 1200
 
 static qboolean started = qfalse;
 static pthread_t thread;
@@ -136,9 +137,15 @@ static void msg_clear(msg_t *msg) {
     msg->compressed = qfalse;
 }
 
+static void force_disconnect() {
+    close(sockfd);
+    state = CA_DISCONNECTED;
+    initial_title();
+}
+
 static void socket_connect() {
     if (state != CA_DISCONNECTED)
-        die("not disconnected");
+        force_disconnect();
 
     if ((sockfd = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) == -1)
         die("socket");
@@ -151,6 +158,7 @@ static void socket_connect() {
     if (inet_aton(host, &serv_addr.sin_addr) == 0)
         die("inet_aton");
 
+    ui_output("connecting to %s\n", host);
     state = CA_SETUP;
 }
 
@@ -166,16 +174,43 @@ static void msg_init_outofband(msg_t *msg) {
     write_long(msg, -1);
 }
 
-static void force_disconnect() {
-    close(sockfd);
-    state = CA_DISCONNECTED;
-    initial_title();
+static void challenge();
+
+static void client_connect() {
+    socket_connect();
+    reset();
+    challenge();
+}
+
+static void disconnect() {
+    ui_output("disconnecting\n");
+    if (state >= CA_CONNECTING) {
+        int i;
+        for (i = 0; i < CERTAINTY; i++)
+            client_command("disconnect");
+    }
+    force_disconnect();
+}
+
+static void force_reconnect() {
+    force_disconnect();
+    client_connect();
+}
+
+static void reconnect() {
+    disconnect();
+    client_connect();
+}
+
+void drop(char *msg) {
+    ui_output("^5%s, reconnecting\n");
+    force_reconnect();
 }
 
 static void client_send(msg_t *msg) {
     if (sendto(sockfd, msg->data, msg->cursize, 0, (struct sockaddr*)&serv_addr, slen) == -1) {
         force_disconnect();
-        die("sendto");
+        drop("sendto failed");
     }
 }
 
@@ -268,17 +303,6 @@ static void client_recv() {
     parse_message(&msg);
 }
 
-static void challenge() {
-    ui_output("requesting challenge\n");
-    msg_t msg;
-    msg_init_outofband(&msg);
-    write_string(&msg, "getchallenge");
-    client_send(&msg);
-
-    state = CA_CHALLENGING;
-    resend = millis() + TIMEOUT;
-}
-
 static void connection_request() {
     ui_output("sending connection request\n");
     msg_init_outofband(&smsg);
@@ -298,6 +322,17 @@ static void connection_request() {
     client_send(&smsg);
 
     state = CA_CONNECTING;
+    resend = millis() + TIMEOUT;
+}
+
+static void challenge() {
+    ui_output("requesting challenge\n");
+    msg_t msg;
+    msg_init_outofband(&msg);
+    write_string(&msg, "getchallenge");
+    client_send(&msg);
+
+    state = CA_CHALLENGING;
     resend = millis() + TIMEOUT;
 }
 
@@ -345,27 +380,6 @@ static void client_frame() {
         default:
             break;
     }
-}
-
-static void client_connect() {
-    socket_connect();
-    reset();
-    challenge();
-}
-
-static void disconnect() {
-    ui_output("disconnecting\n");
-    if (state >= CA_CONNECTING) {
-        int i;
-        for (i = 0; i < CERTAINTY; i++)
-            client_command("disconnect");
-    }
-    force_disconnect();
-}
-
-static void reconnect() {
-    disconnect();
-    client_connect();
 }
 
 static void *client_run(void *args) {

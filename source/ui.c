@@ -77,7 +77,7 @@ static void init_colors() {
         init_pair(1, COLOR_RED, COLOR_BLACK);
         init_pair(2, COLOR_GREEN, COLOR_BLACK);
         init_pair(3, COLOR_YELLOW, COLOR_BLACK);
-        init_pair(4, COLOR_BLUE, COLOR_WHITE);
+        init_pair(4, COLOR_WHITE, COLOR_BLUE);
         init_pair(5, COLOR_CYAN, COLOR_BLACK);
         init_pair(6, COLOR_MAGENTA, COLOR_BLACK);
         init_pair(7, COLOR_WHITE, COLOR_BLACK);
@@ -223,7 +223,11 @@ void ui_output_real(char *string) {
             next_line = qtrue;
             allow_time = string[i] == '\n';
         } else {
-            buffer[buffer_index][output_length++] = string[i];
+            if (ghost_line && i > 3 && string[i - 1] != '^') {
+                int j;
+                for (j = 0; j < min(5, COLS - 2); j++)
+                    buffer[buffer_index][output_length++] = ' ';
+            }
             if (((i >= 1 && len > i + 1 && string[i - 1] == '\n' && string[i] == '^'
                         && string[i + 1] >= '0' && string[i + 1] <= '9')
                     || (i >= 2 && string[i - 2] == '\n' && string[i - 1] == '^'
@@ -233,6 +237,7 @@ void ui_output_real(char *string) {
                 ghost_line = qfalse;
                 allow_time = qfalse;
             }
+            buffer[buffer_index][output_length++] = string[i];
         }
     }
     pthread_mutex_unlock(&mutex);
