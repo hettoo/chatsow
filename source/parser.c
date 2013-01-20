@@ -24,11 +24,19 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "client.h"
 #include "ui.h"
 
-static int last_frame = -1;
-static int bitflags = 0;
-static qboolean reliable = qfalse;
-static int servercount = 0;
-static int entity = 0;
+static int last_frame;
+static int bitflags;
+static qboolean reliable;
+static int servercount;
+static int entity;
+
+void parser_reset() {
+    last_frame = -1;
+    bitflags = 0;
+    reliable = qfalse;
+    servercount = 0;
+    entity = 0;
+}
 
 qboolean connection_reliable() {
     return reliable;

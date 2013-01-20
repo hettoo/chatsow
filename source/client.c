@@ -37,6 +37,9 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "ui.h"
 #include "parser.h"
 #include "cmd.h"
+#include "cs.h"
+
+#define TIMEOUT 500
 
 static qboolean started = qfalse;
 static pthread_t thread;
@@ -55,6 +58,8 @@ static int outseq = 1;
 static int inseq = 0;
 
 static msg_t smsg;
+
+static unsigned int resend = 0;
 
 typedef enum client_state_s {
     CA_DISCONNECTED,
@@ -76,7 +81,7 @@ static void msg_clear(msg_t *msg) {
     msg->compressed = qfalse;
 }
 
-static void client_connect() {
+static void socket_connect() {
     if (state != CA_DISCONNECTED)
         die("not disconnected");
 
@@ -146,7 +151,6 @@ static void client_recv() {
         die("recvfrom");
     }
     int seq = read_long(&msg);
-    //ui_output("%d %d\n", msg.cursize, seq);
     if (seq == -1) {
         cmd_execute(read_string(&msg));
         return;
@@ -201,46 +205,18 @@ static void client_recv() {
     parse_message(&msg);
 }
 
-static void client_frame() {
-    if (state == CA_LOADING && player_num() != 0) {
-        ui_output("requesting configstrings\n");
-        state = CA_CONFIGURING;
-        client_command("configstrings %d 0", spawn_count());
-    }
-}
-
-static void *client_run(void *args) {
-    client_connect();
-
+static void challenge() {
     ui_output("requesting challenge\n");
     msg_t msg;
     msg_init_outofband(&msg);
     write_string(&msg, "getchallenge");
     client_send(&msg);
+
     state = CA_CHALLENGING;
-
-    while (1) {
-        client_recv();
-        client_frame();
-        pthread_mutex_lock(&stop_mutex);
-        if (stopping)
-            break;
-        pthread_mutex_unlock(&stop_mutex);
-    }
-    pthread_mutex_unlock(&stop_mutex);
-
-    int i;
-    for (i = 0; i < CERTAINTY; i++)
-        client_command("disconnect");
-    close(sockfd);
-
-    return NULL;
+    resend = millis() + TIMEOUT;
 }
 
-void cmd_challenge() {
-    if (state != CA_CHALLENGING)
-        die("not challenging");
-
+static void connection_request() {
     ui_output("sending connection request\n");
     msg_init_outofband(&smsg);
     write_string(&smsg, "connect 15 ");
@@ -255,18 +231,94 @@ void cmd_challenge() {
     client_send(&smsg);
 
     state = CA_CONNECTING;
+    resend = millis() + TIMEOUT;
+}
+
+static void client_frame() {
+    switch (state) {
+        case CA_CHALLENGING:
+            if (millis() >= resend)
+                challenge();
+        break;
+        case CA_CONNECTING:
+            if (millis() >= resend)
+                connection_request();
+        break;
+        case CA_LOADING:
+            if (player_num() != 0) {
+                ui_output("requesting configstrings\n");
+                cs_init();
+                state = CA_CONFIGURING;
+                resend = 0;
+            }
+        case CA_CONFIGURING:
+            if (millis() >= resend) {
+                client_command("configstrings %d 0", spawn_count());
+                resend = millis() + TIMEOUT;
+            }
+            break;
+        default:
+            break;
+    }
+}
+
+static void client_connect() {
+    socket_connect();
+    parser_reset();
+    challenge();
+}
+
+static void disconnect() {
+    ui_output("disconnecting\n");
+    int i;
+    for (i = 0; i < CERTAINTY; i++)
+        client_command("disconnect");
+    close(sockfd);
+    state = CA_DISCONNECTED;
+}
+
+static void reconnect() {
+    disconnect();
+    client_connect();
+}
+
+static void *client_run(void *args) {
+    client_connect();
+
+    while (1) {
+        client_recv();
+        client_frame();
+        pthread_mutex_lock(&stop_mutex);
+        if (stopping)
+            break;
+        pthread_mutex_unlock(&stop_mutex);
+    }
+    pthread_mutex_unlock(&stop_mutex);
+
+    disconnect();
+
+    return NULL;
+}
+
+void cmd_challenge() {
+    if (state != CA_CHALLENGING)
+        return;
+
+    connection_request();
 }
 
 void cmd_client_connect() {
-    if (state != CA_CONNECTING)
-        die("not connecting");
-
     ui_output("sending serverdata request\n");
     client_command("new");
     state = CA_LOADING;
 }
 
 void cmd_cs() {
+    int i;
+    for (i = 0; i < cmd_argc(); i++) {
+        if (i % 2 == 1)
+            cs_set(atoi(cmd_argv(i)), cmd_argv(i + 1));
+    }
 }
 
 void cmd_cmd() {
@@ -274,8 +326,20 @@ void cmd_cmd() {
 }
 
 void cmd_precache() {
+    if (state != CA_CONFIGURING)
+        return;
+
     ui_output("entering the game\n");
+    state = CA_ACTIVE;
     client_command("begin %d", spawn_count());
+}
+
+void cmd_disconnect() {
+    disconnect();
+}
+
+void cmd_reconnect() {
+    reconnect();
 }
 
 void cmd_nop() {
@@ -285,18 +349,27 @@ void cmd_pr() {
     ui_output("%s", cmd_argv(1));
 }
 
+void cmd_ch() {
+    ui_output("%s: %s\n", player_name(atoi(cmd_argv(1))), cmd_argv(2));
+}
+
 void client_start(char *new_host, char *new_port) {
     cmd_add("challenge", cmd_challenge);
     cmd_add("client_connect", cmd_client_connect);
     cmd_add("cs", cmd_cs);
     cmd_add("cmd", cmd_cmd);
     cmd_add("precache", cmd_precache);
+    cmd_add("disconnect", cmd_disconnect);
+    cmd_add("forcereconnect", cmd_reconnect);
+    cmd_add("reconnect", cmd_reconnect);
 
+    cmd_add("mm", cmd_nop);
     cmd_add("plstats", cmd_nop);
     cmd_add("scb", cmd_nop);
     cmd_add("cvarinfo", cmd_nop);
 
     cmd_add("pr", cmd_pr);
+    cmd_add("ch", cmd_ch);
 
     host = new_host;
     port = new_port;

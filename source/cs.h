@@ -1,5 +1,5 @@
 /*
-Copyright (C) 2013 hettoo (Gerco van Heerdt)
+Copyright (C) 1997-2001 Id Software, Inc.
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -18,36 +18,12 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 */
 
-#include <stdlib.h>
-#include <stdio.h>
-#include <stdarg.h>
-#include <sys/time.h>
+#ifndef WRLC_CS_H
+#define WRLC_CS_H
 
-#include "main.h"
+void cs_init();
+void cs_set(int index, char *string);
+char *cs_get(int index);
+char *player_name(int num);
 
-int die(char *format, ...) {
-    shutdown();
-	va_list	argptr;
-	va_start(argptr, format);
-    vprintf(format, argptr);
-	va_end(argptr);
-    printf("\n");
-    exit(1);
-}
-
-int min(int a, int b) {
-    return a < b ? a : b;
-}
-
-int max(int a, int b) {
-    return a > b ? a : b;
-}
-
-unsigned int millis() {
-	struct timeval tp;
-	struct timezone tzp;
-
-	gettimeofday( &tp, &tzp );
-
-	return tp.tv_sec * 1000 + tp.tv_usec / 1000;
-}
+#endif

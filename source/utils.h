@@ -24,5 +24,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 int die(char *format, ...);
 int min(int a, int b);
 int max(int a, int b);
+unsigned int millis();
 
 #endif

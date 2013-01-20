@@ -1,5 +1,5 @@
 /*
-Copyright (C) 2013 hettoo (Gerco van Heerdt)
+Copyright (C) 1997-2001 Id Software, Inc.
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -18,36 +18,26 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 */
 
-#include <stdlib.h>
-#include <stdio.h>
-#include <stdarg.h>
-#include <sys/time.h>
+#include "import.h"
 
-#include "main.h"
+static char css[MAX_CONFIGSTRINGS][MAX_CONFIGSTRING_CHARS];
 
-int die(char *format, ...) {
-    shutdown();
-	va_list	argptr;
-	va_start(argptr, format);
-    vprintf(format, argptr);
-	va_end(argptr);
-    printf("\n");
-    exit(1);
+void cs_init() {
+    int i;
+    for (i = 0; i < MAX_CONFIGSTRINGS; i++)
+        css[i][0] = '\0';
 }
 
-int min(int a, int b) {
-    return a < b ? a : b;
+void cs_set(int index, char *string) {
+    //strcpy(css[index], string);
 }
 
-int max(int a, int b) {
-    return a > b ? a : b;
+char *cs_get(int index) {
+    return css[index];
 }
 
-unsigned int millis() {
-	struct timeval tp;
-	struct timezone tzp;
-
-	gettimeofday( &tp, &tzp );
-
-	return tp.tv_sec * 1000 + tp.tv_usec / 1000;
+char *player_name(int num) {
+    if (num == 0)
+        return "console";
+    return "?";
 }
