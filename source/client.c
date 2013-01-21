@@ -137,9 +137,14 @@ static void msg_clear(msg_t *msg) {
     msg->compressed = qfalse;
 }
 
+static void set_state(int new_state) {
+    state = new_state;
+    resend = 0;
+}
+
 static void force_disconnect() {
     close(sockfd);
-    state = CA_DISCONNECTED;
+    set_state(CA_DISCONNECTED);
     initial_title();
 }
 
@@ -158,8 +163,8 @@ static void socket_connect() {
     if (inet_aton(host, &serv_addr.sin_addr) == 0)
         die("inet_aton");
 
-    ui_output("connecting to %s\n", host);
-    state = CA_SETUP;
+    ui_output("Connecting to %s:%s...\n", host, port);
+    set_state(CA_SETUP);
 }
 
 static void msg_init(msg_t *msg) {
@@ -183,7 +188,7 @@ static void client_connect() {
 }
 
 static void disconnect() {
-    ui_output("disconnecting\n");
+    ui_output("Disconnecting...\n");
     if (state >= CA_CONNECTING) {
         int i;
         for (i = 0; i < CERTAINTY; i++)
@@ -203,7 +208,7 @@ static void reconnect() {
 }
 
 void drop(char *msg) {
-    ui_output("^5%s, reconnecting\n");
+    ui_output("^5%s, reconnecting...\n");
     force_reconnect();
 }
 
@@ -246,7 +251,7 @@ static void client_recv() {
     if ((msg.cursize = recvfrom(sockfd, msg.data, msg.maxsize, MSG_DONTWAIT, (struct sockaddr*)&serv_addr, &slen)) == -1) {
         if (errno == EAGAIN)
             return;
-        die("recvfrom");
+        drop("recvfrom failed");
     }
     int seq = read_long(&msg);
     if (seq == -1) {
@@ -304,7 +309,7 @@ static void client_recv() {
 }
 
 static void connection_request() {
-    ui_output("sending connection request\n");
+    ui_output("Sending connection request...\n");
     msg_init_outofband(&smsg);
     write_string(&smsg, "connect 15 ");
     smsg.cursize--;
@@ -321,26 +326,34 @@ static void connection_request() {
     write_string(&smsg, "\" 0");
     client_send(&smsg);
 
-    state = CA_CONNECTING;
+    set_state(CA_CONNECTING);
     resend = millis() + TIMEOUT;
 }
 
 static void challenge() {
-    ui_output("requesting challenge\n");
+    ui_output("Requesting challenge...\n");
     msg_t msg;
     msg_init_outofband(&msg);
     write_string(&msg, "getchallenge");
     client_send(&msg);
 
-    state = CA_CHALLENGING;
+    set_state(CA_CHALLENGING);
     resend = millis() + TIMEOUT;
 }
 
 static void enter() {
-    ui_output("entering the game\n");
+    ui_output("Entering the game...\n");
     client_command("begin %d", spawn_count);
 
-    state = CA_ENTERING;
+    set_state(CA_ENTERING);
+    resend = millis() + TIMEOUT;
+}
+
+static void request_serverdata() {
+    ui_output("Sending serverdata request...\n");
+    client_command("new");
+
+    set_state(CA_LOADING);
     resend = millis() + TIMEOUT;
 }
 
@@ -361,14 +374,17 @@ static void client_frame() {
                 connection_request();
         break;
         case CA_LOADING:
-            if (playernum != 0) {
-                ui_output("requesting configstrings\n");
+            if (playernum == 0) {
+                if (millis() >= resend)
+                    request_serverdata();
+                break;
+            } else {
                 cs_init();
-                state = CA_CONFIGURING;
-                resend = 0;
+                set_state(CA_CONFIGURING);
             }
         case CA_CONFIGURING:
             if (millis() >= resend) {
+                ui_output("Requesting configstrings...\n");
                 client_command("configstrings %d 0", spawn_count);
                 resend = millis() + TIMEOUT;
             }
@@ -408,9 +424,7 @@ void cmd_challenge() {
 }
 
 void cmd_client_connect() {
-    ui_output("sending serverdata request\n");
-    client_command("new");
-    state = CA_LOADING;
+    request_serverdata();
 }
 
 void cmd_cs() {
@@ -422,8 +436,8 @@ void cmd_cs() {
 }
 
 void cmd_cmd() {
-    resend = millis() + TIMEOUT;
     client_command("%s", cmd_args(1));
+    resend = millis() + TIMEOUT;
 }
 
 void cmd_precache() {
@@ -437,13 +451,18 @@ void client_activate() {
     if (state != CA_ENTERING)
         return;
 
-    state = CA_ACTIVE;
+    set_state(CA_ACTIVE);
     set_title("%s (%s : %s @ %s:%s)", cs_get(0), level, game, host, port);
     cmd_execute("players");
 }
 
 void cmd_disconnect() {
     disconnect();
+}
+
+void cmd_changing() {
+    cs_init();
+    set_state(CA_CONFIGURING);
 }
 
 void cmd_reconnect() {
@@ -459,6 +478,14 @@ void cmd_pr() {
 
 void cmd_ch() {
     ui_output("%s^7: ^2%s^7\n", player_name(atoi(cmd_argv(1))), cmd_argv(2));
+}
+
+void cmd_tvch() {
+    ui_output("[TV]%s^7: ^2%s^7\n", cmd_argv(1), cmd_argv(2));
+}
+
+void cmd_motd() {
+    ui_output("^5Message of the day:^7\n%s", cmd_argv(2));
 }
 
 void cmd_players() {
@@ -484,6 +511,7 @@ void client_start(char *new_host, char *new_port, char *new_name) {
     cmd_add("cmd", cmd_cmd);
     cmd_add("precache", cmd_precache);
     cmd_add("disconnect", cmd_disconnect);
+    cmd_add("changing", cmd_changing);
     cmd_add("forcereconnect", cmd_reconnect);
     cmd_add("reconnect", cmd_reconnect);
 
@@ -492,10 +520,14 @@ void client_start(char *new_host, char *new_port, char *new_name) {
     cmd_add("scb", cmd_nop);
     cmd_add("cvarinfo", cmd_nop);
     cmd_add("obry", cmd_nop);
+    cmd_add("ti", cmd_nop);
 
     cmd_add("pr", cmd_pr);
     cmd_add("cp", cmd_pr);
     cmd_add("ch", cmd_ch);
+    cmd_add("tch", cmd_ch);
+    cmd_add("tvch", cmd_tvch);
+    cmd_add("motd", cmd_motd);
 
     cmd_add("players", cmd_players);
 
@@ -503,7 +535,7 @@ void client_start(char *new_host, char *new_port, char *new_name) {
     port = new_port;
     name = new_name;
     port_int = atoi(port);
-    state = CA_DISCONNECTED;
+    set_state(CA_DISCONNECTED);
     initial_title();
     pthread_mutex_init(&stop_mutex, NULL);
     pthread_mutex_init(&command_mutex, NULL);

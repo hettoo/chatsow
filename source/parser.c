@@ -25,9 +25,11 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "ui.h"
 
 static int last_frame;
+static int last_cmd_num;
 
 void parser_reset() {
     last_frame = -1;
+    last_cmd_num = 0;
 }
 
 static void parse_frame(msg_t *msg) {
@@ -82,9 +84,8 @@ void parse_message(msg_t *msg) {
                 break;
             case svc_servercmd:
                 if (!(get_bitflags() & SV_BITFLAGS_RELIABLE)) {
-                    static int last_cmd_num = 0;
                     int cmd_num = read_long(msg);
-                    if (cmd_num <= last_cmd_num) {
+                    if (cmd_num != last_cmd_num + 1) {
                         read_string(msg);
                         break;
                     }
@@ -119,7 +120,7 @@ void parse_message(msg_t *msg) {
             case -1:
                 return;
             default:
-                ui_output("unknown command: %d\n", cmd);
+                ui_output("Unknown command: %d\n", cmd);
                 return;
         }
     }

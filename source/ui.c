@@ -205,7 +205,10 @@ void ui_output_real(char *string) {
     int len = strlen(string);
     int i;
     int maxlen = min(COLS, MAX_OUTPUT_LENGTH - 2);
+    qboolean empty = qfalse;
     pthread_mutex_lock(&mutex);
+    if (ghost_line)
+        ghost_line = qfalse;
     if (buffer_count == 0)
         buffer_count++;
     for (i = 0; i < len; i++) {
@@ -221,25 +224,36 @@ void ui_output_real(char *string) {
         if (string[i] == '\n' || output_length > maxlen) {
             buffer[buffer_index][output_length] = '\0';
             next_line = qtrue;
-            allow_time = string[i] == '\n';
-        } else {
-            if (ghost_line && i > 3 && string[i - 1] != '^') {
+            empty = qfalse;
+            if (len > i + 1) {
+                empty = qtrue;
                 int j;
-                for (j = 0; j < min(5, COLS - 2); j++)
-                    buffer[buffer_index][output_length++] = ' ';
+                for (j = i + 1; j < len && string[j] != '\n'; j++) {
+                    if ((j - (i + 1)) % 2 == 0) {
+                        if (string[j] != '^')
+                            empty = qfalse;
+                    } else {
+                        if (string[j] < '0' || string[j] > '9')
+                            empty = qfalse;
+                    }
+                }
+                if ((j - (i + 1)) % 2 == 1)
+                    empty = qfalse;
             }
-            if (((i >= 1 && len > i + 1 && string[i - 1] == '\n' && string[i] == '^'
-                        && string[i + 1] >= '0' && string[i + 1] <= '9')
-                    || (i >= 2 && string[i - 2] == '\n' && string[i - 1] == '^'
-                        && string[i] >= '0' && string[i] <= '9'))) {
-                ghost_line = qtrue;
-            } else {
-                ghost_line = qfalse;
+            allow_time = string[i] == '\n';
+            ghost_line = !empty || !allow_time;//empty && !allow_time;
+        } else {
+            if (ghost_line && output_length == 0) {
+                int j;
+                for (j = 0; j < min(6, COLS - 2); j++)
+                    buffer[buffer_index][output_length++] = ' ';
                 allow_time = qfalse;
             }
+            allow_time = empty;
             buffer[buffer_index][output_length++] = string[i];
         }
     }
+    ghost_line = empty;
     pthread_mutex_unlock(&mutex);
 }
 
