@@ -23,16 +23,14 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "import.h"
 #include "client.h"
 #include "ui.h"
+#include "parser.h"
 
-static int last_frame;
-static int last_cmd_num;
-
-void parser_reset() {
-    last_frame = -1;
-    last_cmd_num = 0;
+void parser_reset(parser_t *parser) {
+    parser->last_frame = -1;
+    parser->last_cmd_num = 0;
 }
 
-static void parse_frame(msg_t *msg) {
+static void parse_frame(parser_t *parser, msg_t *msg) {
     int length = read_short(msg); // length
     int pos = msg->readcount;
     read_long(msg); // serverTime
@@ -52,14 +50,14 @@ static void parse_frame(msg_t *msg) {
             numtargets = read_byte(msg);
             read_data(msg, targets, numtargets);
         }
-        if (frame > last_frame + framediff)
-            execute(cmd, targets, numtargets);
+        if (frame > parser->last_frame + framediff)
+            execute(parser->client, cmd, targets, numtargets);
     }
     skip_data(msg, length - (msg->readcount - pos));
-    last_frame = frame;
+    parser->last_frame = frame;
 }
 
-void parse_message(msg_t *msg) {
+void parse_message(parser_t *parser, msg_t *msg) {
     int cmd;
     while (1) {
         cmd = read_byte(msg);
@@ -72,38 +70,38 @@ void parse_message(msg_t *msg) {
                 size_t meta_data_maxsize = read_long(msg);
                 size_t end = msg->readcount + meta_data_realsize;
                 while (msg->readcount < end) {
-                    demoinfo_key(read_string(msg));
-                    demoinfo_value(read_string(msg));
+                    demoinfo_key(parser->client, read_string(msg));
+                    demoinfo_value(parser->client, read_string(msg));
                 }
                 skip_data(msg, meta_data_maxsize - meta_data_realsize);
                 break;
             case svc_clcack:
                 read_long(msg); // reliable acknownledge
                 read_long(msg); // ucmd acknowledged
-                client_activate();
+                client_activate(parser->client);
                 break;
             case svc_servercmd:
-                if (!(get_bitflags() & SV_BITFLAGS_RELIABLE)) {
+                if (!(get_bitflags(parser->client) & SV_BITFLAGS_RELIABLE)) {
                     int cmd_num = read_long(msg);
-                    if (cmd_num != last_cmd_num + 1) {
+                    if (cmd_num != parser->last_cmd_num + 1) {
                         read_string(msg);
                         break;
                     }
-                    last_cmd_num = cmd_num;
-                    client_ack(cmd_num);
+                    parser->last_cmd_num = cmd_num;
+                    client_ack(parser->client, cmd_num);
                 }
             case svc_servercs:
-                execute(read_string(msg), NULL, 0);
+                execute(parser->client, read_string(msg), NULL, 0);
                 break;
             case svc_serverdata:
-                set_protocol(read_long(msg));
-                set_spawn_count(read_long(msg));
+                set_protocol(parser->client, read_long(msg));
+                set_spawn_count(parser->client, read_long(msg));
                 read_short(msg); // snap frametime
                 read_string(msg); // base game
-                set_game(read_string(msg));
-                set_playernum(read_short(msg) + 1);
-                set_level(read_string(msg)); // level name
-                set_bitflags(read_byte(msg));
+                set_game(parser->client, read_string(msg));
+                set_playernum(parser->client, read_short(msg) + 1);
+                set_level(parser->client, read_string(msg)); // level name
+                set_bitflags(parser->client, read_byte(msg));
                 int pure = read_short(msg);
                 while (pure > 0) {
                     read_string(msg); // pure pk3 name
@@ -115,18 +113,18 @@ void parse_message(msg_t *msg) {
                 read_delta_entity(msg, read_entity_bits(msg));
                 break;
             case svc_frame:
-                parse_frame(msg);
+                parse_frame(parser, msg);
                 break;
             case -1:
                 return;
             default:
-                ui_output("Unknown command: %d\n", cmd);
+                ui_output(parser->client, "Unknown command: %d\n", cmd);
                 return;
         }
     }
 }
 
-static qboolean read_demo_message(FILE *fp) {
+static qboolean read_demo_message(parser_t *parser, FILE *fp) {
     int length;
     if (!fread(&length, 4, 1, fp))
         return qfalse;
@@ -140,11 +138,11 @@ static qboolean read_demo_message(FILE *fp) {
     msg.cursize = length;
     msg.maxsize = sizeof(msg.data);
     msg.compressed = qfalse;
-    parse_message(&msg);
+    parse_message(parser, &msg);
     return qtrue;
 }
 
-void parse_demo(FILE *fp) {
-    while (read_demo_message(fp))
+void parse_demo(parser_t *parser, FILE *fp) {
+    while (read_demo_message(parser, fp))
         ;
 }

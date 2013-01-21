@@ -19,21 +19,20 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
 #include "import.h"
+#include "cs.h"
 
-static char css[MAX_CONFIGSTRINGS][MAX_CONFIGSTRING_CHARS];
-
-void cs_init() {
+void cs_init(cs_t *cs) {
     int i;
     for (i = 0; i < MAX_CONFIGSTRINGS; i++)
-        css[i][0] = '\0';
+        cs->css[i][0] = '\0';
 }
 
-void cs_set(int index, char *string) {
-    strcpy(css[index], string);
+void cs_set(cs_t *cs, int index, char *string) {
+    strcpy(cs->css[index], string);
 }
 
-char *cs_get(int index) {
-    return css[index];
+char *cs_get(cs_t *cs, int index) {
+    return cs->css[index];
 }
 
 static char *playerinfo_token(char *playerinfo, char *name) {
@@ -64,8 +63,8 @@ static char *playerinfo_token(char *playerinfo, char *name) {
     return "";
 }
 
-char *player_name(int num) {
+char *player_name(cs_t *cs, int num) {
     if (num == 0)
         return "console";
-    return playerinfo_token(cs_get(CS_PLAYERINFOS + num - 1), "name");
+    return playerinfo_token(cs_get(cs, CS_PLAYERINFOS + num - 1), "name");
 }

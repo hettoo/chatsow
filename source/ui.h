@@ -21,11 +21,13 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #ifndef WRLC_UI_H
 #define WRLC_UI_H
 
+#define SCREENS 10
+#define CLIENT_SCREENS (SCREENS - 1)
+
 void ui_run();
 void ui_stop();
-void ui_output(char *format, ...);
-void set_title(char *server, char *level, char *game, char *host, char *port);
-void update_status(char *name);
-void draw_status(char *name);
+void ui_output(int client, char *format, ...);
+void set_title(int client, char *server, char *level, char *game, char *host, char *port);
+void draw_status(int client, char *name);
 
 #endif

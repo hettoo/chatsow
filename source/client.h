@@ -22,25 +22,28 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define WRLC_CLIENT_H
 
 #include "import.h"
+#include "cs.h"
 
-void client_start();
-void client_frame();
-void client_activate();
-qboolean client_ready();
-void client_ack(int num);
-void client_command(char *format, ...);
-void disconnect();
+void client_register_commands();
+void client_start(int id);
+void client_frame(int id);
+void client_activate(int id);
+qboolean client_ready(int id);
+void client_ack(int id, int num);
+void client_command(int id, char *format, ...);
+cs_t *client_cs(int id);
+void disconnect(int id);
 
-void demoinfo_key(char *key);
-void demoinfo_value(char *value);
-void execute(char *cmd, qbyte *targets, int target_count);
+void demoinfo_key(int id, char *key);
+void demoinfo_value(int id, char *value);
+void execute(int id, char *cmd, qbyte *targets, int target_count);
 
-void set_protocol(int new_protocol);
-void set_spawn_count(int new_spawn_count);
-int get_bitflags();
-void set_bitflags(int new_bitflags);
-void set_game(char *new_game);
-void set_playernum(int new_playernum);
-void set_level(char *new_level);
+void set_protocol(int id, int new_protocol);
+void set_spawn_count(int id, int new_spawn_count);
+int get_bitflags(int id);
+void set_bitflags(int id, int new_bitflags);
+void set_game(int id, char *new_game);
+void set_playernum(int id, int new_playernum);
+void set_level(int id, char *new_level);
 
 #endif

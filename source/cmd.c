@@ -36,6 +36,7 @@ typedef struct cmd_s {
 static cmd_t cmds[MAX_CMDS];
 static int cmd_count = 0;
 
+static int client = -1;
 static int argc = 0;
 static char argv[MAX_ARGC][MAX_ARG_SIZE];
 static char args[MAX_ARGS_SIZE];
@@ -105,7 +106,8 @@ void parse_cmd() {
     }
 }
 
-void cmd_execute(char *cmd) {
+void cmd_execute(int c, char *cmd) {
+    client = c;
     argc = 0;
     strcpy(args, cmd);
     parse_cmd();
@@ -117,14 +119,20 @@ void cmd_execute(char *cmd) {
                 return;
             }
         }
-        for (i = CS_GAMECOMMANDS; i < CS_GAMECOMMANDS + MAX_GAMECOMMANDS; i++) {
-            if (!strcmp(cmd_argv(0), cs_get(i))) {
-                client_command("%s", cmd_args(0));
-                return;
+        if (c >= 0) {
+            for (i = CS_GAMECOMMANDS; i < CS_GAMECOMMANDS + MAX_GAMECOMMANDS; i++) {
+                if (!strcmp(cmd_argv(0), cs_get(client_cs(c), i))) {
+                    client_command(c, "%s", cmd_args(0));
+                    return;
+                }
             }
         }
     }
-    ui_output("Unrecognized command: %s\n", cmd);
+    ui_output(c, "Unrecognized command: %s\n", cmd);
+}
+
+int cmd_client() {
+    return client;
 }
 
 int cmd_argc() {

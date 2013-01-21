@@ -21,9 +21,13 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #ifndef WRLC_CS_H
 #define WRLC_CS_H
 
-void cs_init();
-void cs_set(int index, char *string);
-char *cs_get(int index);
-char *player_name(int num);
+typedef struct cs_s {
+    char css[MAX_CONFIGSTRINGS][MAX_CONFIGSTRING_CHARS];
+} cs_t;
+
+void cs_init(cs_t *cs);
+void cs_set(cs_t *cs, int index, char *string);
+char *cs_get(cs_t *cs, int index);
+char *player_name(cs_t *cs, int num);
 
 #endif

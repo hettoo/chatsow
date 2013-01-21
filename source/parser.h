@@ -23,8 +23,14 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include <stdio.h>
 
-void parser_reset();
-void parse_message(msg_t *msg);
-void parse_demo(FILE *fp);
+typedef struct parser_s {
+    int client;
+    int last_frame;
+    int last_cmd_num;
+} parser_t;
+
+void parser_reset(parser_t *parser);
+void parse_message(parser_t *parser, msg_t *msg);
+void parse_demo(parser_t *parser, FILE *fp);
 
 #endif

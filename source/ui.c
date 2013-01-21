@@ -44,27 +44,37 @@ static WINDOW *outwin;
 static WINDOW *statuswin;
 static WINDOW *inwin;
 
-static char *server;
-static char *level;
-static char *game;
-static char *host;
-static char *port;
+typedef struct screen_s {
+    char *server;
+    char *level;
+    char *game;
+    char *host;
+    char *port;
 
-static char buffer[MAX_BUFFER_SIZE][MAX_OUTPUT_LENGTH];
-static int buffer_count = 0;
-static qboolean ghost_line = qfalse;
-static int buffer_index = 0;
-static int output_length = 0;
-static int scroll_up = 0;
-static qboolean next_line = qfalse;
-static qboolean allow_time = qtrue;
+    char *last_name;
 
-static char commandline[MAX_INPUT_LENGTH];
-static int commandline_length = 0;
+    char buffer[MAX_BUFFER_SIZE][MAX_OUTPUT_LENGTH];
+    int buffer_count;
+    qboolean ghost_line;
+    int buffer_index;
+    int output_length;
+    int scroll_up;
+    qboolean next_line;
+    qboolean allow_time;
+
+    char commandline[MAX_INPUT_LENGTH];
+    int commandline_length;
+} screen_t;
+
+static screen_t screens[SCREENS];
+static int screen = 0;
 
 static bool stopped = FALSE;
 
 void ui_stop() {
+    int i;
+    for (i = 0; i < CLIENT_SCREENS; i++)
+        disconnect(i);
     endwin();
     stopped = TRUE;
 }
@@ -127,49 +137,49 @@ static void draw_titlewin() {
     werase(titlewin);
     int i = 1;
     waddstr(titlewin, " ");
-    if (server) {
+    if (screens[screen].server) {
         wattron(titlewin, A_BOLD);
-        i += draw_colored(titlewin, server, qtrue);
+        i += draw_colored(titlewin, screens[screen].server, qtrue);
         wattroff(titlewin, A_BOLD);
         i += draw_colored(titlewin, " ", qtrue);
     }
-    if (level) {
+    if (screens[screen].level) {
         i += draw_colored(titlewin, "[", qtrue);
         wattron(titlewin, A_BOLD);
-        i += draw_colored(titlewin, level, qtrue);
+        i += draw_colored(titlewin, screens[screen].level, qtrue);
         wattroff(titlewin, A_BOLD);
         i += draw_colored(titlewin, "] ", qtrue);
     }
-    if (game) {
+    if (screens[screen].game) {
         i += draw_colored(titlewin, "[", qtrue);
         wattron(titlewin, A_BOLD);
-        i += draw_colored(titlewin, game, qtrue);
+        i += draw_colored(titlewin, screens[screen].game, qtrue);
         wattroff(titlewin, A_BOLD);
         i += draw_colored(titlewin, "] ", qtrue);
     }
-    if (host || port)
+    if (screens[screen].host || screens[screen].port)
         i += draw_colored(titlewin, "@ ", qtrue);
-    if (host) {
+    if (screens[screen].host) {
         wattron(titlewin, A_BOLD);
-        i += draw_colored(titlewin, host, qtrue);
+        i += draw_colored(titlewin, screens[screen].host, qtrue);
         wattroff(titlewin, A_BOLD);
     }
-    if (port) {
+    if (screens[screen].port) {
         i += draw_colored(titlewin, ":", qtrue);
-        i += draw_colored(titlewin, port, qtrue);
+        i += draw_colored(titlewin, screens[screen].port, qtrue);
     }
     for (; i < COLS; i++)
         waddch(titlewin, ' ');
     wrefresh(titlewin);
 }
 
-void set_title(char *new_server, char *new_level, char *new_game, char *new_host, char *new_port) {
-    server = new_server;
-    level = new_level;
-    game = new_game;
-    host = new_host;
-    port = new_port;
-    draw_titlewin();
+void set_title(int client, char *new_server, char *new_level, char *new_game, char *new_host, char *new_port) {
+    screens[client + 1].server = new_server;
+    screens[client + 1].level = new_level;
+    screens[client + 1].game = new_game;
+    screens[client + 1].host = new_host;
+    screens[client + 1].port = new_port;
+    draw_titlewin(client + 1);
 }
 
 static void draw_outwin() {
@@ -177,27 +187,27 @@ static void draw_outwin() {
     int outheight = LINES - 3;
     int i;
     wattrset(outwin, COLOR_PAIR(7));
-    int actual_buffer_count = buffer_count - (ghost_line ? 1 : 0);
-    if (scroll_up > actual_buffer_count - outheight)
-        scroll_up = actual_buffer_count - outheight;
-    if (scroll_up < 0)
-        scroll_up = 0;
+    int actual_buffer_count = screens[screen].buffer_count - (screens[screen].ghost_line ? 1 : 0);
+    if (screens[screen].scroll_up > actual_buffer_count - outheight)
+        screens[screen].scroll_up = actual_buffer_count - outheight;
+    if (screens[screen].scroll_up < 0)
+        screens[screen].scroll_up = 0;
     int start = max(0, actual_buffer_count - outheight);
     int displayable = actual_buffer_count - start;
     for (i = start; i < actual_buffer_count; i++) {
         wmove(outwin, i - start + outheight - displayable, 0);
         int index = i;
-        index -= buffer_count - 1; // replace the last buffer with
-        index += buffer_index; // the selected one
-        index -= scroll_up;
+        index -= screens[screen].buffer_count - 1; // replace the last buffer with
+        index += screens[screen].buffer_index; // the selected one
+        index -= screens[screen].scroll_up;
         index += MAX_BUFFER_SIZE * 2; // negative modulo prevention
         index %= MAX_BUFFER_SIZE;
-        draw_colored(outwin, buffer[index], qfalse);
+        draw_colored(outwin, screens[screen].buffer[index], qfalse);
     }
     wrefresh(outwin);
 }
 
-void draw_status(char *name) {
+static void draw_statuswin() {
     werase(statuswin);
     static char string[32];
     int i = 0;
@@ -207,14 +217,19 @@ void draw_status(char *name) {
     i += draw_colored(statuswin, string, qtrue);
     wattroff(statuswin, A_BOLD);
     i += draw_colored(statuswin, "] ", qtrue);
-    if (name != NULL) {
+    if (screens[screen].last_name != NULL) {
         wattron(statuswin, A_BOLD);
-        i += draw_colored(statuswin, name, qtrue);
+        i += draw_colored(statuswin, screens[screen].last_name, qtrue);
         wattroff(statuswin, A_BOLD);
     }
     for (; i < COLS; i++)
         waddch(statuswin, ' ');
     wrefresh(statuswin);
+}
+
+void draw_status(int client, char *name) {
+    screens[client + 1].last_name = name;
+    draw_statuswin();
 }
 
 static void draw_inwin() {
@@ -223,35 +238,42 @@ static void draw_inwin() {
     wattron(inwin, A_BOLD);
     draw_colored(inwin, "> ", qfalse);
     wattroff(inwin, A_BOLD);
-    if (commandline_length < 1 || commandline[0] != '/')
+    if (screens[screen].commandline_length < 1 || screens[screen].commandline[0] != '/')
         wattrset(inwin, COLOR_PAIR(2));
-    draw_colored(inwin, commandline, qfalse);
+    draw_colored(inwin, screens[screen].commandline, qfalse);
     waddch(inwin, '_');
     wrefresh(inwin);
 }
 
-void ui_output_real(char *string) {
+static void redraw() {
+    draw_titlewin();
+    draw_outwin();
+    draw_statuswin();
+    draw_inwin();
+}
+
+void ui_output_real(int client, char *string) {
     int len = strlen(string);
     int i;
     int maxlen = min(COLS, MAX_OUTPUT_LENGTH - 2);
     qboolean empty = qfalse;
-    if (ghost_line)
-        ghost_line = qfalse;
-    if (buffer_count == 0)
-        buffer_count++;
+    if (screens[client + 1].ghost_line)
+        screens[client + 1].ghost_line = qfalse;
+    if (screens[client + 1].buffer_count == 0)
+        screens[client + 1].buffer_count++;
     for (i = 0; i < len; i++) {
-        if (next_line) {
-            if (buffer_count < MAX_BUFFER_SIZE)
-                buffer_count++;
-            buffer_index = (buffer_index + 1) % MAX_BUFFER_SIZE;
-            if (scroll_up)
-                scroll_up++;
-            output_length = 0;
-            next_line = qfalse;
+        if (screens[client + 1].next_line) {
+            if (screens[client + 1].buffer_count < MAX_BUFFER_SIZE)
+                screens[client + 1].buffer_count++;
+            screens[client + 1].buffer_index = (screens[client + 1].buffer_index + 1) % MAX_BUFFER_SIZE;
+            if (screens[client + 1].scroll_up)
+                screens[client + 1].scroll_up++;
+            screens[client + 1].output_length = 0;
+            screens[client + 1].next_line = qfalse;
         }
-        if (string[i] == '\n' || output_length > maxlen) {
-            buffer[buffer_index][output_length] = '\0';
-            next_line = qtrue;
+        if (string[i] == '\n' || screens[client + 1].output_length > maxlen) {
+            screens[client + 1].buffer[screens[client + 1].buffer_index][screens[client + 1].output_length] = '\0';
+            screens[client + 1].next_line = qtrue;
             empty = qfalse;
             if (len > i + 1) {
                 empty = qtrue;
@@ -268,28 +290,28 @@ void ui_output_real(char *string) {
                 if ((j - (i + 1)) % 2 == 1)
                     empty = qfalse;
             }
-            allow_time = string[i] == '\n';
-            ghost_line = !empty || !allow_time;
+            screens[client + 1].allow_time = string[i] == '\n';
+            screens[client + 1].ghost_line = !empty || !screens[client + 1].allow_time;
         } else {
-            if (ghost_line && output_length == 0) {
+            if (screens[client + 1].ghost_line && screens[client + 1].output_length == 0) {
                 int j;
                 for (j = 0; j < min(6, COLS - 2); j++)
-                    buffer[buffer_index][output_length++] = ' ';
-                allow_time = qfalse;
+                    screens[client + 1].buffer[screens[client + 1].buffer_index][screens[client + 1].output_length++] = ' ';
+                screens[client + 1].allow_time = qfalse;
             }
-            allow_time = empty;
-            buffer[buffer_index][output_length++] = string[i];
+            screens[client + 1].allow_time = empty;
+            screens[client + 1].buffer[screens[client + 1].buffer_index][screens[client + 1].output_length++] = string[i];
         }
     }
-    ghost_line = empty;
+    screens[client + 1].ghost_line = empty;
 }
 
-void ui_output(char *format, ...) {
+void ui_output(int client, char *format, ...) {
     static char string[65536];
     string[0] = '^';
     string[1] = '7';
     int len = 2;
-    if (allow_time) {
+    if (screens[client + 1].allow_time) {
         len += timestring(string + len);
         string[len++] = ' ';
     }
@@ -298,8 +320,22 @@ void ui_output(char *format, ...) {
 	va_start(argptr, format);
     vsprintf(string + len, format, argptr);
 	va_end(argptr);
-    ui_output_real(string);
+    ui_output_real(client, string);
     draw_outwin();
+}
+
+static void screen_init(screen_t *s) {
+    s->last_name = NULL;
+
+    s->buffer_count = 0;
+    s->ghost_line = qfalse;
+    s->buffer_index = 0;
+    s->output_length = 0;
+    s->scroll_up = 0;
+    s->next_line = qfalse;
+    s->allow_time = qtrue;
+
+    s->commandline_length = 0;
 }
 
 void ui_run() {
@@ -326,27 +362,43 @@ void ui_run() {
     keypad(inwin, TRUE);
     wtimeout(inwin, INPUT_TIME);
 
-    set_title(NULL, NULL, NULL, NULL, NULL);
+    client_register_commands();
+    int i;
+    for (i = 0; i < SCREENS; i++) {
+        screen_init(screens + i);
+        if (i > 0)
+            client_start(i - 1);
+    }
+
+    set_title(-1, NULL, NULL, NULL, NULL, NULL);
     draw_outwin();
-    draw_status(NULL);
+    draw_statuswin();
     draw_inwin();
 
-    client_start();
-
+    qboolean alt = qfalse;
     for (;;) {
         if (stopped)
             break;
-        client_frame();
+        for (i = 0; i < CLIENT_SCREENS; i++)
+            client_frame(i);
         int c = wgetch(inwin);
         if (c == -1)
             continue;
+        if (alt) {
+            if (c >= '0' && c <= '9') {
+                screen = c - '0';
+                redraw();
+            }
+            alt = qfalse;
+            continue;
+        }
         bool handled = TRUE;
         switch (c) {
             case KEY_PPAGE:
-                scroll_up += SCROLL_SPEED;
+                screens[screen].scroll_up += SCROLL_SPEED;
                 break;
             case KEY_NPAGE:
-                scroll_up -= SCROLL_SPEED;
+                screens[screen].scroll_up -= SCROLL_SPEED;
                 break;
             default:
                 handled = FALSE;
@@ -357,31 +409,35 @@ void ui_run() {
             continue;
         }
         switch (c) {
+            case 27:
+                alt = qtrue;
+                continue;
             case KEY_BACKSPACE:
             case 127:
-                if (commandline_length > 0)
-                    commandline_length--;
-                commandline[commandline_length] = '\0';
+                if (screens[screen].commandline_length > 0)
+                    screens[screen].commandline_length--;
+                screens[screen].commandline[screens[screen].commandline_length] = '\0';
                 break;
             case KEY_ENTER:
             case 13:
-                commandline[commandline_length] = '\0';
-                scroll_up = 0;
-                if (commandline_length > 0) {
-                    if (commandline[0] == '/') {
-                        ui_output("%s\n", commandline);
-                        cmd_execute(commandline + 1);
+                screens[screen].commandline[screens[screen].commandline_length] = '\0';
+                screens[screen].scroll_up = 0;
+                if (screens[screen].commandline_length > 0) {
+                    if (screens[screen].commandline[0] == '/') {
+                        ui_output(screen - 1, "%s\n", screens[screen].commandline);
+                        cmd_execute(screen - 1, screens[screen].commandline + 1);
                     } else {
-                        client_command("say %s", commandline);
+                        if (screen > 0)
+                            client_command(screen - 1, "say %s", screens[screen].commandline);
                     }
-                    commandline_length = 0;
-                    commandline[commandline_length] = '\0';
+                    screens[screen].commandline_length = 0;
+                    screens[screen].commandline[screens[screen].commandline_length] = '\0';
                 }
                 draw_outwin();
                 break;
             default:
-                commandline[commandline_length++] = c;
-                commandline[commandline_length] = '\0';
+                screens[screen].commandline[screens[screen].commandline_length++] = c;
+                screens[screen].commandline[screens[screen].commandline_length] = '\0';
                 break;
         }
         draw_inwin();

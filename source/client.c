@@ -46,7 +46,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #define NOP_TIME 5000
 
-typedef enum client_state_s {
+typedef enum client_state_e {
     CA_DISCONNECTED,
     CA_SETUP,
     CA_CHALLENGING,
@@ -58,99 +58,118 @@ typedef enum client_state_s {
     CA_ACTIVE
 } client_state_t;
 
-static client_state_t state;
+typedef struct client_s {
+    int id;
 
-static char host[512];
-static char port[512];
-static char name[512];
-static int port_int;
-static struct sockaddr_in serv_addr;
-static int sockfd;
-static socklen_t slen = sizeof(serv_addr);
+    client_state_t state;
 
-static int drops;
+    parser_t parser;
+    cs_t cs;
 
-static int outseq;
-static int inseq;
+    char host[512];
+    char port[512];
+    char name[512];
+    int port_int;
+    struct sockaddr_in serv_addr;
+    int sockfd;
+    socklen_t slen;
 
-static int command_seq;
+    int drops;
 
-static unsigned int last_status;
+    int outseq;
+    int inseq;
 
-static unsigned int resend;
-static unsigned int last_send;
+    int command_seq;
 
-static int fragment_total;
-static qbyte fragment_buffer[MAX_MSGLEN];
+    unsigned int last_status;
 
-static int bitflags;
-static int protocol;
-static int spawn_count;
-static int playernum;
-static char game[MAX_STRING_CHARS];
-static char level[MAX_STRING_CHARS];
+    unsigned int resend;
+    unsigned int last_send;
+
+    int fragment_total;
+    qbyte fragment_buffer[MAX_MSGLEN];
+
+    int bitflags;
+    int protocol;
+    int spawn_count;
+    int playernum;
+    char game[MAX_STRING_CHARS];
+    char level[MAX_STRING_CHARS];
+} client_t;
+
+static client_t clients[CLIENT_SCREENS];
 
 static msg_t smsg;
 
-static void reset() {
-    drops = 0;
+static void reset(client_t *c) {
+    c->id = c - clients;
 
-    outseq = 1;
-    inseq = 0;
+    c->parser.client = c->id;
 
-    command_seq = 1;
+    c->slen = sizeof(c->serv_addr);
 
-    last_status = 0;
+    c->drops = 0;
 
-    resend = 0;
-    last_send = 0;
+    c->outseq = 1;
+    c->inseq = 0;
 
-    fragment_total = 0;
+    c->command_seq = 1;
 
-    protocol = 0;
-    bitflags = 0;
-    spawn_count = 0;
-    playernum = 0;
-    game[0] = '\0';
-    level[0] = '\0';
+    c->last_status = 0;
 
-    parser_reset();
+    c->resend = 0;
+    c->last_send = 0;
+
+    c->fragment_total = 0;
+
+    c->protocol = 0;
+    c->bitflags = 0;
+    c->spawn_count = 0;
+    c->playernum = 0;
+    c->game[0] = '\0';
+    c->level[0] = '\0';
+
+    parser_reset(&c->parser);
 }
 
-qboolean client_ready() {
-    return state == CA_ACTIVE;
+cs_t *client_cs(int id) {
+    return &clients[id].cs;
 }
 
-int get_bitflags() {
-    return bitflags;
+qboolean client_ready(int id) {
+    return clients[id].state == CA_ACTIVE;
 }
 
-void set_spawn_count(int new_spawn_count) {
-    spawn_count = new_spawn_count;
+int get_bitflags(int id) {
+    return clients[id].bitflags;
 }
 
-void set_protocol(int new_protocol) {
-    protocol = new_protocol;
+void set_spawn_count(int id, int new_spawn_count) {
+    clients[id].spawn_count = new_spawn_count;
 }
 
-void set_game(char *new_game) {
-    strcpy(game, new_game);
+void set_protocol(int id, int new_protocol) {
+    clients[id].protocol = new_protocol;
 }
 
-void set_playernum(int new_playernum) {
-    playernum = new_playernum;
+void set_game(int id, char *new_game) {
+    strcpy(clients[id].game, new_game);
 }
 
-void set_level(char *new_level) {
-    strcpy(level, new_level);
+void set_playernum(int id, int new_playernum) {
+    clients[id].playernum = new_playernum;
 }
 
-void set_bitflags(int new_bitflags) {
-    bitflags = new_bitflags;
+void set_level(int id, char *new_level) {
+    strcpy(clients[id].level, new_level);
 }
 
-static void client_title() {
-    set_title(cs_get(0), level, game, host, port);
+void set_bitflags(int id, int new_bitflags) {
+    clients[id].bitflags = new_bitflags;
+}
+
+static void client_title(client_t *c) {
+    set_title(c->id, cs_get(&c->cs, 0), c->level, c->game, c->host, c->port);
 }
 
 static void msg_clear(msg_t *msg) {
@@ -160,44 +179,44 @@ static void msg_clear(msg_t *msg) {
     msg->compressed = qfalse;
 }
 
-static void set_state(int new_state) {
-    state = new_state;
-    resend = 0;
+static void set_state(client_t *c, int new_state) {
+    c->state = new_state;
+    c->resend = 0;
 }
 
-static void force_disconnect() {
-    if (state == CA_DISCONNECTED)
+static void force_disconnect(client_t *c) {
+    if (c->state == CA_DISCONNECTED)
         return;
 
-    close(sockfd);
-    set_state(CA_DISCONNECTED);
-    client_title();
+    close(c->sockfd);
+    set_state(c, CA_DISCONNECTED);
+    client_title(c);
 }
 
-static void socket_connect() {
-    if (state != CA_DISCONNECTED)
-        force_disconnect();
+static void socket_connect(client_t *c) {
+    if (c->state != CA_DISCONNECTED)
+        force_disconnect(c);
 
-    if ((sockfd = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) == -1)
+    if ((c->sockfd = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) == -1)
         die("socket");
 
-    bzero(&serv_addr, sizeof(serv_addr));
+    bzero(&c->serv_addr, sizeof(c->serv_addr));
 
-    serv_addr.sin_family = AF_INET;
-    serv_addr.sin_port = htons(port_int);
+    c->serv_addr.sin_family = AF_INET;
+    c->serv_addr.sin_port = htons(c->port_int);
 
-    if (inet_aton(host, &serv_addr.sin_addr) == 0)
+    if (inet_aton(c->host, &c->serv_addr.sin_addr) == 0)
         die("inet_aton");
 
-    ui_output("Connecting to %s:%s...\n", host, port);
-    set_state(CA_SETUP);
+    ui_output(c->id, "Connecting to %s:%s...\n", c->host, c->port);
+    set_state(c, CA_SETUP);
 }
 
-static void msg_init(msg_t *msg) {
+static void msg_init(client_t *c, msg_t *msg) {
     msg_clear(msg);
-    write_long(msg, outseq++);
-    write_long(msg, inseq);
-    write_short(msg, port_int);
+    write_long(msg, c->outseq++);
+    write_long(msg, c->inseq);
+    write_short(msg, c->port_int);
 }
 
 static void msg_init_outofband(msg_t *msg) {
@@ -205,57 +224,59 @@ static void msg_init_outofband(msg_t *msg) {
     write_long(msg, -1);
 }
 
-static void challenge();
+static void challenge(client_t *c);
 
-static void client_connect() {
-    socket_connect();
-    reset();
-    challenge();
+static void client_connect(client_t *c) {
+    socket_connect(c);
+    reset(c);
+    challenge(c);
 }
 
-void disconnect() {
-    if (state == CA_DISCONNECTED)
+void disconnect(int id) {
+    client_t *c = clients + id;
+    if (c->state == CA_DISCONNECTED)
         return;
 
-    ui_output("Disconnecting...\n");
-    if (state >= CA_CONNECTING) {
+    ui_output(id, "Disconnecting...\n");
+    if (c->state >= CA_CONNECTING) {
         int i;
         for (i = 0; i < CERTAINTY; i++)
-            client_command("disconnect");
+            client_command(id, "disconnect");
     }
-    force_disconnect();
+    force_disconnect(c);
 }
 
-static void force_reconnect() {
-    force_disconnect();
-    client_connect();
+static void force_reconnect(client_t *c) {
+    force_disconnect(c);
+    client_connect(c);
 }
 
-static void reconnect() {
-    disconnect();
-    client_connect();
+static void reconnect(client_t *c) {
+    disconnect(c->id);
+    client_connect(c);
 }
 
-void drop(char *msg) {
-    drops++;
-    if (drops == MAX_DROPS) {
-        ui_output("^5too many drops, disconnecting...\n");
-        force_disconnect();
+static void drop(client_t *c, char *msg) {
+    c->drops++;
+    if (c->drops == MAX_DROPS) {
+        ui_output(c->id, "^5too many drops, disconnecting...\n");
+        force_disconnect(c);
     } else {
-        ui_output("^5%s, reconnecting %d...\n", msg, drops);
-        force_reconnect();
+        ui_output(c->id, "^5%s, reconnecting %d...\n", msg, c->drops);
+        force_reconnect(c);
     }
 }
 
-static void client_send(msg_t *msg) {
-    if (sendto(sockfd, msg->data, msg->cursize, 0, (struct sockaddr*)&serv_addr, slen) == -1)
-        drop("sendto failed");
-    last_send = millis();
+static void client_send(client_t *c, msg_t *msg) {
+    if (sendto(c->sockfd, msg->data, msg->cursize, 0, (struct sockaddr*)&c->serv_addr, c->slen) == -1)
+        drop(c, "sendto failed");
+    c->last_send = millis();
 }
 
-void client_command(char *format, ...) {
-    if (state < CA_SETUP) {
-        ui_output("not connected\n");
+void client_command(int id, char *format, ...) {
+    client_t *c = clients + id;
+    if (c->state < CA_SETUP) {
+        ui_output(id, "not connected\n");
         return;
     }
 
@@ -264,34 +285,34 @@ void client_command(char *format, ...) {
 	va_start(argptr, format);
     vsprintf(string, format, argptr);
 	va_end(argptr);
-    msg_t msg;
-    msg_init(&msg);
-    write_byte(&msg, clc_clientcommand);
-    if (!(bitflags & SV_BITFLAGS_RELIABLE))
-        write_long(&msg, command_seq++);
-    write_string(&msg, string);
-    client_send(&msg);
+
+    msg_init(c, &smsg);
+    write_byte(&smsg, clc_clientcommand);
+    if (!(c->bitflags & SV_BITFLAGS_RELIABLE))
+        write_long(&smsg, c->command_seq++);
+    write_string(&smsg, string);
+    client_send(c, &smsg);
 }
 
-void client_ack(int num) {
-    msg_t msg;
-    msg_init(&msg);
-    write_byte(&msg, clc_svcack);
-    write_long(&msg, num);
-    client_send(&msg);
+void client_ack(int id, int num) {
+    client_t *c = clients + id;
+    msg_init(c, &smsg);
+    write_byte(&smsg, clc_svcack);
+    write_long(&smsg, num);
+    client_send(c, &smsg);
 }
 
-static void client_recv() {
+static void client_recv(client_t *c) {
     static msg_t msg;
     msg_clear(&msg);
-    if ((msg.cursize = recvfrom(sockfd, msg.data, msg.maxsize, MSG_DONTWAIT, (struct sockaddr*)&serv_addr, &slen)) == -1) {
+    if ((msg.cursize = recvfrom(c->sockfd, msg.data, msg.maxsize, MSG_DONTWAIT, (struct sockaddr*)&c->serv_addr, &c->slen)) == -1) {
         if (errno == EAGAIN)
             return;
-        drop("recvfrom failed");
+        drop(c, "recvfrom failed");
     }
     int seq = read_long(&msg);
     if (seq == -1) {
-        cmd_execute(read_string(&msg));
+        cmd_execute(c->id, read_string(&msg));
         return;
     }
     qboolean compressed = qfalse;
@@ -300,7 +321,7 @@ static void client_recv() {
         seq &= ~FRAGMENT_BIT;
         fragmented = qtrue;
     }
-    inseq = seq;
+    c->inseq = seq;
     int ack = read_long(&msg);
     if (ack & FRAGMENT_BIT) {
         ack &= ~FRAGMENT_BIT;
@@ -309,7 +330,7 @@ static void client_recv() {
     if (fragmented) {
         short fragment_start = read_short(&msg);
         short fragment_length = read_short(&msg);
-        if (fragment_start != fragment_total) {
+        if (fragment_start != c->fragment_total) {
             msg.readcount = 0;
             msg.cursize = 0;
             return;
@@ -319,13 +340,13 @@ static void client_recv() {
             fragment_length &= ~FRAGMENT_LAST;
             last = qtrue;
         }
-        memcpy(fragment_buffer + fragment_total, msg.data + msg.readcount, fragment_length);
-        fragment_total += fragment_length;
+        memcpy(c->fragment_buffer + c->fragment_total, msg.data + msg.readcount, fragment_length);
+        c->fragment_total += fragment_length;
         msg.readcount = 0;
         if (last) {
-            memcpy(msg.data, fragment_buffer, fragment_total);
-            msg.cursize = fragment_total;
-            fragment_total = 0;
+            memcpy(msg.data, c->fragment_buffer, c->fragment_total);
+            msg.cursize = c->fragment_total;
+            c->fragment_total = 0;
         } else {
             msg.cursize = 0;
             return;
@@ -339,15 +360,15 @@ static void client_recv() {
         msg.readcount = 0;
         msg.cursize = new_size;
     }
-    parse_message(&msg);
+    parse_message(&c->parser, &msg);
 }
 
-static void connection_request() {
-    ui_output("Sending connection request...\n");
+static void connection_request(client_t *c) {
+    ui_output(c->id, "Sending connection request...\n");
     msg_init_outofband(&smsg);
     write_string(&smsg, "connect 15 ");
     smsg.cursize--;
-    write_string(&smsg, port);
+    write_string(&smsg, c->port);
     smsg.cursize--;
     write_string(&smsg, " ");
     smsg.cursize--;
@@ -355,88 +376,87 @@ static void connection_request() {
     smsg.cursize--;
     write_string(&smsg, " \"\\name\\");
     smsg.cursize--;
-    write_string(&smsg, name);
+    write_string(&smsg, c->name);
     smsg.cursize--;
     write_string(&smsg, "\" 0");
-    client_send(&smsg);
+    client_send(c, &smsg);
 
-    set_state(CA_CONNECTING);
-    resend = millis() + TIMEOUT;
+    set_state(c, CA_CONNECTING);
+    c->resend = millis() + TIMEOUT;
 }
 
-static void challenge() {
-    ui_output("Requesting challenge...\n");
-    msg_t msg;
-    msg_init_outofband(&msg);
-    write_string(&msg, "getchallenge");
-    client_send(&msg);
+static void challenge(client_t *c) {
+    ui_output(c->id, "Requesting challenge...\n");
+    msg_init_outofband(&smsg);
+    write_string(&smsg, "getchallenge");
+    client_send(c, &smsg);
 
-    set_state(CA_CHALLENGING);
-    resend = millis() + TIMEOUT;
+    set_state(c, CA_CHALLENGING);
+    c->resend = millis() + TIMEOUT;
 }
 
-static void enter() {
-    ui_output("Entering the game...\n");
-    client_command("begin %d", spawn_count);
+static void enter(client_t *c) {
+    ui_output(c->id, "Entering the game...\n");
+    client_command(c->id, "begin %d", c->spawn_count);
 
-    set_state(CA_ENTERING);
-    resend = millis() + TIMEOUT;
+    set_state(c, CA_ENTERING);
+    c->resend = millis() + TIMEOUT;
 }
 
-static void request_serverdata() {
-    ui_output("Sending serverdata request...\n");
-    client_command("new");
+static void request_serverdata(client_t *c) {
+    ui_output(c->id, "Sending serverdata request...\n");
+    client_command(c->id, "new");
 
-    set_state(CA_LOADING);
-    resend = millis() + TIMEOUT;
+    set_state(c, CA_LOADING);
+    c->resend = millis() + TIMEOUT;
 }
 
-void client_frame() {
+void client_frame(int id) {
+    client_t *c = clients + id;
     int m = millis();
-    if (last_status == 0 || m >= last_status + 1000) {
-        draw_status(name);
-        last_status = m;
+    if (c->last_status == 0 || m >= c->last_status + 1000) {
+        draw_status(id, c->name);
+        c->last_status = m;
     }
 
-    if (state == CA_DISCONNECTED)
+    if (c->state == CA_DISCONNECTED)
         return;
 
-    client_recv();
-    switch (state) {
+    client_recv(c);
+    switch (c->state) {
         case CA_CHALLENGING:
-            if (millis() >= resend)
-                challenge();
+            if (millis() >= c->resend)
+                challenge(c);
         break;
         case CA_CONNECTING:
-            if (millis() >= resend)
-                connection_request();
+            if (millis() >= c->resend)
+                connection_request(c);
         break;
         case CA_LOADING:
-            if (playernum == 0) {
-                if (millis() >= resend)
-                    request_serverdata();
+            if (c->playernum == 0) {
+                if (millis() >= c->resend)
+                    request_serverdata(c);
                 break;
             } else {
-                cs_init();
-                set_state(CA_CONFIGURING);
+                cs_init(&c->cs);
+                set_state(c, CA_CONFIGURING);
             }
         case CA_CONFIGURING:
-            if (millis() >= resend) {
-                ui_output("Requesting configstrings...\n");
-                client_command("configstrings %d 0", spawn_count);
-                resend = millis() + TIMEOUT;
+            if (millis() >= c->resend) {
+                ui_output(c->id, "Requesting configstrings...\n");
+                client_command(c->id, "configstrings %d 0", c->spawn_count);
+                c->resend = millis() + TIMEOUT;
             }
             break;
         case CA_ENTERING:
-            if (millis() >= resend)
-                enter();
+            if (millis() >= c->resend)
+                enter(c);
             break;
         case CA_ACTIVE:
-            if (millis() >= last_send + NOP_TIME) {
-                msg_t msg;
-                msg_init(&msg);
-                write_byte(&msg, clc_nop);
-                client_send(&msg);
+            if (millis() >= c->last_send + NOP_TIME) {
+                msg_init(c, &smsg);
+                write_byte(&smsg, clc_nop);
+                client_send(c, &smsg);
             }
             break;
         default:
@@ -444,126 +464,141 @@ void client_frame() {
     }
 }
 
-static void set_server(char *new_host, char *new_port) {
-    disconnect();
+static void set_server(client_t *c, char *new_host, char *new_port) {
+    disconnect(c->id);
     if (new_host == NULL || new_port == NULL) {
-        strcpy(host, "");
-        strcpy(port, "");
+        strcpy(c->host, "");
+        strcpy(c->port, "");
         return;
     }
-    strcpy(host, new_host);
-    if (!strcmp(host, "localhost"))
-        strcpy(host, "127.0.0.1");
-    strcpy(port, new_port);
-    port_int = atoi(port);
-    client_connect();
-    client_title();
+    strcpy(c->host, new_host);
+    if (!strcmp(c->host, "localhost"))
+        strcpy(c->host, "127.0.0.1");
+    strcpy(c->port, new_port);
+    c->port_int = atoi(c->port);
+    client_connect(c);
+    client_title(c);
 }
 
 void cmd_challenge() {
-    if (state != CA_CHALLENGING)
+    client_t *c = clients + cmd_client();
+    if (c->state != CA_CHALLENGING)
         return;
 
-    connection_request();
+    connection_request(c);
 }
 
 void cmd_client_connect() {
-    request_serverdata();
+    client_t *c = clients + cmd_client();
+    request_serverdata(c);
 }
 
 void cmd_cs() {
+    client_t *c = clients + cmd_client();
     int i;
     for (i = 0; i < cmd_argc(); i++) {
         if (i % 2 == 1)
-            cs_set(atoi(cmd_argv(i)), cmd_argv(i + 1));
+            cs_set(&c->cs, atoi(cmd_argv(i)), cmd_argv(i + 1));
     }
-    strcpy(name, player_name(playernum));
+    strcpy(c->name, player_name(&c->cs, c->playernum));
 }
 
 void cmd_cmd() {
-    client_command("%s", cmd_args(1));
-    resend = millis() + TIMEOUT;
+    client_t *c = clients + cmd_client();
+    client_command(c->id, "%s", cmd_args(1));
+    c->resend = millis() + TIMEOUT;
 }
 
 void cmd_precache() {
-    if (state != CA_CONFIGURING || cs_get(0)[0] == '\0')
+    client_t *c = clients + cmd_client();
+    if (c->state != CA_CONFIGURING || cs_get(&c->cs, 0)[0] == '\0')
         return;
 
-    enter();
+    enter(c);
 }
 
-void client_activate() {
-    if (state != CA_ENTERING)
+void client_activate(int id) {
+    client_t *c = clients + id;
+    if (c->state != CA_ENTERING)
         return;
 
-    set_state(CA_ACTIVE);
-    drops = 0;
-    client_title();
-    cmd_execute("players");
+    set_state(c, CA_ACTIVE);
+    c->drops = 0;
+    client_title(c);
+    cmd_execute(id, "players");
 }
 
 void cmd_disconnect() {
-    disconnect();
+    client_t *c = clients + cmd_client();
+    disconnect(c->id);
 }
 
 void cmd_reconnect() {
-    reconnect();
+    client_t *c = clients + cmd_client();
+    reconnect(c);
 }
 
 void cmd_nop() {
 }
 
 void cmd_pr() {
-    ui_output("%s^7", cmd_argv(1));
+    client_t *c = clients + cmd_client();
+    ui_output(c->id, "%s^7", cmd_argv(1));
 }
 
 void cmd_ch() {
-    ui_output("%s^7: ^2%s^7\n", player_name(atoi(cmd_argv(1))), cmd_argv(2));
+    client_t *c = clients + cmd_client();
+    ui_output(c->id, "%s^7: ^2%s^7\n", player_name(&c->cs, atoi(cmd_argv(1))), cmd_argv(2));
 }
 
 void cmd_tvch() {
-    ui_output("[TV]%s^7: ^2%s^7\n", cmd_argv(1), cmd_argv(2));
+    client_t *c = clients + cmd_client();
+    ui_output(c->id, "[TV]%s^7: ^2%s^7\n", cmd_argv(1), cmd_argv(2));
 }
 
 void cmd_motd() {
-    ui_output("^5Message of the day:^7\n%s", cmd_argv(2));
+    client_t *c = clients + cmd_client();
+    ui_output(c->id, "^5Message of the day:^7\n%s", cmd_argv(2));
 }
 
 void cmd_connect() {
+    client_t *c = clients + cmd_client();
     char *new_host = cmd_argv(1);
     char *new_port = "44400";
     if (cmd_argc() > 2)
-        new_port = cmd_argv(1);
-    set_server(new_host, new_port);
+        new_port = cmd_argv(2);
+    set_server(c, new_host, new_port);
 }
 
 void cmd_players() {
+    client_t *c = clients + cmd_client();
     int i;
     qboolean first = qtrue;
     for (i = 1; i <= MAX_CLIENTS; i++) {
-        char *name = player_name(i);
+        char *name = player_name(&c->cs, i);
         if (name && *name) {
             if (first) {
-                ui_output("^5Online players:^7");
+                ui_output(c->id, "^5Online players:^7");
                 first = qfalse;
             }
-            ui_output(" %s^7", name);
+            ui_output(c->id, " %s^7", name);
         }
     }
-    ui_output("\n");
+    ui_output(c->id, "\n");
 }
 
 void cmd_name() {
-    strcpy(name, cmd_argv(1));
-    if (state >= CA_SETUP)
-        client_command("usri \"\\name\\%s\"", name);
+    client_t *c = clients + cmd_client();
+    strcpy(c->name, cmd_argv(1));
+    if (c->state >= CA_SETUP)
+        client_command(c->id, "usri \"\\name\\%s\"", c->name);
 }
 
 void cmd_quit() {
     quit();
 }
 
-void client_start() {
+void client_register_commands() {
     cmd_add("challenge", cmd_challenge);
     cmd_add("client_connect", cmd_client_connect);
     cmd_add("cs", cmd_cs);
@@ -596,30 +631,36 @@ void client_start() {
     cmd_add("players", cmd_players);
     cmd_add("name", cmd_name);
     cmd_add("quit", cmd_quit);
-
-    strcpy(name, "chatter");
-    set_state(CA_DISCONNECTED);
-    set_server(NULL, NULL);
 }
 
-void demoinfo_key(char *key) {
-    ui_output("demoinfo key %s\n", key);
+void client_start(int id) {
+    client_t *c = clients + id;
+    reset(c);
+
+    strcpy(c->name, "chatter");
+    set_state(c, CA_DISCONNECTED);
+    set_server(c, NULL, NULL);
 }
 
-void demoinfo_value(char *value) {
-    ui_output("demoinfo value %s\n", value);
+void demoinfo_key(int id, char *key) {
+    ui_output(id, "demoinfo key %s\n", key);
 }
 
-void execute(char *cmd, qbyte *targets, int target_count) {
+void demoinfo_value(int id, char *value) {
+    ui_output(id, "demoinfo value %s\n", value);
+}
+
+void execute(int id, char *cmd, qbyte *targets, int target_count) {
+    client_t *c = clients + id;
     if (target_count > 0) {
         int i;
         qboolean found = qfalse;
         for (i = 0; i < target_count; i++) {
-            if (targets[i] == playernum)
+            if (targets[i] == c->playernum)
                 found = qtrue;
         }
         if (!found)
             return;
     }
-    cmd_execute(cmd);
+    cmd_execute(id, cmd);
 }

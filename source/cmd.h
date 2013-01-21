@@ -21,7 +21,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #ifndef WRLC_CMD_H
 #define WRLC_CMD_H
 
-void cmd_execute(char *cmd);
+void cmd_execute(int c, char *cmd);
+int cmd_client();
 int cmd_argc();
 char *cmd_argv(int index);
 char *cmd_args(int start);
