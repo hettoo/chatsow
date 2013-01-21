@@ -458,12 +458,6 @@ void cmd_disconnect() {
     disconnect();
 }
 
-void cmd_changing() {
-    cs_init();
-    parser_reset();
-    set_state(CA_CONFIGURING);
-}
-
 void cmd_reconnect() {
     reconnect();
 }
@@ -510,7 +504,6 @@ void client_start(char *new_host, char *new_port, char *new_name) {
     cmd_add("cmd", cmd_cmd);
     cmd_add("precache", cmd_precache);
     cmd_add("disconnect", cmd_disconnect);
-    cmd_add("changing", cmd_changing);
     cmd_add("forcereconnect", cmd_reconnect);
     cmd_add("reconnect", cmd_reconnect);
 
@@ -520,6 +513,7 @@ void client_start(char *new_host, char *new_port, char *new_name) {
     cmd_add("cvarinfo", cmd_nop);
     cmd_add("obry", cmd_nop);
     cmd_add("ti", cmd_nop);
+    cmd_add("changing", cmd_nop);
 
     cmd_add("dstart", cmd_nop);
     cmd_add("dstop", cmd_nop);
