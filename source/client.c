@@ -62,7 +62,7 @@ static client_state_t state;
 
 static char host[512];
 static char port[512];
-static char *name;
+static char name[512];
 static int port_int;
 static struct sockaddr_in serv_addr;
 static int sockfd;
@@ -471,6 +471,7 @@ void cmd_cs() {
         if (i % 2 == 1)
             cs_set(atoi(cmd_argv(i)), cmd_argv(i + 1));
     }
+    strcpy(name, player_name(playernum));
 }
 
 void cmd_cmd() {
@@ -583,7 +584,7 @@ void client_start(char *new_host, char *new_port, char *new_name) {
     cmd_add("players", cmd_players);
     cmd_add("quit", cmd_quit);
 
-    name = new_name;
+    strcpy(name, new_name);
     set_state(CA_DISCONNECTED);
     set_server(new_host, new_port);
 }
