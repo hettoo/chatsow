@@ -107,49 +107,62 @@ void parse_cmd() {
 }
 
 void cmd_execute(int c, char *cmd) {
-    client = c;
     argc = 0;
     strcpy(args, cmd);
     parse_cmd();
+    qboolean switch_screen = qfalse;
     if (argc) {
+        int start = c;
+        int end = c;
         int i;
-        for (i = 0; i < cmd_count; i++) {
-            if (!strcmp(cmd_argv(0), cmds[i].name)) {
-                if (c < 0) {
-                    int j;
-                    if (!strcmp(cmds[i].name, "connect")) {
-                        for (j = 0; j < CLIENT_SCREENS; j++) {
-                            if (!client_active(j)) {
-                                client = j;
-                                cmds[i].f();
-                                set_screen(j + 1);
-                                return;
-                            }
-                        }
-                        ui_output(c, "No free screen left\n");
-                        return;
-                    } else {
-                        for (j = 0; j < CLIENT_SCREENS; j++) {
-                            client = j;
-                            cmds[i].f();
-                        }
+        if (c < 0) {
+            if (!strcmp(cmd_argv(0), "connect")) {
+                for (i = 0; i < CLIENT_SCREENS; i++) {
+                    if (!client_active(i)) {
+                        start = i;
+                        end = i;
+                        switch_screen = qtrue;
+                        break;
                     }
-                } else {
-                    cmds[i].f();
                 }
-                return;
-            }
-        }
-        if (c >= 0) {
-            for (i = CS_GAMECOMMANDS; i < CS_GAMECOMMANDS + MAX_GAMECOMMANDS; i++) {
-                if (!strcmp(cmd_argv(0), cs_get(client_cs(c), i))) {
-                    client_command(c, "%s", cmd_args(0));
+                if (start < 0) {
+                    ui_output(c, "No free screen left\n");
                     return;
                 }
+            } else {
+                start = 0;
+                end = CLIENT_SCREENS - 1;
             }
         }
+        for (client = start; client <= end; client++) {
+            qboolean done = qfalse;
+            for (i = 0; i < cmd_count; i++) {
+                if (!strcmp(cmd_argv(0), cmds[i].name)) {
+                    cmds[i].f();
+                    if (switch_screen)
+                        set_screen(client + 1);
+                    done = qtrue;
+                    break;
+                }
+            }
+            if (!done) {
+                for (i = CS_GAMECOMMANDS; i < CS_GAMECOMMANDS + MAX_GAMECOMMANDS; i++) {
+                    if (!strcmp(cmd_argv(0), cs_get(client_cs(client), i))) {
+                        client_command(c, "%s", cmd_args(0));
+                        if (switch_screen)
+                            set_screen(client + 1);
+                        done = qtrue;
+                        break;
+                    }
+                }
+            }
+            if (!done)
+                ui_output(client, "Unrecognized command: %s\n", cmd);
+            else if (switch_screen)
+                set_screen(client + 1);
+        }
+        client = end;
     }
-    ui_output(c, "Unrecognized command: %s\n", cmd);
 }
 
 int cmd_client() {

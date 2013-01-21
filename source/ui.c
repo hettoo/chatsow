@@ -226,8 +226,8 @@ static void draw_statuswin() {
         wattroff(statuswin, A_BOLD);
         i += draw_colored(statuswin, " ", qtrue);
     }
-    qboolean first = qtrue;
     char number[2];
+    qboolean first = qtrue;
     int j;
     for (j = 0; j < SCREENS; j++) {
         if (screens[j].updated) {
@@ -246,7 +246,13 @@ static void draw_statuswin() {
         }
     }
     if (!first)
-        i += draw_colored(statuswin, "]", qtrue);
+        i += draw_colored(statuswin, "] ", qtrue);
+    sprintf(number, "%d", screen);
+    i += draw_colored(statuswin, "[", qtrue);
+    wattron(statuswin, A_BOLD);
+    i += draw_colored(statuswin, number, qtrue);
+    wattroff(statuswin, A_BOLD);
+    i += draw_colored(statuswin, "] ", qtrue);
     for (; i < COLS; i++)
         waddch(statuswin, ' ');
     wrefresh(statuswin);

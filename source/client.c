@@ -130,6 +130,7 @@ static void reset(client_t *c) {
     c->level[0] = '\0';
 
     parser_reset(&c->parser);
+    cs_init(&c->cs);
 }
 
 cs_t *client_cs(int id) {
