@@ -28,13 +28,7 @@ void quit() {
 }
 
 int main(int argc, char *argv[]) {
-    if (argc < 4)
-        die("No host, port or name given");
-
-    ui_init();
-    client_start(argv[1], argv[2], argv[3]);
     ui_run();
-    quit();
 
     return 0;
 }

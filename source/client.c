@@ -446,6 +446,11 @@ void client_frame() {
 
 static void set_server(char *new_host, char *new_port) {
     disconnect();
+    if (new_host == NULL || new_port == NULL) {
+        strcpy(host, "");
+        strcpy(port, "");
+        return;
+    }
     strcpy(host, new_host);
     if (!strcmp(host, "localhost"))
         strcpy(host, "127.0.0.1");
@@ -558,7 +563,7 @@ void cmd_quit() {
     quit();
 }
 
-void client_start(char *new_host, char *new_port, char *new_name) {
+void client_start() {
     cmd_add("challenge", cmd_challenge);
     cmd_add("client_connect", cmd_client_connect);
     cmd_add("cs", cmd_cs);
@@ -592,9 +597,9 @@ void client_start(char *new_host, char *new_port, char *new_name) {
     cmd_add("name", cmd_name);
     cmd_add("quit", cmd_quit);
 
-    strcpy(name, new_name);
+    strcpy(name, "chatter");
     set_state(CA_DISCONNECTED);
-    set_server(new_host, new_port);
+    set_server(NULL, NULL);
 }
 
 void demoinfo_key(char *key) {

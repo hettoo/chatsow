@@ -23,7 +23,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include "import.h"
 
-void client_start(char *new_host, char *new_port, char *new_name);
+void client_start();
 void client_frame();
 void client_activate();
 qboolean client_ready();

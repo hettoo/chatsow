@@ -303,7 +303,7 @@ void ui_output(char *format, ...) {
     draw_outwin();
 }
 
-void ui_init() {
+void ui_run() {
     signal(SIGINT, interrupt);
     signal(SIGSEGV, interrupt);
 
@@ -325,15 +325,15 @@ void ui_init() {
 
     inwin = subwin(mainwin, 1, COLS, LINES - 1, 0);
     keypad(inwin, TRUE);
+    wtimeout(inwin, INPUT_TIME);
 
     set_title(NULL, NULL, NULL, NULL, NULL);
     draw_outwin();
     draw_status(NULL);
     draw_inwin();
-}
 
-void ui_run() {
-    wtimeout(inwin, INPUT_TIME);
+    client_start();
+
     for (;;) {
         if (stopped)
             break;
@@ -384,4 +384,6 @@ void ui_run() {
         }
         draw_inwin();
     }
+
+    quit();
 }
