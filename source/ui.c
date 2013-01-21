@@ -252,6 +252,11 @@ static void redraw() {
     draw_inwin();
 }
 
+void set_screen(int new_screen) {
+    screen = new_screen;
+    redraw();
+}
+
 void ui_output_real(int client, char *string) {
     int len = strlen(string);
     int i;
@@ -423,6 +428,7 @@ void ui_run() {
                 screens[screen].commandline[screens[screen].commandline_length] = '\0';
                 screens[screen].scroll_up = 0;
                 if (screens[screen].commandline_length > 0) {
+                    int old_screen = screen;
                     if (screens[screen].commandline[0] == '/') {
                         ui_output(screen - 1, "%s\n", screens[screen].commandline);
                         cmd_execute(screen - 1, screens[screen].commandline + 1);
@@ -430,8 +436,8 @@ void ui_run() {
                         if (screen > 0)
                             client_command(screen - 1, "say %s", screens[screen].commandline);
                     }
-                    screens[screen].commandline_length = 0;
-                    screens[screen].commandline[screens[screen].commandline_length] = '\0';
+                    screens[old_screen].commandline_length = 0;
+                    screens[old_screen].commandline[screens[old_screen].commandline_length] = '\0';
                 }
                 draw_outwin();
                 break;

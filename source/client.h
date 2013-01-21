@@ -28,6 +28,7 @@ void client_register_commands();
 void client_start(int id);
 void client_frame(int id);
 void client_activate(int id);
+qboolean client_active(int id);
 qboolean client_ready(int id);
 void client_ack(int id, int num);
 void client_command(int id, char *format, ...);

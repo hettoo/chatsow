@@ -115,7 +115,28 @@ void cmd_execute(int c, char *cmd) {
         int i;
         for (i = 0; i < cmd_count; i++) {
             if (!strcmp(cmd_argv(0), cmds[i].name)) {
-                cmds[i].f();
+                if (c < 0) {
+                    int j;
+                    if (!strcmp(cmds[i].name, "connect")) {
+                        for (j = 0; j < CLIENT_SCREENS; j++) {
+                            if (!client_active(j)) {
+                                client = j;
+                                cmds[i].f();
+                                set_screen(j + 1);
+                                return;
+                            }
+                        }
+                        ui_output(c, "No free screen left\n");
+                        return;
+                    } else {
+                        for (j = 0; j < CLIENT_SCREENS; j++) {
+                            client = j;
+                            cmds[i].f();
+                        }
+                    }
+                } else {
+                    cmds[i].f();
+                }
                 return;
             }
         }

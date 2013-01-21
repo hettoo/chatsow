@@ -26,6 +26,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 void ui_run();
 void ui_stop();
+void set_screen(int new_screen);
 void ui_output(int client, char *format, ...);
 void set_title(int client, char *server, char *level, char *game, char *host, char *port);
 void draw_status(int client, char *name);

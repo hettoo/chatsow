@@ -136,6 +136,10 @@ cs_t *client_cs(int id) {
     return &clients[id].cs;
 }
 
+qboolean client_active(int id) {
+    return clients[id].state > CA_DISCONNECTED;
+}
+
 qboolean client_ready(int id) {
     return clients[id].state == CA_ACTIVE;
 }
