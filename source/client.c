@@ -45,31 +45,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #define NOP_TIME 5000
 
-static char *host;
-static char *port;
-static char *name;
-static int port_int;
-static struct sockaddr_in serv_addr;
-static int sockfd;
-static socklen_t slen = sizeof(serv_addr);
-
-static int drops = 0;
-
-static int outseq = 1;
-static int inseq = 0;
-
-static msg_t smsg;
-
-static unsigned int resend = 0;
-static unsigned int last_send = 0;
-
-static int bitflags;
-static int protocol;
-static int spawn_count;
-static int playernum;
-static char game[MAX_STRING_CHARS];
-static char level[MAX_STRING_CHARS];
-
 typedef enum client_state_s {
     CA_DISCONNECTED,
     CA_SETUP,
@@ -84,14 +59,61 @@ typedef enum client_state_s {
 
 static client_state_t state;
 
+static char *host;
+static char *port;
+static char *name;
+static int port_int;
+static struct sockaddr_in serv_addr;
+static int sockfd;
+static socklen_t slen = sizeof(serv_addr);
+
+static int drops;
+
+static int outseq;
+static int inseq;
+
+static int command_seq;
+
+static unsigned int last_status;
+
+static unsigned int resend;
+static unsigned int last_send;
+
+static int fragment_total;
+static qbyte fragment_buffer[MAX_MSGLEN];
+
+static int bitflags;
+static int protocol;
+static int spawn_count;
+static int playernum;
+static char game[MAX_STRING_CHARS];
+static char level[MAX_STRING_CHARS];
+
+static msg_t smsg;
+
 static void reset() {
-    parser_reset();
+    drops = 0;
+
+    outseq = 1;
+    inseq = 0;
+
+    command_seq = 1;
+
+    last_status = 0;
+
+    resend = 0;
+    last_send = 0;
+
+    fragment_total = 0;
+
     protocol = 0;
     bitflags = 0;
     spawn_count = 0;
     playernum = 0;
     game[0] = '\0';
     level[0] = '\0';
+
+    parser_reset();
 }
 
 qboolean client_ready() {
@@ -225,7 +247,6 @@ static void client_send(msg_t *msg) {
 }
 
 void client_command(char *format, ...) {
-    static int n = 1;
     static char string[MAX_MSGLEN];
 	va_list	argptr;
 	va_start(argptr, format);
@@ -235,7 +256,7 @@ void client_command(char *format, ...) {
     msg_init(&msg);
     write_byte(&msg, clc_clientcommand);
     if (!(bitflags & SV_BITFLAGS_RELIABLE))
-        write_long(&msg, n++);
+        write_long(&msg, command_seq++);
     write_string(&msg, string);
     client_send(&msg);
 }
@@ -274,8 +295,6 @@ static void client_recv() {
         compressed = qtrue;
     }
     if (fragmented) {
-        static int fragment_total = 0;
-        static qbyte buffer[MAX_MSGLEN];
         short fragment_start = read_short(&msg);
         short fragment_length = read_short(&msg);
         if (fragment_start != fragment_total) {
@@ -288,11 +307,11 @@ static void client_recv() {
             fragment_length &= ~FRAGMENT_LAST;
             last = qtrue;
         }
-        memcpy(buffer + fragment_total, msg.data + msg.readcount, fragment_length);
+        memcpy(fragment_buffer + fragment_total, msg.data + msg.readcount, fragment_length);
         fragment_total += fragment_length;
         msg.readcount = 0;
         if (last) {
-            memcpy(msg.data, buffer, fragment_total);
+            memcpy(msg.data, fragment_buffer, fragment_total);
             msg.cursize = fragment_total;
             fragment_total = 0;
         } else {
@@ -365,11 +384,10 @@ void client_frame() {
         return;
 
     client_recv();
-    static unsigned int last_time = 0;
     int m = millis();
-    if (last_time == 0 || m >= last_time + 1000) {
+    if (last_status == 0 || m >= last_status + 1000) {
         draw_status(name);
-        last_time = m;
+        last_status = m;
     }
     switch (state) {
         case CA_CHALLENGING:
