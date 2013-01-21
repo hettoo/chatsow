@@ -84,7 +84,7 @@ void parse_message(msg_t *msg) {
                 if (!(get_bitflags() & SV_BITFLAGS_RELIABLE)) {
                     static int last_cmd_num = 0;
                     int cmd_num = read_long(msg);
-                    if (cmd_num != last_cmd_num + 1) {
+                    if (cmd_num <= last_cmd_num) {
                         read_string(msg);
                         break;
                     }

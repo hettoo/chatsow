@@ -146,7 +146,7 @@ static void draw_outwin() {
                         color = 10;
                     wattrset(outwin, COLOR_PAIR(color));
                     continue;
-                } else {
+                } else if (buffer[index][j] != '^') {
                     waddch(outwin, '^');
                 }
             } else if (buffer[index][j] == '^') {

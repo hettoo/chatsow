@@ -438,7 +438,7 @@ void client_activate() {
         return;
 
     state = CA_ACTIVE;
-    set_title("%s (hosting %s on %s @ %s)", cs_get(0), level, game, host);
+    set_title("%s (%s : %s @ %s:%s)", cs_get(0), level, game, host, port);
     cmd_execute("players");
 }
 
