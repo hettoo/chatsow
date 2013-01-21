@@ -43,6 +43,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #define MAX_DROPS 10
 
+#define NOP_TIME 5000
+
 static char *host;
 static char *port;
 static char *name;
@@ -59,6 +61,7 @@ static int inseq = 0;
 static msg_t smsg;
 
 static unsigned int resend = 0;
+static unsigned int last_send = 0;
 
 static int bitflags;
 static int protocol;
@@ -218,6 +221,7 @@ void drop(char *msg) {
 static void client_send(msg_t *msg) {
     if (sendto(sockfd, msg->data, msg->cursize, 0, (struct sockaddr*)&serv_addr, slen) == -1)
         drop("sendto failed");
+    last_send = millis();
 }
 
 void client_command(char *format, ...) {
@@ -395,6 +399,14 @@ void client_frame() {
         case CA_ENTERING:
             if (millis() >= resend)
                 enter();
+            break;
+        case CA_ACTIVE:
+            if (millis() >= last_send + NOP_TIME) {
+                msg_t msg;
+                msg_init(&msg);
+                write_byte(&msg, clc_nop);
+                client_send(&msg);
+            }
             break;
         default:
             break;
