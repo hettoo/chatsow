@@ -223,9 +223,8 @@ static void draw_inwin() {
     wattron(inwin, A_BOLD);
     draw_colored(inwin, "> ", qfalse);
     wattroff(inwin, A_BOLD);
-    if (commandline[0] != '/')
+    if (commandline_length < 1 || commandline[0] != '/')
         wattrset(inwin, COLOR_PAIR(2));
-    commandline[commandline_length] = '\0';
     draw_colored(inwin, commandline, qfalse);
     waddch(inwin, '_');
     wrefresh(inwin);
@@ -362,6 +361,7 @@ void ui_run() {
             case 127:
                 if (commandline_length > 0)
                     commandline_length--;
+                commandline[commandline_length] = '\0';
                 break;
             case KEY_ENTER:
             case 13:
@@ -375,11 +375,13 @@ void ui_run() {
                         client_command("say %s", commandline);
                     }
                     commandline_length = 0;
+                    commandline[commandline_length] = '\0';
                 }
                 draw_outwin();
                 break;
             default:
                 commandline[commandline_length++] = c;
+                commandline[commandline_length] = '\0';
                 break;
         }
         draw_inwin();
