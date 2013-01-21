@@ -41,6 +41,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #define TIMEOUT 1400
 
+#define MAX_DROPS 10
+
 static char *host;
 static char *port;
 static char *name;
@@ -48,6 +50,8 @@ static int port_int;
 static struct sockaddr_in serv_addr;
 static int sockfd;
 static socklen_t slen = sizeof(serv_addr);
+
+static int drops = 0;
 
 static int outseq = 1;
 static int inseq = 0;
@@ -119,8 +123,8 @@ void set_bitflags(int new_bitflags) {
     bitflags = new_bitflags;
 }
 
-static void initial_title() {
-    set_title("Not connected");
+static void client_title() {
+    set_title(cs_get(0), level, game, host, port);
 }
 
 static void msg_clear(msg_t *msg) {
@@ -138,7 +142,7 @@ static void set_state(int new_state) {
 static void force_disconnect() {
     close(sockfd);
     set_state(CA_DISCONNECTED);
-    initial_title();
+    client_title();
 }
 
 static void socket_connect() {
@@ -201,15 +205,19 @@ static void reconnect() {
 }
 
 void drop(char *msg) {
-    ui_output("^5%s, reconnecting...\n");
-    force_reconnect();
+    drops++;
+    if (drops == MAX_DROPS) {
+        ui_output("^5too many drops, disconnecting...\n");
+        force_disconnect();
+    } else {
+        ui_output("^5%s, reconnecting %d...\n", msg, drops);
+        force_reconnect();
+    }
 }
 
 static void client_send(msg_t *msg) {
-    if (sendto(sockfd, msg->data, msg->cursize, 0, (struct sockaddr*)&serv_addr, slen) == -1) {
-        force_disconnect();
+    if (sendto(sockfd, msg->data, msg->cursize, 0, (struct sockaddr*)&serv_addr, slen) == -1)
         drop("sendto failed");
-    }
 }
 
 void client_command(char *format, ...) {
@@ -349,6 +357,9 @@ static void request_serverdata() {
 }
 
 void client_frame() {
+    if (state == CA_DISCONNECTED)
+        return;
+
     client_recv();
     static unsigned int last_time = 0;
     int m = millis();
@@ -426,7 +437,8 @@ void client_activate() {
         return;
 
     set_state(CA_ACTIVE);
-    set_title("%s (%s : %s @ %s:%s)", cs_get(0), level, game, host, port);
+    drops = 0;
+    client_title();
     cmd_execute("players");
 }
 
@@ -496,6 +508,10 @@ void client_start(char *new_host, char *new_port, char *new_name) {
     cmd_add("obry", cmd_nop);
     cmd_add("ti", cmd_nop);
 
+    cmd_add("dstart", cmd_nop);
+    cmd_add("dstop", cmd_nop);
+    cmd_add("dcancel", cmd_nop);
+
     cmd_add("pr", cmd_pr);
     cmd_add("cp", cmd_pr);
     cmd_add("ch", cmd_ch);
@@ -510,7 +526,7 @@ void client_start(char *new_host, char *new_port, char *new_name) {
     name = new_name;
     port_int = atoi(port);
     set_state(CA_DISCONNECTED);
-    initial_title();
+    client_title();
     client_connect();
 }
 

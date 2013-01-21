@@ -25,7 +25,7 @@ void ui_init();
 void ui_run();
 void ui_stop();
 void ui_output(char *format, ...);
-void set_title(char *format, ...);
+void set_title(char *server, char *level, char *game, char *host, char *port);
 void update_status(char *name);
 void draw_status(char *name);
 
