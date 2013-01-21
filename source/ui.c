@@ -62,12 +62,15 @@ static qboolean allow_time = qtrue;
 static char commandline[MAX_INPUT_LENGTH];
 static int commandline_length = 0;
 
+static bool stopped = FALSE;
+
 void ui_stop() {
     endwin();
+    stopped = TRUE;
 }
 
 static void interrupt(int sig) {
-    shutdown();
+    quit();
     exit(sig);
 }
 
@@ -332,6 +335,8 @@ void ui_init() {
 void ui_run() {
     wtimeout(inwin, INPUT_TIME);
     for (;;) {
+        if (stopped)
+            break;
         client_frame();
         int c = wgetch(inwin);
         if (c == -1)
@@ -367,10 +372,7 @@ void ui_run() {
                         ui_output("%s\n", commandline);
                         cmd_execute(commandline + 1);
                     } else {
-                        if (client_ready())
-                            client_command("say %s", commandline);
-                        else
-                            ui_output("not connected\n");
+                        client_command("say %s", commandline);
                     }
                     commandline_length = 0;
                 }

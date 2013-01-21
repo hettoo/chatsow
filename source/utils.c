@@ -28,7 +28,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "main.h"
 
 int die(char *format, ...) {
-    shutdown();
+    quit();
 	va_list	argptr;
 	va_start(argptr, format);
     vprintf(format, argptr);

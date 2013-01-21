@@ -22,7 +22,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "ui.h"
 #include "client.h"
 
-void shutdown() {
+void quit() {
     disconnect();
     ui_stop();
 }
@@ -34,7 +34,7 @@ int main(int argc, char *argv[]) {
     ui_init();
     client_start(argv[1], argv[2], argv[3]);
     ui_run();
-    shutdown();
+    quit();
 
     return 0;
 }

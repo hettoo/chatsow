@@ -33,6 +33,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "import.h"
 #include "config.h"
 #include "utils.h"
+#include "main.h"
 #include "ui.h"
 #include "parser.h"
 #include "cmd.h"
@@ -59,8 +60,8 @@ typedef enum client_state_s {
 
 static client_state_t state;
 
-static char *host;
-static char *port;
+static char host[512];
+static char port[512];
 static char *name;
 static int port_int;
 static struct sockaddr_in serv_addr;
@@ -165,6 +166,9 @@ static void set_state(int new_state) {
 }
 
 static void force_disconnect() {
+    if (state == CA_DISCONNECTED)
+        return;
+
     close(sockfd);
     set_state(CA_DISCONNECTED);
     client_title();
@@ -210,6 +214,9 @@ static void client_connect() {
 }
 
 void disconnect() {
+    if (state == CA_DISCONNECTED)
+        return;
+
     ui_output("Disconnecting...\n");
     if (state >= CA_CONNECTING) {
         int i;
@@ -247,6 +254,11 @@ static void client_send(msg_t *msg) {
 }
 
 void client_command(char *format, ...) {
+    if (state < CA_SETUP) {
+        ui_output("not connected\n");
+        return;
+    }
+
     static char string[MAX_MSGLEN];
 	va_list	argptr;
 	va_start(argptr, format);
@@ -431,6 +443,17 @@ void client_frame() {
     }
 }
 
+static void set_server(char *new_host, char *new_port) {
+    disconnect();
+    strcpy(host, new_host);
+    if (!strcmp(host, "localhost"))
+        strcpy(host, "127.0.0.1");
+    strcpy(port, new_port);
+    port_int = atoi(port);
+    client_connect();
+    client_title();
+}
+
 void cmd_challenge() {
     if (state != CA_CHALLENGING)
         return;
@@ -499,6 +522,14 @@ void cmd_motd() {
     ui_output("^5Message of the day:^7\n%s", cmd_argv(2));
 }
 
+void cmd_connect() {
+    char *new_host = cmd_argv(1);
+    char *new_port = "44400";
+    if (cmd_argc() > 2)
+        new_port = cmd_argv(1);
+    set_server(new_host, new_port);
+}
+
 void cmd_players() {
     int i;
     qboolean first = qtrue;
@@ -513,6 +544,10 @@ void cmd_players() {
         }
     }
     ui_output("\n");
+}
+
+void cmd_quit() {
+    quit();
 }
 
 void client_start(char *new_host, char *new_port, char *new_name) {
@@ -544,15 +579,13 @@ void client_start(char *new_host, char *new_port, char *new_name) {
     cmd_add("tvch", cmd_tvch);
     cmd_add("motd", cmd_motd);
 
+    cmd_add("connect", cmd_connect);
     cmd_add("players", cmd_players);
+    cmd_add("quit", cmd_quit);
 
-    host = new_host;
-    port = new_port;
     name = new_name;
-    port_int = atoi(port);
     set_state(CA_DISCONNECTED);
-    client_title();
-    client_connect();
+    set_server(new_host, new_port);
 }
 
 void demoinfo_key(char *key) {
