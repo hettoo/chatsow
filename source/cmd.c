@@ -40,8 +40,6 @@ static int argc = 0;
 static char argv[MAX_ARGC][MAX_ARG_SIZE];
 static char args[MAX_ARGS_SIZE];
 static int args_index[MAX_ARGC];
-static char args_stripped[MAX_ARGS_SIZE];
-static int args_stripped_index[MAX_ARGC];
 
 void parse_cmd() {
     int i;
@@ -143,12 +141,6 @@ char *cmd_args(int start) {
     if (start >= argc)
         return "";
     return args + args_index[start];
-}
-
-char *cmd_args_stripped(int start) {
-    if (start >= argc)
-        return "";
-    return "";
 }
 
 void cmd_add(char *name, void (*f)()) {

@@ -18,7 +18,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 */
 
-#include <pthread.h>
 #include <arpa/inet.h>
 #include <netinet/in.h>
 #include <stdio.h>
@@ -40,13 +39,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "cs.h"
 #include "client.h"
 
-#define TIMEOUT 1200
-
-static qboolean started = qfalse;
-static pthread_t thread;
-static pthread_mutex_t stop_mutex;
-static qboolean stopping = qfalse;
-static pthread_mutex_t command_mutex;
+#define TIMEOUT 1400
 
 static char *host;
 static char *port;
@@ -187,7 +180,7 @@ static void client_connect() {
     challenge();
 }
 
-static void disconnect() {
+void disconnect() {
     ui_output("Disconnecting...\n");
     if (state >= CA_CONNECTING) {
         int i;
@@ -220,7 +213,6 @@ static void client_send(msg_t *msg) {
 }
 
 void client_command(char *format, ...) {
-    pthread_mutex_lock(&command_mutex);
     static int n = 1;
     static char string[MAX_MSGLEN];
 	va_list	argptr;
@@ -234,7 +226,6 @@ void client_command(char *format, ...) {
         write_long(&msg, n++);
     write_string(&msg, string);
     client_send(&msg);
-    pthread_mutex_unlock(&command_mutex);
 }
 
 void client_ack(int num) {
@@ -357,7 +348,8 @@ static void request_serverdata() {
     resend = millis() + TIMEOUT;
 }
 
-static void client_frame() {
+void client_frame() {
+    client_recv();
     static unsigned int last_time = 0;
     int m = millis();
     if (last_time == 0 || m >= last_time + 1000) {
@@ -396,24 +388,6 @@ static void client_frame() {
         default:
             break;
     }
-}
-
-static void *client_run(void *args) {
-    client_connect();
-
-    while (1) {
-        client_recv();
-        client_frame();
-        pthread_mutex_lock(&stop_mutex);
-        if (stopping)
-            break;
-        pthread_mutex_unlock(&stop_mutex);
-    }
-    pthread_mutex_unlock(&stop_mutex);
-
-    disconnect();
-
-    return NULL;
 }
 
 void cmd_challenge() {
@@ -537,23 +511,7 @@ void client_start(char *new_host, char *new_port, char *new_name) {
     port_int = atoi(port);
     set_state(CA_DISCONNECTED);
     initial_title();
-    pthread_mutex_init(&stop_mutex, NULL);
-    pthread_mutex_init(&command_mutex, NULL);
-    stopping = qfalse;
-    pthread_create(&thread, NULL, client_run, NULL);
-    started = qtrue;
-}
-
-void client_stop() {
-    if (started) {
-        pthread_mutex_lock(&stop_mutex);
-        stopping = qtrue;
-        pthread_mutex_unlock(&stop_mutex);
-        pthread_join(thread, NULL);
-        started = qfalse;
-        pthread_mutex_destroy(&stop_mutex);
-        pthread_mutex_destroy(&command_mutex);
-    }
+    client_connect();
 }
 
 void demoinfo_key(char *key) {

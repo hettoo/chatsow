@@ -22,7 +22,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <string.h>
 #include <curses.h>
 #include <signal.h>
-#include <pthread.h>
 #include <time.h>
 
 #include "main.h"
@@ -38,7 +37,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #define SCROLL_SPEED 10
 
-static pthread_mutex_t mutex;
+#define INPUT_TIME 10
 
 static WINDOW *mainwin;
 static WINDOW *titlewin;
@@ -61,7 +60,6 @@ static char commandline[MAX_INPUT_LENGTH];
 static int commandline_length = 0;
 
 void ui_stop() {
-    pthread_mutex_destroy(&mutex);
     endwin();
 }
 
@@ -115,7 +113,6 @@ void set_title(char *format, ...) {
 }
 
 static void draw_outwin() {
-    pthread_mutex_lock(&mutex);
     werase(outwin);
     int outheight = LINES - 3;
     int i;
@@ -157,11 +154,9 @@ static void draw_outwin() {
         }
     }
     wrefresh(outwin);
-    pthread_mutex_unlock(&mutex);
 }
 
 void draw_status(char *name) {
-    pthread_mutex_lock(&mutex);
     werase(statuswin);
     static char string[32];
     int i = 2;
@@ -181,11 +176,9 @@ void draw_status(char *name) {
     for (; i < COLS; i++)
         waddch(statuswin, ' ');
     wrefresh(statuswin);
-    pthread_mutex_unlock(&mutex);
 }
 
 static void draw_inwin() {
-    pthread_mutex_lock(&mutex);
     werase(inwin);
     wattrset(inwin, COLOR_PAIR(7));
     wattron(inwin, A_BOLD);
@@ -198,7 +191,6 @@ static void draw_inwin() {
         waddch(inwin, commandline[i]);
     waddch(inwin, '_');
     wrefresh(inwin);
-    pthread_mutex_unlock(&mutex);
 }
 
 void ui_output_real(char *string) {
@@ -206,7 +198,6 @@ void ui_output_real(char *string) {
     int i;
     int maxlen = min(COLS, MAX_OUTPUT_LENGTH - 2);
     qboolean empty = qfalse;
-    pthread_mutex_lock(&mutex);
     if (ghost_line)
         ghost_line = qfalse;
     if (buffer_count == 0)
@@ -254,7 +245,6 @@ void ui_output_real(char *string) {
         }
     }
     ghost_line = empty;
-    pthread_mutex_unlock(&mutex);
 }
 
 void ui_output(char *format, ...) {
@@ -277,8 +267,6 @@ void ui_output(char *format, ...) {
 
 void ui_init() {
     title[0] = '\0';
-
-    pthread_mutex_init(&mutex, NULL);
 
     signal(SIGINT, interrupt);
     signal(SIGSEGV, interrupt);
@@ -310,8 +298,12 @@ void ui_init() {
 }
 
 void ui_run() {
+    wtimeout(inwin, INPUT_TIME);
     for (;;) {
+        client_frame();
         int c = wgetch(inwin);
+        if (c == -1)
+            continue;
         bool handled = TRUE;
         switch (c) {
             case KEY_PPAGE:

@@ -25,7 +25,6 @@ void cmd_execute(char *cmd);
 int cmd_argc();
 char *cmd_argv(int index);
 char *cmd_args(int start);
-char *cmd_args_stripped(int start);
 
 void cmd_add(char *name, void (*f)());
 
