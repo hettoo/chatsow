@@ -392,15 +392,16 @@ static void request_serverdata() {
 }
 
 void client_frame() {
-    if (state == CA_DISCONNECTED)
-        return;
-
-    client_recv();
     int m = millis();
     if (last_status == 0 || m >= last_status + 1000) {
         draw_status(name);
         last_status = m;
     }
+
+    if (state == CA_DISCONNECTED)
+        return;
+
+    client_recv();
     switch (state) {
         case CA_CHALLENGING:
             if (millis() >= resend)
@@ -547,6 +548,12 @@ void cmd_players() {
     ui_output("\n");
 }
 
+void cmd_name() {
+    strcpy(name, cmd_argv(1));
+    if (state >= CA_SETUP)
+        client_command("usri \"\\name\\%s\"", name);
+}
+
 void cmd_quit() {
     quit();
 }
@@ -582,6 +589,7 @@ void client_start(char *new_host, char *new_port, char *new_name) {
 
     cmd_add("connect", cmd_connect);
     cmd_add("players", cmd_players);
+    cmd_add("name", cmd_name);
     cmd_add("quit", cmd_quit);
 
     strcpy(name, new_name);
