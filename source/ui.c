@@ -305,12 +305,11 @@ void ui_init() {
     signal(SIGSEGV, interrupt);
 
     mainwin = initscr();
+    init_colors();
     nonl();
     cbreak();
     noecho();
     curs_set(0);
-
-    init_colors();
 
     titlewin = subwin(mainwin, 1, COLS, 0, 0);
     wattrset(titlewin, COLOR_PAIR(11));

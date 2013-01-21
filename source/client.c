@@ -460,6 +460,7 @@ void cmd_disconnect() {
 
 void cmd_changing() {
     cs_init();
+    parser_reset();
     set_state(CA_CONFIGURING);
 }
 
