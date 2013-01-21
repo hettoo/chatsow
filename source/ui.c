@@ -64,6 +64,9 @@ typedef struct screen_s {
 
     char commandline[MAX_INPUT_LENGTH];
     int commandline_length;
+
+    qboolean updated;
+    qboolean important;
 } screen_t;
 
 static screen_t screens[SCREENS];
@@ -221,7 +224,29 @@ static void draw_statuswin() {
         wattron(statuswin, A_BOLD);
         i += draw_colored(statuswin, screens[screen].last_name, qtrue);
         wattroff(statuswin, A_BOLD);
+        i += draw_colored(statuswin, " ", qtrue);
     }
+    qboolean first = qtrue;
+    char number[2];
+    int j;
+    for (j = 0; j < SCREENS; j++) {
+        if (screens[j].updated) {
+            if (first) {
+                i += draw_colored(statuswin, "[Act: ", qtrue);
+                first = qfalse;
+            } else {
+                i += draw_colored(statuswin, ",", qtrue);
+            }
+            sprintf(number, "%d", j);
+            if (screens[j].important)
+                wattron(statuswin, A_BOLD);
+            i += draw_colored(statuswin, number, qtrue);
+            if (screens[j].important)
+                wattroff(statuswin, A_BOLD);
+        }
+    }
+    if (!first)
+        i += draw_colored(statuswin, "]", qtrue);
     for (; i < COLS; i++)
         waddch(statuswin, ' ');
     wrefresh(statuswin);
@@ -254,6 +279,8 @@ static void redraw() {
 
 void set_screen(int new_screen) {
     screen = new_screen;
+    screens[screen].updated = qfalse;
+    screens[screen].important = qfalse;
     redraw();
 }
 
@@ -327,6 +354,17 @@ void ui_output(int client, char *format, ...) {
 	va_end(argptr);
     ui_output_real(client, string);
     draw_outwin();
+    if (client + 1 != screen) {
+        screens[client + 1].updated = qtrue;
+        draw_statuswin();
+    }
+}
+
+void ui_set_important(int client) {
+    if (screens[client + 1].updated) {
+        screens[client + 1].important = qtrue;
+        draw_statuswin();
+    }
 }
 
 static void screen_init(screen_t *s) {
@@ -341,6 +379,9 @@ static void screen_init(screen_t *s) {
     s->allow_time = qtrue;
 
     s->commandline_length = 0;
+
+    s->updated = qfalse;
+    s->important = qfalse;
 }
 
 void ui_run() {
@@ -390,10 +431,8 @@ void ui_run() {
         if (c == -1)
             continue;
         if (alt) {
-            if (c >= '0' && c <= '9') {
-                screen = c - '0';
-                redraw();
-            }
+            if (c >= '0' && c <= '9')
+                set_screen(c - '0');
             alt = qfalse;
             continue;
         }

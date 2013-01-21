@@ -553,11 +553,13 @@ void cmd_pr() {
 void cmd_ch() {
     client_t *c = clients + cmd_client();
     ui_output(c->id, "%s^7: ^2%s^7\n", player_name(&c->cs, atoi(cmd_argv(1))), cmd_argv(2));
+    ui_set_important(c->id);
 }
 
 void cmd_tvch() {
     client_t *c = clients + cmd_client();
     ui_output(c->id, "[TV]%s^7: ^2%s^7\n", cmd_argv(1), cmd_argv(2));
+    ui_set_important(c->id);
 }
 
 void cmd_motd() {
