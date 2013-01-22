@@ -37,7 +37,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "cmd.h"
 #include "client.h"
 
-#define TIMEOUT 1400
+#define TIMEOUT 2000
 
 #define MAX_DROPS 10
 
