@@ -70,8 +70,6 @@ void parse(char *string, void (*f_char)(char c), void (*f_color)(int color)) {
             set_color = qfalse;
             if (string[i] >= '0' && string[i] <= '9') {
                 int color = string[i] - '0';
-                if (color == 0)
-                    color = 10;
                 if (f_color)
                     f_color(color);
                 continue;

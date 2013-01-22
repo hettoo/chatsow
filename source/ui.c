@@ -38,6 +38,9 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #define INPUT_TIME 10
 
+#define BRIGHT_WHITE_PAIR 0
+#define COLOR_DEFAULT (BRIGHT_WHITE_PAIR - color_base)
+
 typedef enum color_e {
     NORMAL_BASE,
     NORMAL_BLACK,
@@ -117,6 +120,7 @@ static void interrupt(int sig) {
 static void init_colors() {
     if (has_colors()) {
         start_color();
+        use_default_colors();
 
         init_pair(NORMAL_BLACK, COLOR_BLACK, COLOR_WHITE);
         init_pair(NORMAL_RED, COLOR_RED, COLOR_BLACK);
@@ -141,6 +145,12 @@ static void init_colors() {
     }
 }
 
+static void set_color(WINDOW *win, int color) {
+    if (color_base + color == NORMAL_WHITE)
+        color = COLOR_DEFAULT;
+    wattrset(win, COLOR_PAIR(color_base + color));
+}
+
 static WINDOW *draw_win;
 static int draw_len;
 
@@ -150,7 +160,7 @@ static void draw_colored_char(char c) {
 }
 
 static void draw_colored_color(int color) {
-    wattrset(draw_win, COLOR_PAIR(color_base + color));
+    set_color(draw_win, color);
 }
 
 static int draw_colored(WINDOW *win, char *string) {
@@ -163,7 +173,7 @@ static int draw_colored(WINDOW *win, char *string) {
 static void draw_titlewin() {
     color_base = STATUS_BASE + 1;
     werase(titlewin);
-    wattrset(titlewin, COLOR_PAIR(color_base + 7));
+    set_color(titlewin, 7);
     int i = 1;
     waddstr(titlewin, " ");
     if (screens[screen].server) {
@@ -207,7 +217,7 @@ static void draw_outwin() {
     werase(outwin);
     int outheight = LINES - 3;
     int i;
-    wattrset(outwin, COLOR_PAIR(color_base + 7));
+    set_color(outwin, 7);
     int actual_buffer_count = screens[screen].buffer_count - (screens[screen].ghost_line ? 1 : 0);
     if (screens[screen].scroll_up > actual_buffer_count - outheight)
         screens[screen].scroll_up = actual_buffer_count - outheight;
@@ -231,7 +241,7 @@ static void draw_outwin() {
 static void draw_statuswin() {
     color_base = STATUS_BASE + 1;
     werase(statuswin);
-    wattrset(statuswin, COLOR_PAIR(color_base + 7));
+    set_color(statuswin, 7);
     static char string[32];
     int i = 0;
     i += draw_colored(statuswin, " ^5[^7");
@@ -284,7 +294,7 @@ void draw_status(int client, char *name) {
 static void draw_inwin() {
     color_base = NORMAL_BASE + 1;
     werase(inwin);
-    wattrset(inwin, COLOR_PAIR(color_base + 7));
+    set_color(inwin, 7);
     wattron(inwin, A_BOLD);
     draw_colored(inwin, "> ");
     wattroff(inwin, A_BOLD);
