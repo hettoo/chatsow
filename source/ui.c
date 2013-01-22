@@ -20,6 +20,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
 #include <curses.h>
 #include <signal.h>
 #include <time.h>
@@ -411,11 +412,10 @@ static qboolean apply_suggestions(qboolean complete_partial) {
         return qfalse;
 
     int new_commandline_length = suggesting_offset;
-    //screens[screen].commandline_length = suggesting_offset;
     qboolean valid = qtrue;
     for (i = 0; valid; i++) {
         char c = '\0';
-        if (new_commandline_length < screens[screen].commandline_length)
+        if (suggestion_count > 1 && new_commandline_length < screens[screen].commandline_length)
             c = screens[screen].commandline[new_commandline_length];
         int j;
         for (j = 0; j < suggestion_count; j++) {
@@ -459,7 +459,11 @@ static void complete_chat() {
     suggesting_offset++;
 
     suggestion_count = player_suggest(screen - 1, screens[screen].commandline + suggesting_offset, suggestions);
-    apply_suggestions(qfalse);
+    if (apply_suggestions(qfalse)) {
+        screens[screen].commandline[screens[screen].commandline_length++] = '^';
+        screens[screen].commandline[screens[screen].commandline_length++] = '2';
+        screens[screen].commandline[screens[screen].commandline_length] = '\0';
+    }
 }
 
 void ui_run() {

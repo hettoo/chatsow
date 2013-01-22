@@ -35,10 +35,10 @@ char *cs_get(cs_t *cs, int index) {
     return cs->css[index];
 }
 
-static char *playerinfo_token(char *playerinfo, char *name) {
+static char *playerinfo_token(char *playerinfo, char *name, qboolean clear_color) {
     int len = strlen(playerinfo);
     int i;
-    static char token[MAX_CONFIGSTRING_CHARS];
+    static char token[MAX_CONFIGSTRING_CHARS + 2];
     int o = 0;
     qboolean value = qfalse;
     qboolean final = qfalse;
@@ -53,6 +53,10 @@ static char *playerinfo_token(char *playerinfo, char *name) {
                         return token;
                     value = !value;
                     o = 0;
+                    if (final && clear_color) {
+                        token[o++] = '^';
+                        token[o++] = '7';
+                    }
                 }
                 break;
             default:
@@ -66,5 +70,5 @@ static char *playerinfo_token(char *playerinfo, char *name) {
 char *player_name(cs_t *cs, int num) {
     if (num == 0)
         return "console";
-    return playerinfo_token(cs_get(cs, CS_PLAYERINFOS + num - 1), "name");
+    return playerinfo_token(cs_get(cs, CS_PLAYERINFOS + num - 1), "name", qtrue);
 }
