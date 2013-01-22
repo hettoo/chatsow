@@ -116,7 +116,7 @@ int cmd_suggest(int c, char *cmd, char suggestions[][MAX_SUGGESTION_SIZE]) {
         if (c >= 0) {
             for (i = CS_GAMECOMMANDS; i < CS_GAMECOMMANDS + MAX_GAMECOMMANDS; i++) {
                 char *cs = cs_get(client_cs(c), i);
-                if (!strncmp(cmd_argv(0), cs, len))
+                if (cs[0] && !strncmp(cmd_argv(0), cs, len))
                     strcpy(suggestions[count++], cs);
             }
         }

@@ -199,16 +199,20 @@ static void socket_connect(client_t *c) {
     if (c->state != CA_DISCONNECTED)
         force_disconnect(c);
 
-    if ((c->sockfd = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) == -1)
-        die("socket");
+    if ((c->sockfd = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) == -1) {
+        ui_output(c->id, "Unable to create socket.\n");
+        return;
+    }
 
     bzero(&c->serv_addr, sizeof(c->serv_addr));
 
     c->serv_addr.sin_family = AF_INET;
     c->serv_addr.sin_port = htons(c->port_int);
 
-    if (inet_aton(c->host, &c->serv_addr.sin_addr) == 0)
-        die("inet_aton");
+    if (inet_aton(c->host, &c->serv_addr.sin_addr) == 0) {
+        ui_output(c->id, "Invalid hostname.\n");
+        return;
+    }
 
     ui_output(c->id, "Connecting to %s:%s...\n", c->host, c->port);
     set_state(c, CA_SETUP);
@@ -230,6 +234,8 @@ static void challenge(client_t *c);
 
 static void client_connect(client_t *c) {
     socket_connect(c);
+    if (c->state == CA_DISCONNECTED)
+        return;
     reset(c);
     challenge(c);
 }

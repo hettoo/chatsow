@@ -38,6 +38,33 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #define INPUT_TIME 10
 
+typedef enum color_e {
+    NORMAL_BASE,
+    NORMAL_BLACK,
+    NORMAL_RED,
+    NORMAL_GREEN,
+    NORMAL_YELLOW,
+    NORMAL_BLUE,
+    NORMAL_CYAN,
+    NORMAL_MAGENTA,
+    NORMAL_WHITE,
+    NORMAL_ORANGE,
+    NORMAL_GREY,
+    STATUS_BASE,
+    STATUS_BLACK,
+    STATUS_RED,
+    STATUS_GREEN,
+    STATUS_YELLOW,
+    STATUS_BLUE,
+    STATUS_CYAN,
+    STATUS_MAGENTA,
+    STATUS_WHITE,
+    STATUS_ORANGE,
+    STATUS_GREY
+} color_t;
+
+static color_t color_base;
+
 static WINDOW *mainwin;
 static WINDOW *titlewin;
 static WINDOW *outwin;
@@ -91,85 +118,75 @@ static void init_colors() {
     if (has_colors()) {
         start_color();
 
-        init_pair(1, COLOR_RED, COLOR_BLACK);
-        init_pair(2, COLOR_GREEN, COLOR_BLACK);
-        init_pair(3, COLOR_YELLOW, COLOR_BLACK);
-        init_pair(4, COLOR_WHITE, COLOR_BLUE);
-        init_pair(5, COLOR_CYAN, COLOR_BLACK);
-        init_pair(6, COLOR_MAGENTA, COLOR_BLACK);
-        init_pair(7, COLOR_WHITE, COLOR_BLACK);
-        init_pair(8, COLOR_YELLOW, COLOR_BLACK);
-        init_pair(9, COLOR_WHITE, COLOR_BLACK);
-        init_pair(10, COLOR_BLACK, COLOR_WHITE);
-        init_pair(11, COLOR_WHITE, COLOR_BLUE);
+        init_pair(NORMAL_BLACK, COLOR_BLACK, COLOR_WHITE);
+        init_pair(NORMAL_RED, COLOR_RED, COLOR_BLACK);
+        init_pair(NORMAL_GREEN, COLOR_GREEN, COLOR_BLACK);
+        init_pair(NORMAL_YELLOW, COLOR_YELLOW, COLOR_BLACK);
+        init_pair(NORMAL_BLUE, COLOR_WHITE, COLOR_BLUE);
+        init_pair(NORMAL_CYAN, COLOR_CYAN, COLOR_BLACK);
+        init_pair(NORMAL_MAGENTA, COLOR_MAGENTA, COLOR_BLACK);
+        init_pair(NORMAL_WHITE, COLOR_WHITE, COLOR_BLACK);
+        init_pair(NORMAL_ORANGE, COLOR_YELLOW, COLOR_BLACK);
+        init_pair(NORMAL_GREY, COLOR_WHITE, COLOR_BLACK);
+        init_pair(STATUS_BLACK, COLOR_BLACK, COLOR_CYAN);
+        init_pair(STATUS_RED, COLOR_RED, COLOR_BLUE);
+        init_pair(STATUS_GREEN, COLOR_GREEN, COLOR_BLUE);
+        init_pair(STATUS_YELLOW, COLOR_YELLOW, COLOR_BLUE);
+        init_pair(STATUS_BLUE, COLOR_BLUE, COLOR_WHITE);
+        init_pair(STATUS_CYAN, COLOR_CYAN, COLOR_BLUE);
+        init_pair(STATUS_MAGENTA, COLOR_MAGENTA, COLOR_BLUE);
+        init_pair(STATUS_WHITE, COLOR_WHITE, COLOR_BLUE);
+        init_pair(STATUS_ORANGE, COLOR_YELLOW, COLOR_BLUE);
+        init_pair(STATUS_GREY, COLOR_WHITE, COLOR_BLUE);
     }
 }
 
-static int draw_colored(WINDOW *win, char *string, qboolean ignore) {
-    int len = 0;
-    qboolean set_color = qfalse;
-    int i;
-    for (i = 0; string[i]; i++) {
-        if (set_color) {
-            set_color = qfalse;
-            if (string[i] >= '0' && string[i] <= '9') {
-                int color = string[i] - '0';
-                if (color == 0)
-                    color = 10;
-                if (!ignore)
-                    wattrset(win, COLOR_PAIR(color));
-                continue;
-            } else if (string[i] != '^') {
-                waddch(win, '^');
-            }
-        } else if (string[i] == '^') {
-            set_color = qtrue;
-            continue;
-        }
-        len++;
-        waddch(win, string[i]);
-    }
-    if (set_color) {
-        waddch(win, '^');
-        len++;
-    }
-    return len;
+static WINDOW *draw_win;
+static int draw_len;
+
+static void draw_colored_char(char c) {
+    draw_len++;
+    waddch(draw_win, c);
+}
+
+static void draw_colored_color(int color) {
+    wattrset(draw_win, COLOR_PAIR(color_base + color));
+}
+
+static int draw_colored(WINDOW *win, char *string) {
+    draw_len = 0;
+    draw_win = win;
+    parse(string, draw_colored_char, draw_colored_color);
+    return draw_len;
 }
 
 static void draw_titlewin() {
+    color_base = STATUS_BASE + 1;
     werase(titlewin);
+    wattrset(titlewin, COLOR_PAIR(color_base + 7));
     int i = 1;
     waddstr(titlewin, " ");
     if (screens[screen].server) {
-        wattron(titlewin, A_BOLD);
-        i += draw_colored(titlewin, screens[screen].server, qtrue);
-        wattroff(titlewin, A_BOLD);
-        i += draw_colored(titlewin, " ", qtrue);
+        i += draw_colored(titlewin, screens[screen].server);
+        i += draw_colored(titlewin, " ^5");
     }
     if (screens[screen].level) {
-        i += draw_colored(titlewin, "[", qtrue);
-        wattron(titlewin, A_BOLD);
-        i += draw_colored(titlewin, screens[screen].level, qtrue);
-        wattroff(titlewin, A_BOLD);
-        i += draw_colored(titlewin, "] ", qtrue);
+        i += draw_colored(titlewin, "[^7");
+        i += draw_colored(titlewin, screens[screen].level);
+        i += draw_colored(titlewin, "^5] ");
     }
     if (screens[screen].game) {
-        i += draw_colored(titlewin, "[", qtrue);
-        wattron(titlewin, A_BOLD);
-        i += draw_colored(titlewin, screens[screen].game, qtrue);
-        wattroff(titlewin, A_BOLD);
-        i += draw_colored(titlewin, "] ", qtrue);
+        i += draw_colored(titlewin, "[^7");
+        i += draw_colored(titlewin, screens[screen].game);
+        i += draw_colored(titlewin, "^5] ");
     }
     if (screens[screen].host || screens[screen].port)
-        i += draw_colored(titlewin, "@ ", qtrue);
-    if (screens[screen].host) {
-        wattron(titlewin, A_BOLD);
-        i += draw_colored(titlewin, screens[screen].host, qtrue);
-        wattroff(titlewin, A_BOLD);
-    }
+        i += draw_colored(titlewin, "@ ^7");
+    if (screens[screen].host)
+        i += draw_colored(titlewin, screens[screen].host);
     if (screens[screen].port) {
-        i += draw_colored(titlewin, ":", qtrue);
-        i += draw_colored(titlewin, screens[screen].port, qtrue);
+        i += draw_colored(titlewin, "^5:^7");
+        i += draw_colored(titlewin, screens[screen].port);
     }
     for (; i < COLS; i++)
         waddch(titlewin, ' ');
@@ -186,10 +203,11 @@ void set_title(int client, char *new_server, char *new_level, char *new_game, ch
 }
 
 static void draw_outwin() {
+    color_base = NORMAL_BASE + 1;
     werase(outwin);
     int outheight = LINES - 3;
     int i;
-    wattrset(outwin, COLOR_PAIR(7));
+    wattrset(outwin, COLOR_PAIR(color_base + 7));
     int actual_buffer_count = screens[screen].buffer_count - (screens[screen].ghost_line ? 1 : 0);
     if (screens[screen].scroll_up > actual_buffer_count - outheight)
         screens[screen].scroll_up = actual_buffer_count - outheight;
@@ -205,26 +223,25 @@ static void draw_outwin() {
         index -= screens[screen].scroll_up;
         index += MAX_BUFFER_SIZE * 2; // negative modulo prevention
         index %= MAX_BUFFER_SIZE;
-        draw_colored(outwin, screens[screen].buffer[index], qfalse);
+        draw_colored(outwin, screens[screen].buffer[index]);
     }
     wrefresh(outwin);
 }
 
 static void draw_statuswin() {
+    color_base = STATUS_BASE + 1;
     werase(statuswin);
+    wattrset(statuswin, COLOR_PAIR(color_base + 7));
     static char string[32];
     int i = 0;
-    i += draw_colored(statuswin, " [", qtrue);
+    i += draw_colored(statuswin, " ^5[^7");
     timestring(string);
-    wattron(statuswin, A_BOLD);
-    i += draw_colored(statuswin, string, qtrue);
-    wattroff(statuswin, A_BOLD);
-    i += draw_colored(statuswin, "] ", qtrue);
+    i += draw_colored(statuswin, string);
+    i += draw_colored(statuswin, "^5]^7 ");
     if (screens[screen].last_name != NULL) {
-        wattron(statuswin, A_BOLD);
-        i += draw_colored(statuswin, screens[screen].last_name, qtrue);
-        wattroff(statuswin, A_BOLD);
-        i += draw_colored(statuswin, " ", qtrue);
+        i += draw_colored(statuswin, "^5[^7");
+        i += draw_colored(statuswin, screens[screen].last_name);
+        i += draw_colored(statuswin, "^5]^7 ");
     }
     char number[2];
     qboolean first = qtrue;
@@ -232,27 +249,28 @@ static void draw_statuswin() {
     for (j = 0; j < SCREENS; j++) {
         if (screens[j].updated) {
             if (first) {
-                i += draw_colored(statuswin, "[Act: ", qtrue);
+                i += draw_colored(statuswin, "^5[^7Act: ^5");
                 first = qfalse;
             } else {
-                i += draw_colored(statuswin, ",", qtrue);
+                i += draw_colored(statuswin, "^5,");
             }
             sprintf(number, "%d", j);
-            if (screens[j].important)
+            if (screens[j].important) {
+                i += draw_colored(statuswin, "^7");
                 wattron(statuswin, A_BOLD);
-            i += draw_colored(statuswin, number, qtrue);
-            if (screens[j].important)
-                wattroff(statuswin, A_BOLD);
+            }
+            i += draw_colored(statuswin, number);
+            wattroff(statuswin, A_BOLD);
         }
     }
     if (!first)
-        i += draw_colored(statuswin, "] ", qtrue);
+        i += draw_colored(statuswin, "^5] ");
+    i += draw_colored(statuswin, "^5[^7");
     sprintf(number, "%d", screen);
-    i += draw_colored(statuswin, "[", qtrue);
-    wattron(statuswin, A_BOLD);
-    i += draw_colored(statuswin, number, qtrue);
-    wattroff(statuswin, A_BOLD);
-    i += draw_colored(statuswin, "] ", qtrue);
+    i += draw_colored(statuswin, number);
+    if (screen == 0)
+        i += draw_colored(statuswin, ":STATUS");
+    i += draw_colored(statuswin, "^5] ");
     for (; i < COLS; i++)
         waddch(statuswin, ' ');
     wrefresh(statuswin);
@@ -264,14 +282,15 @@ void draw_status(int client, char *name) {
 }
 
 static void draw_inwin() {
+    color_base = NORMAL_BASE + 1;
     werase(inwin);
-    wattrset(inwin, COLOR_PAIR(7));
+    wattrset(inwin, COLOR_PAIR(color_base + 7));
     wattron(inwin, A_BOLD);
-    draw_colored(inwin, "> ", qfalse);
+    draw_colored(inwin, "> ");
     wattroff(inwin, A_BOLD);
     if (screens[screen].commandline_length < 1 || screens[screen].commandline[0] != '/')
-        wattrset(inwin, COLOR_PAIR(2));
-    draw_colored(inwin, screens[screen].commandline, qfalse);
+        wattrset(inwin, COLOR_PAIR(color_base + 2));
+    draw_colored(inwin, screens[screen].commandline);
     waddch(inwin, '_');
     wrefresh(inwin);
 }
@@ -478,13 +497,11 @@ void ui_run() {
     curs_set(0);
 
     titlewin = subwin(mainwin, 1, COLS, 0, 0);
-    wattrset(titlewin, COLOR_PAIR(11));
 
     outwin = subwin(mainwin, LINES - 3, COLS, 1, 0);
     scrollok(outwin, TRUE);
 
     statuswin = subwin(mainwin, 1, COLS, LINES - 2, 0);
-    wattrset(statuswin, COLOR_PAIR(11));
 
     inwin = subwin(mainwin, 1, COLS, LINES - 1, 0);
     keypad(inwin, TRUE);
