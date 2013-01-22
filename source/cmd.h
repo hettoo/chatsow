@@ -21,7 +21,13 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #ifndef WRLC_CMD_H
 #define WRLC_CMD_H
 
+#define MAX_CMDS 128
+#define MAX_ARGC 512
+#define MAX_ARG_SIZE 512
+#define MAX_ARGS_SIZE (MAX_ARGC * MAX_ARG_SIZE)
+
 void cmd_execute(int c, char *cmd);
+int cmd_suggest(int c, char *cmd, char *suggestions[]);
 int cmd_client();
 int cmd_argc();
 char *cmd_argv(int index);

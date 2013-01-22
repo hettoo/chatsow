@@ -390,6 +390,50 @@ static void screen_init(screen_t *s) {
     s->important = qfalse;
 }
 
+static char *suggestions[MAX_CMDS];
+static int suggestion_count;
+static int suggesting_offset;
+
+static void apply_suggestions(qboolean add_space) {
+    if (suggestion_count == 0)
+        return;
+
+    screens[screen].commandline_length = suggesting_offset;
+    int i;
+    int j;
+    qboolean valid = qtrue;
+    for (i = 0; valid; i++) {
+        char c = '\0';
+        for (j = 0; j < suggestion_count; j++) {
+            if (i >= strlen(suggestions[j]) || (c != '\0' && suggestions[j][i] != c))
+                valid = qfalse;
+            c = suggestions[j][i];
+        }
+        if (c == '\0')
+            valid = qfalse;
+        if (valid)
+            screens[screen].commandline[screens[screen].commandline_length++] = c;
+    }
+    if (suggestion_count == 1 && add_space) {
+        screens[screen].commandline[screens[screen].commandline_length++] = ' ';
+    } else {
+        ui_output(screen - 1, "^5Possibilities:\n");
+        for (i = 0; i < suggestion_count; i++)
+            ui_output(screen - 1, "%s\n", suggestions[i]);
+    }
+    screens[screen].commandline[screens[screen].commandline_length] = '\0';
+}
+
+static void complete_command() {
+    suggesting_offset = 1;
+    suggestion_count = cmd_suggest(screen - 1, screens[screen].commandline + 1, suggestions);
+    apply_suggestions(qtrue);
+}
+
+static void complete_chat() {
+    suggesting_offset = 0;
+}
+
 void ui_run() {
     signal(SIGINT, interrupt);
     signal(SIGSEGV, interrupt);
@@ -467,6 +511,12 @@ void ui_run() {
                 if (screens[screen].commandline_length > 0)
                     screens[screen].commandline_length--;
                 screens[screen].commandline[screens[screen].commandline_length] = '\0';
+                break;
+            case 9:
+                if (screens[screen].commandline[0] == '/')
+                    complete_command();
+                else
+                    complete_chat();
                 break;
             case KEY_ENTER:
             case 13:

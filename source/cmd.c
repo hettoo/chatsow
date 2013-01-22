@@ -24,11 +24,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "ui.h"
 #include "cmd.h"
 
-#define MAX_CMDS 128
-#define MAX_ARGC 512
-#define MAX_ARG_SIZE 512
-#define MAX_ARGS_SIZE (MAX_ARGC * MAX_ARG_SIZE)
-
 typedef struct cmd_s {
     char *name;
     void (*f)();
@@ -42,7 +37,9 @@ static char argv[MAX_ARGC][MAX_ARG_SIZE];
 static char args[MAX_ARGS_SIZE];
 static int args_index[MAX_ARGC];
 
-void parse_cmd() {
+void parse_cmd(char *cmd) {
+    argc = 0;
+    strcpy(args, cmd);
     int i;
     qboolean escaped = qfalse;
     char quote = '\0';
@@ -106,10 +103,27 @@ void parse_cmd() {
     }
 }
 
+int cmd_suggest(int c, char *cmd, char *suggestions[]) {
+    int count = 0;
+    parse_cmd(cmd);
+    int i;
+    int len = strlen(cmd_argv(0));
+    for (i = 0; i < cmd_count; i++) {
+        if (!strncmp(cmd_argv(0), cmds[i].name, len))
+            suggestions[count++] = cmds[i].name;
+    }
+    if (c >= 0) {
+        for (i = CS_GAMECOMMANDS; i < CS_GAMECOMMANDS + MAX_GAMECOMMANDS; i++) {
+            char *cs = cs_get(client_cs(c), i);
+            if (!strncmp(cmd_argv(0), cs, len))
+                suggestions[count++] = cs;
+        }
+    }
+    return count;
+}
+
 void cmd_execute(int c, char *cmd) {
-    argc = 0;
-    strcpy(args, cmd);
-    parse_cmd();
+    parse_cmd(cmd);
     if (argc) {
         qboolean switch_screen = qfalse;
         int start = c;

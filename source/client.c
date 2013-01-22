@@ -557,6 +557,12 @@ void cmd_ch() {
     ui_set_important(c->id);
 }
 
+void cmd_tch() {
+    client_t *c = clients + cmd_client();
+    ui_output(c->id, "%s^7: ^3%s^7\n", player_name(&c->cs, atoi(cmd_argv(1))), cmd_argv(2));
+    ui_set_important(c->id);
+}
+
 void cmd_tvch() {
     client_t *c = clients + cmd_client();
     ui_output(c->id, "[TV]%s^7: ^2%s^7\n", cmd_argv(1), cmd_argv(2));
@@ -630,7 +636,7 @@ void client_register_commands() {
     cmd_add("pr", cmd_pr);
     cmd_add("cp", cmd_pr);
     cmd_add("ch", cmd_ch);
-    cmd_add("tch", cmd_ch);
+    cmd_add("tch", cmd_tch);
     cmd_add("tvch", cmd_tvch);
     cmd_add("motd", cmd_motd);
 
