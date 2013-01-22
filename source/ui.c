@@ -88,6 +88,7 @@ typedef struct screen_s {
     qboolean ghost_line;
     int buffer_index;
     int output_length;
+    int visual_output_length;
     int scroll_up;
     qboolean next_line;
     qboolean allow_time;
@@ -314,63 +315,77 @@ static void redraw() {
 
 void set_screen(int new_screen) {
     screen = new_screen;
-    screens[screen].updated = qfalse;
-    screens[screen].important = qfalse;
+    if (screens[screen].scroll_up == 0) {
+        screens[screen].updated = qfalse;
+        screens[screen].important = qfalse;
+    }
     redraw();
 }
 
-void ui_output_real(int client, char *string) {
-    int len = strlen(string);
-    int i;
-    int maxlen = min(COLS, MAX_OUTPUT_LENGTH - 2);
-    qboolean empty = qfalse;
-    if (screens[client + 1].ghost_line)
-        screens[client + 1].ghost_line = qfalse;
-    if (screens[client + 1].buffer_count == 0)
-        screens[client + 1].buffer_count++;
-    for (i = 0; i < len; i++) {
-        if (screens[client + 1].next_line) {
-            if (screens[client + 1].buffer_count < MAX_BUFFER_SIZE)
-                screens[client + 1].buffer_count++;
-            screens[client + 1].buffer_index = (screens[client + 1].buffer_index + 1) % MAX_BUFFER_SIZE;
-            if (screens[client + 1].scroll_up)
-                screens[client + 1].scroll_up++;
-            screens[client + 1].output_length = 0;
-            screens[client + 1].next_line = qfalse;
-        }
-        if (string[i] == '\n' || screens[client + 1].output_length > maxlen) {
-            screens[client + 1].buffer[screens[client + 1].buffer_index][screens[client + 1].output_length] = '\0';
-            screens[client + 1].next_line = qtrue;
-            empty = qfalse;
-            if (len > i + 1) {
-                empty = qtrue;
-                int j;
-                for (j = i + 1; j < len && string[j] != '\n'; j++) {
-                    if ((j - (i + 1)) % 2 == 0) {
-                        if (string[j] != '^')
-                            empty = qfalse;
-                    } else {
-                        if (string[j] < '0' || string[j] > '9')
-                            empty = qfalse;
-                    }
-                }
-                if ((j - (i + 1)) % 2 == 1)
-                    empty = qfalse;
-            }
-            screens[client + 1].allow_time = string[i] == '\n';
-            screens[client + 1].ghost_line = !empty || !screens[client + 1].allow_time;
-        } else {
-            if (screens[client + 1].ghost_line && screens[client + 1].output_length == 0) {
-                int j;
-                for (j = 0; j < min(6, COLS - 2); j++)
-                    screens[client + 1].buffer[screens[client + 1].buffer_index][screens[client + 1].output_length++] = ' ';
-                screens[client + 1].allow_time = qfalse;
-            }
-            screens[client + 1].allow_time = empty;
-            screens[client + 1].buffer[screens[client + 1].buffer_index][screens[client + 1].output_length++] = string[i];
+static screen_t *ui_output_screen;
+
+static void ui_output_char(char c);
+
+static void check_next_line() {
+    if (ui_output_screen->next_line) {
+        if (ui_output_screen->buffer_count < MAX_BUFFER_SIZE)
+            ui_output_screen->buffer_count++;
+        ui_output_screen->buffer_index = (ui_output_screen->buffer_index + 1) % MAX_BUFFER_SIZE;
+        if (ui_output_screen->scroll_up)
+            ui_output_screen->scroll_up++;
+        ui_output_screen->output_length = 0;
+        ui_output_screen->visual_output_length = 0;
+        ui_output_screen->next_line = qfalse;
+        if (!ui_output_screen->allow_time) {
+            int i;
+            for (i = 0; i < 6; i++)
+                ui_output_char(' ');
         }
     }
-    screens[client + 1].ghost_line = empty;
+}
+
+static void schedule_next_line() {
+    check_next_line();
+    ui_output_screen->next_line = qtrue;
+}
+
+static void reserve_space(int places, int visual_places) {
+    check_next_line();
+    if (ui_output_screen->output_length + places >= MAX_OUTPUT_LENGTH || ui_output_screen->visual_output_length + visual_places > COLS)
+        schedule_next_line();
+}
+
+static void add_char(char c) {
+    ui_output_screen->buffer[ui_output_screen->buffer_index][ui_output_screen->output_length++] = c;
+}
+
+static void ui_output_char(char c) {
+    reserve_space(1, 1);
+    add_char(c);
+    ui_output_screen->visual_output_length++;
+    ui_output_screen->allow_time = qfalse;
+}
+
+static void ui_output_color(int color) {
+    reserve_space(2, 0);
+    add_char('^');
+    add_char('0' + color);
+}
+
+static void ui_output_real(int client, char *string) {
+    ui_output_screen = screens + client + 1;
+    if (ui_output_screen->buffer_count == 0)
+        ui_output_screen->next_line = qtrue;
+    parse_state_t state;
+    parse_init(&state, ui_output_char, ui_output_color, '\n');
+    char *s = string;
+    do {
+        s = parse_interleaved(s, &state);
+        if (s[-1] != '\0') {
+            schedule_next_line();
+            ui_output_screen->allow_time = qtrue;
+        }
+    } while(s[-1] != '\0');
 }
 
 void ui_output(int client, char *format, ...) {
@@ -389,7 +404,7 @@ void ui_output(int client, char *format, ...) {
 	va_end(argptr);
     ui_output_real(client, string);
     draw_outwin();
-    if (client + 1 != screen) {
+    if (client + 1 != screen || screens[client + 1].scroll_up != 0) {
         screens[client + 1].updated = qtrue;
         draw_statuswin();
     }
@@ -409,6 +424,7 @@ static void screen_init(screen_t *s) {
     s->ghost_line = qfalse;
     s->buffer_index = 0;
     s->output_length = 0;
+    s->visual_output_length = 0;
     s->scroll_up = 0;
     s->next_line = qfalse;
     s->allow_time = qtrue;
@@ -554,6 +570,11 @@ void ui_run() {
                 break;
             case KEY_NPAGE:
                 screens[screen].scroll_up -= SCROLL_SPEED;
+                if (screens[screen].scroll_up <= 0) {
+                    screens[screen].updated = qfalse;
+                    screens[screen].important = qfalse;
+                    draw_statuswin();
+                }
                 break;
             default:
                 handled = FALSE;
