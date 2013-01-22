@@ -175,12 +175,9 @@ void cmd_execute(int c, char *cmd) {
             }
             if (done)
                 executions++;
-            else if (c >= 0)
-                ui_output(client, "Unrecognized command: %s\n", cmd);
             if (switch_screen)
                 set_screen(client + 1);
         }
-        client = end;
         if (executions == 0)
             ui_output(c, "Unrecognized command: %s\n", cmd);
         else if ((c < 0 && strcmp(cmd_argv(0), "connect")) || executions > 1)

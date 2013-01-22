@@ -435,7 +435,7 @@ static void apply_suggestions(qboolean add_space) {
     if (suggestion_count == 1 && add_space) {
         screens[screen].commandline[screens[screen].commandline_length++] = ' ';
     } else {
-        ui_output(screen - 1, "^5Possibilities:\n");
+        ui_output(screen - 1, "\n^5Possibilities:\n");
         for (i = 0; i < suggestion_count; i++)
             ui_output(screen - 1, "%s\n", suggestions[i]);
     }
@@ -546,7 +546,9 @@ void ui_run() {
                         ui_output(screen - 1, "%s\n", screens[screen].commandline);
                         cmd_execute(screen - 1, screens[screen].commandline + 1);
                     } else {
-                        if (screen > 0)
+                        if (screen == 0)
+                            ui_output(screen - 1, "^5If you really want to broadcast your message, invoke /say manually.\n");
+                        else
                             client_command(screen - 1, "say %s", screens[screen].commandline);
                     }
                 }
