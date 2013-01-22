@@ -110,8 +110,8 @@ void cmd_execute(int c, char *cmd) {
     argc = 0;
     strcpy(args, cmd);
     parse_cmd();
-    qboolean switch_screen = qfalse;
     if (argc) {
+        qboolean switch_screen = qfalse;
         int start = c;
         int end = c;
         int i;
@@ -134,6 +134,7 @@ void cmd_execute(int c, char *cmd) {
                 end = CLIENT_SCREENS - 1;
             }
         }
+        int executions = 0;
         for (client = start; client <= end; client++) {
             qboolean done = qfalse;
             for (i = 0; i < cmd_count; i++) {
@@ -156,12 +157,18 @@ void cmd_execute(int c, char *cmd) {
                     }
                 }
             }
-            if (!done)
+            if (done)
+                executions++;
+            else if (c >= 0)
                 ui_output(client, "Unrecognized command: %s\n", cmd);
-            else if (switch_screen)
+            if (switch_screen)
                 set_screen(client + 1);
         }
         client = end;
+        if (executions == 0)
+            ui_output(c, "Unrecognized command: %s\n", cmd);
+        else if ((c < 0 && strcmp(cmd_argv(0), "connect")) || executions > 1)
+            ui_output(c, "Command executed on %d clients\n", executions);
     }
 }
 
