@@ -23,12 +23,23 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include "import.h"
 
+typedef struct parse_state_s {
+    qboolean set_color;
+    void (*f_char)(char c);
+    void (*f_color)(int color);
+    char separator;
+} parse_state_t;
+
 int die(char *format, ...);
 int min(int a, int b);
 int max(int a, int b);
 unsigned int millis();
 int timestring(char *string);
 void parse(char *string, void (*f_char)(char c), void (*f_color)(int color));
+void parse_init(parse_state_t *state, void (*f_char)(char c), void (*f_color)(int color), char separator);
+char *parse_interleaved(char *string, parse_state_t *state);
+int parse_peek_count(char *string, parse_state_t *state);
+void parse_finish(parse_state_t *state);
 char *uncolor(char *string);
 qboolean partial_match(char *a, char *b);
 int insensitive_cmp(const void *a_raw, const void *b_raw);

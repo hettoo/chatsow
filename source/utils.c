@@ -63,29 +63,54 @@ int timestring(char *string) {
 }
 
 void parse(char *string, void (*f_char)(char c), void (*f_color)(int color)) {
-    qboolean set_color = qfalse;
+    parse_state_t state;
+    parse_init(&state, f_char, f_color, '\0');
+    parse_interleaved(string, &state);
+    parse_finish(&state);
+}
+
+void parse_init(parse_state_t *state, void (*f_char)(char c), void (*f_color)(int color), char separator) {
+    state->set_color = qfalse;
+    state->f_char = f_char;
+    state->f_color = f_color;
+    state->separator = separator;
+}
+
+char *parse_interleaved(char *string, parse_state_t *state) {
     int i;
-    for (i = 0; string[i]; i++) {
-        if (set_color) {
-            set_color = qfalse;
+    for (i = 0; string[i] != state->separator && string[i]; i++) {
+        if (state->set_color) {
+            state->set_color = qfalse;
             if (string[i] >= '0' && string[i] <= '9') {
                 int color = string[i] - '0';
-                if (f_color)
-                    f_color(color);
+                if (state->f_color)
+                    state->f_color(color);
                 continue;
-            } else if (string[i] != '^' && f_char) {
-                f_char('^');
+            } else if (string[i] != '^' && state->f_char) {
+                state->f_char('^');
             }
         } else if (string[i] == '^') {
-            set_color = qtrue;
+            state->set_color = qtrue;
             continue;
         }
-        if (f_char)
-            f_char(string[i]);
+        if (state->f_char)
+            state->f_char(string[i]);
     }
-    if (set_color && f_char) {
-        f_char('^');
-    }
+    return string + i + 1;
+}
+
+int parse_peek_count(char *string, parse_state_t *state) {
+    parse_state_t backup = *state;
+    state->f_char = NULL;
+    state->f_color = NULL;
+    char *result = parse_interleaved(string, state);
+    *state = backup;
+    return result - string - 1;
+}
+
+void parse_finish(parse_state_t *state) {
+    if (state->set_color && state->f_char)
+        state->f_char('^');
 }
 
 static char uncolor_result[2048];
