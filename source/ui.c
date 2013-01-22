@@ -472,8 +472,8 @@ void ui_run() {
             case 13:
                 screens[screen].commandline[screens[screen].commandline_length] = '\0';
                 screens[screen].scroll_up = 0;
-                if (screens[screen].commandline_length > 0) {
-                    int old_screen = screen;
+                int old_screen = screen;
+                if (screens[screen].commandline_length > (screens[screen].commandline[0] == '/' ? 1 : 0)) {
                     if (screens[screen].commandline[0] == '/') {
                         ui_output(screen - 1, "%s\n", screens[screen].commandline);
                         cmd_execute(screen - 1, screens[screen].commandline + 1);
@@ -481,9 +481,9 @@ void ui_run() {
                         if (screen > 0)
                             client_command(screen - 1, "say %s", screens[screen].commandline);
                     }
-                    screens[old_screen].commandline_length = 0;
-                    screens[old_screen].commandline[screens[old_screen].commandline_length] = '\0';
                 }
+                screens[old_screen].commandline_length = 0;
+                screens[old_screen].commandline[screens[old_screen].commandline_length] = '\0';
                 draw_outwin();
                 break;
             default:
