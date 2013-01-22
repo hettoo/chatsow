@@ -106,17 +106,19 @@ void parse_cmd(char *cmd) {
 int cmd_suggest(int c, char *cmd, char *suggestions[]) {
     int count = 0;
     parse_cmd(cmd);
-    int i;
-    int len = strlen(cmd_argv(0));
-    for (i = 0; i < cmd_count; i++) {
-        if (!strncmp(cmd_argv(0), cmds[i].name, len))
-            suggestions[count++] = cmds[i].name;
-    }
-    if (c >= 0) {
-        for (i = CS_GAMECOMMANDS; i < CS_GAMECOMMANDS + MAX_GAMECOMMANDS; i++) {
-            char *cs = cs_get(client_cs(c), i);
-            if (!strncmp(cmd_argv(0), cs, len))
-                suggestions[count++] = cs;
+    if (argc <= 1) {
+        int i;
+        int len = strlen(cmd_argv(0));
+        for (i = 0; i < cmd_count; i++) {
+            if (!strncmp(cmd_argv(0), cmds[i].name, len))
+                suggestions[count++] = cmds[i].name;
+        }
+        if (c >= 0) {
+            for (i = CS_GAMECOMMANDS; i < CS_GAMECOMMANDS + MAX_GAMECOMMANDS; i++) {
+                char *cs = cs_get(client_cs(c), i);
+                if (!strncmp(cmd_argv(0), cs, len))
+                    suggestions[count++] = cs;
+            }
         }
     }
     return count;

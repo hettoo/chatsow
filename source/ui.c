@@ -390,20 +390,38 @@ static void screen_init(screen_t *s) {
     s->important = qfalse;
 }
 
+static int cmp_case(const void *a_raw, const void *b_raw) {
+    char *a = (char *)*(char **)a_raw;
+    char *b = (char *)*(char **)b_raw;
+    return strcasecmp(a, b);
+}
+
 static char *suggestions[MAX_CMDS];
 static int suggestion_count;
 static int suggesting_offset;
 
 static void apply_suggestions(qboolean add_space) {
+    qsort(suggestions, suggestion_count, sizeof(char *), cmp_case);
+    int skip = 0;
+    char *last = NULL;
+    int i;
+    for (i = 0; i + skip < suggestion_count; i++) {
+        if (last != NULL && strcmp(suggestions[i], last))
+            skip++;
+        if (skip > 0 && i + skip < suggestion_count)
+            suggestions[i] = suggestions[i + skip];
+        last = suggestions[i];
+    }
+    suggestion_count -= skip;
+
     if (suggestion_count == 0)
         return;
 
     screens[screen].commandline_length = suggesting_offset;
-    int i;
-    int j;
     qboolean valid = qtrue;
     for (i = 0; valid; i++) {
         char c = '\0';
+        int j;
         for (j = 0; j < suggestion_count; j++) {
             if (i >= strlen(suggestions[j]) || (c != '\0' && suggestions[j][i] != c))
                 valid = qfalse;
