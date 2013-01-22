@@ -336,6 +336,7 @@ static void check_next_line() {
         ui_output_screen->output_length = 0;
         ui_output_screen->visual_output_length = 0;
         ui_output_screen->next_line = qfalse;
+        ui_output_screen->ghost_line = qtrue;
         if (!ui_output_screen->allow_time) {
             int i;
             for (i = 0; i < 6; i++)
@@ -351,12 +352,13 @@ static void schedule_next_line() {
 
 static void reserve_space(int places, int visual_places) {
     check_next_line();
-    if (ui_output_screen->output_length + places >= MAX_OUTPUT_LENGTH || ui_output_screen->visual_output_length + visual_places > COLS)
+    if (ui_output_screen->output_length + places >= MAX_OUTPUT_LENGTH - 1 || ui_output_screen->visual_output_length + visual_places > COLS)
         schedule_next_line();
 }
 
 static void add_char(char c) {
     ui_output_screen->buffer[ui_output_screen->buffer_index][ui_output_screen->output_length++] = c;
+    ui_output_screen->buffer[ui_output_screen->buffer_index][ui_output_screen->output_length] = '\0';
 }
 
 static void ui_output_char(char c) {
@@ -364,6 +366,8 @@ static void ui_output_char(char c) {
     add_char(c);
     ui_output_screen->visual_output_length++;
     ui_output_screen->allow_time = qfalse;
+    if (c != ' ')
+        ui_output_screen->ghost_line = qfalse;
 }
 
 static void ui_output_color(int color) {
@@ -383,7 +387,8 @@ static void ui_output_real(int client, char *string) {
         s = parse_interleaved(s, &state);
         if (s[-1] != '\0') {
             schedule_next_line();
-            ui_output_screen->allow_time = qtrue;
+            char *peek = parse_peek(s, &state);
+            ui_output_screen->allow_time = peek[-1] == '\0' || peek - s - 1 == 0;
         }
     } while(s[-1] != '\0');
 }
@@ -592,6 +597,10 @@ void ui_run() {
             case 127:
                 if (screens[screen].commandline_length > 0)
                     screens[screen].commandline_length--;
+                screens[screen].commandline[screens[screen].commandline_length] = '\0';
+                break;
+            case 21:
+                screens[screen].commandline_length = 0;
                 screens[screen].commandline[screens[screen].commandline_length] = '\0';
                 break;
             case 9:

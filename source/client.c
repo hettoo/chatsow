@@ -586,34 +586,6 @@ void cmd_connect() {
     set_server(c, new_host, new_port);
 }
 
-void cmd_players() {
-    client_t *c = clients + cmd_client();
-    int i;
-    qboolean first = qtrue;
-    for (i = 1; i <= MAX_CLIENTS; i++) {
-        char *name = player_name(&c->cs, i);
-        if (name && *name) {
-            if (first) {
-                ui_output(c->id, "^5Online players:^7");
-                first = qfalse;
-            }
-            ui_output(c->id, " %s^7", name);
-        }
-    }
-    ui_output(c->id, "\n");
-}
-
-int player_suggest(int id, char *partial, char suggestions[][MAX_SUGGESTION_SIZE]) {
-    int count = 0;
-    int i;
-    for (i = 1; i <= MAX_CLIENTS; i++) {
-        char *name = player_name(&clients[id].cs, i);
-        if (name && *name && partial_match(partial, name))
-            strcpy(suggestions[count++], name);
-    }
-    return count;
-}
-
 void cmd_name() {
     client_t *c = clients + cmd_client();
     strcpy(c->name, cmd_argv(1));
@@ -655,9 +627,19 @@ void client_register_commands() {
     cmd_add("motd", cmd_motd);
 
     cmd_add("connect", cmd_connect);
-    cmd_add("players", cmd_players);
     cmd_add("name", cmd_name);
     cmd_add("quit", cmd_quit);
+}
+
+int player_suggest(int id, char *partial, char suggestions[][MAX_SUGGESTION_SIZE]) {
+    int count = 0;
+    int i;
+    for (i = 1; i <= MAX_CLIENTS; i++) {
+        char *name = player_name(&clients[id].cs, i);
+        if (name && *name && partial_match(partial, name))
+            strcpy(suggestions[count++], name);
+    }
+    return count;
 }
 
 void client_start(int id) {

@@ -99,13 +99,13 @@ char *parse_interleaved(char *string, parse_state_t *state) {
     return string + i + 1;
 }
 
-int parse_peek_count(char *string, parse_state_t *state) {
+char *parse_peek(char *string, parse_state_t *state) {
     parse_state_t backup = *state;
     state->f_char = NULL;
     state->f_color = NULL;
     char *result = parse_interleaved(string, state);
     *state = backup;
-    return result - string - 1;
+    return result;
 }
 
 void parse_finish(parse_state_t *state) {

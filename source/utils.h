@@ -38,7 +38,7 @@ int timestring(char *string);
 void parse(char *string, void (*f_char)(char c), void (*f_color)(int color));
 void parse_init(parse_state_t *state, void (*f_char)(char c), void (*f_color)(int color), char separator);
 char *parse_interleaved(char *string, parse_state_t *state);
-int parse_peek_count(char *string, parse_state_t *state);
+char *parse_peek(char *string, parse_state_t *state);
 void parse_finish(parse_state_t *state);
 char *uncolor(char *string);
 qboolean partial_match(char *a, char *b);
