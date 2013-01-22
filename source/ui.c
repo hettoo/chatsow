@@ -430,25 +430,27 @@ static qboolean apply_suggestions(qboolean complete_partial) {
     if (suggestion_count == 0)
         return qfalse;
 
-    int new_commandline_length = suggesting_offset;
-    qboolean valid = qtrue;
-    for (i = 0; valid; i++) {
-        char c = '\0';
-        if (suggestion_count > 1 && new_commandline_length < screens[screen].commandline_length)
-            c = screens[screen].commandline[new_commandline_length];
-        int j;
-        for (j = 0; j < suggestion_count; j++) {
-            if (i >= strlen(suggestions[j]) || (c != '\0' && tolower(suggestions[j][i]) != tolower(c)))
+    if (suggestion_count == 1 || complete_partial) {
+        int new_commandline_length = suggesting_offset;
+        qboolean valid = qtrue;
+        for (i = 0; valid; i++) {
+            char c = '\0';
+            if (suggestion_count > 1 && new_commandline_length < screens[screen].commandline_length)
+                c = screens[screen].commandline[new_commandline_length];
+            int j;
+            for (j = 0; j < suggestion_count; j++) {
+                if (i >= strlen(suggestions[j]) || (c != '\0' && tolower(suggestions[j][i]) != tolower(c)))
+                    valid = qfalse;
+                else
+                    c = suggestions[j][i];
+            }
+            if (c == '\0')
                 valid = qfalse;
-            else
-                c = suggestions[j][i];
+            if (valid)
+                screens[screen].commandline[new_commandline_length++] = c;
         }
-        if (c == '\0')
-            valid = qfalse;
-        if (valid)
-            screens[screen].commandline[new_commandline_length++] = c;
+        screens[screen].commandline_length = max(screens[screen].commandline_length, new_commandline_length);
     }
-    screens[screen].commandline_length = max(screens[screen].commandline_length, new_commandline_length);
     if (suggestion_count > 1) {
         ui_output(screen - 1, "\n^5Possibilities:\n");
         for (i = 0; i < suggestion_count; i++)

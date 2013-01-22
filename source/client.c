@@ -646,9 +646,9 @@ void client_register_commands() {
     cmd_add("dstart", cmd_nop);
     cmd_add("dstop", cmd_nop);
     cmd_add("dcancel", cmd_nop);
+    cmd_add("cp", cmd_nop);
 
     cmd_add("pr", cmd_pr);
-    cmd_add("cp", cmd_pr);
     cmd_add("ch", cmd_ch);
     cmd_add("tch", cmd_tch);
     cmd_add("tvch", cmd_tvch);
