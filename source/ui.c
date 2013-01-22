@@ -27,7 +27,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "main.h"
 #include "utils.h"
 #include "client.h"
-#include "cmd.h"
 #include "ui.h"
 
 #define MAX_BUFFER_SIZE 512
@@ -390,18 +389,12 @@ static void screen_init(screen_t *s) {
     s->important = qfalse;
 }
 
-static int cmp_case(const void *a_raw, const void *b_raw) {
-    char *a = (char *)*(char **)a_raw;
-    char *b = (char *)*(char **)b_raw;
-    return strcasecmp(a, b);
-}
-
-static char *suggestions[MAX_CMDS];
+static char suggestions[MAX_CMDS][MAX_SUGGESTION_SIZE];
 static int suggestion_count;
 static int suggesting_offset;
 
 static void apply_suggestions(qboolean add_space) {
-    qsort(suggestions, suggestion_count, sizeof(char *), cmp_case);
+    qsort(suggestions, suggestion_count, MAX_SUGGESTION_SIZE, insensitive_cmp);
     int skip = 0;
     char *last = NULL;
     int i;
@@ -409,7 +402,7 @@ static void apply_suggestions(qboolean add_space) {
         if (last != NULL && strcmp(suggestions[i], last))
             skip++;
         if (skip > 0 && i + skip < suggestion_count)
-            suggestions[i] = suggestions[i + skip];
+            strcpy(suggestions[i], suggestions[i + skip]);
         last = suggestions[i];
     }
     suggestion_count -= skip;
@@ -432,8 +425,9 @@ static void apply_suggestions(qboolean add_space) {
         if (valid)
             screens[screen].commandline[screens[screen].commandline_length++] = c;
     }
-    if (suggestion_count == 1 && add_space) {
-        screens[screen].commandline[screens[screen].commandline_length++] = ' ';
+    if (suggestion_count == 1) {
+        if (add_space)
+            screens[screen].commandline[screens[screen].commandline_length++] = ' ';
     } else {
         ui_output(screen - 1, "\n^5Possibilities:\n");
         for (i = 0; i < suggestion_count; i++)
@@ -444,12 +438,22 @@ static void apply_suggestions(qboolean add_space) {
 
 static void complete_command() {
     suggesting_offset = 1;
-    suggestion_count = cmd_suggest(screen - 1, screens[screen].commandline + 1, suggestions);
+    suggestion_count = cmd_suggest(screen - 1, screens[screen].commandline + suggesting_offset, suggestions);
     apply_suggestions(qtrue);
 }
 
 static void complete_chat() {
-    suggesting_offset = 0;
+    if (screen == 0)
+        return;
+
+    for (suggesting_offset = screens[screen].commandline_length - 1; suggesting_offset >= 0; suggesting_offset--) {
+        if (screens[screen].commandline[suggesting_offset] == ' ')
+            break;
+    }
+    suggesting_offset++;
+
+    suggestion_count = player_suggest(screen - 1, screens[screen].commandline + suggesting_offset, suggestions);
+    apply_suggestions(qfalse);
 }
 
 void ui_run() {

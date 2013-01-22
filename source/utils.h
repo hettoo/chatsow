@@ -21,10 +21,16 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #ifndef WRLC_UTILS_H
 #define WRLC_UTILS_H
 
+#include "import.h"
+
 int die(char *format, ...);
 int min(int a, int b);
 int max(int a, int b);
 unsigned int millis();
 int timestring(char *string);
+void parse(char *string, void (*f_char)(char c), void (*f_color)(int color));
+char *uncolor(char *string);
+qboolean partial_match(char *a, char *b);
+int insensitive_cmp(const void *a_raw, const void *b_raw);
 
 #endif

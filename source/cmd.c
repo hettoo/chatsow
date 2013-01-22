@@ -1,33 +1,33 @@
 /*
-Copyright (C) 2013 hettoo (Gerco van Heerdt)
+   Copyright (C) 2013 hettoo (Gerco van Heerdt)
 
-This program is free software; you can redistribute it and/or
-modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation; either version 2
-of the License, or (at your option) any later version.
+   This program is free software; you can redistribute it and/or
+   modify it under the terms of the GNU General Public License
+   as published by the Free Software Foundation; either version 2
+   of the License, or (at your option) any later version.
 
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
-See the GNU General Public License for more details.
+   See the GNU General Public License for more details.
 
-You should have received a copy of the GNU General Public License
-along with this program; if not, write to the Free Software
-Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+   You should have received a copy of the GNU General Public License
+   along with this program; if not, write to the Free Software
+   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 */
 
 #include "import.h"
 #include "cs.h"
 #include "client.h"
-#include "ui.h"
 #include "cmd.h"
 
 typedef struct cmd_s {
     char *name;
     void (*f)();
 } cmd_t;
+
 static cmd_t cmds[MAX_CMDS];
 static int cmd_count = 0;
 
@@ -103,7 +103,7 @@ void parse_cmd(char *cmd) {
     }
 }
 
-int cmd_suggest(int c, char *cmd, char *suggestions[]) {
+int cmd_suggest(int c, char *cmd, char suggestions[][MAX_SUGGESTION_SIZE]) {
     int count = 0;
     parse_cmd(cmd);
     if (argc <= 1) {
@@ -111,13 +111,13 @@ int cmd_suggest(int c, char *cmd, char *suggestions[]) {
         int len = strlen(cmd_argv(0));
         for (i = 0; i < cmd_count; i++) {
             if (!strncmp(cmd_argv(0), cmds[i].name, len))
-                suggestions[count++] = cmds[i].name;
+                strcpy(suggestions[count++], cmds[i].name);
         }
         if (c >= 0) {
             for (i = CS_GAMECOMMANDS; i < CS_GAMECOMMANDS + MAX_GAMECOMMANDS; i++) {
                 char *cs = cs_get(client_cs(c), i);
                 if (!strncmp(cmd_argv(0), cs, len))
-                    suggestions[count++] = cs;
+                    strcpy(suggestions[count++], cs);
             }
         }
     }

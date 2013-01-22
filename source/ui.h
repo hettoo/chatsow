@@ -24,6 +24,10 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define SCREENS 10
 #define CLIENT_SCREENS (SCREENS - 1)
 
+#define MAX_SUGGESTION_SIZE MAX_ARG_SIZE
+
+#include "cmd.h"
+
 void ui_run();
 void ui_stop();
 void set_screen(int new_screen);

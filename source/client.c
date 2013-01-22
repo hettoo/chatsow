@@ -30,14 +30,11 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <string.h>
 #include "zlib.h"
 
-#include "import.h"
 #include "config.h"
 #include "utils.h"
 #include "main.h"
-#include "ui.h"
 #include "parser.h"
 #include "cmd.h"
-#include "cs.h"
 #include "client.h"
 
 #define TIMEOUT 1400
@@ -598,6 +595,17 @@ void cmd_players() {
         }
     }
     ui_output(c->id, "\n");
+}
+
+int player_suggest(int id, char *partial, char suggestions[][MAX_SUGGESTION_SIZE]) {
+    int count = 0;
+    int i;
+    for (i = 1; i <= MAX_CLIENTS; i++) {
+        char *name = player_name(&clients[id].cs, i);
+        if (name && *name && partial_match(partial, name))
+            strcpy(suggestions[count++], name);
+    }
+    return count;
 }
 
 void cmd_name() {
