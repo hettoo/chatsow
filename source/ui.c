@@ -534,6 +534,15 @@ static void complete_chat() {
     }
 }
 
+static void move_cursor(int d) {
+    int len = uncolored_length(screens[screen].commandline);
+    screens[screen].commandline_cursor += d;
+    if (screens[screen].commandline_cursor > len)
+        screens[screen].commandline_cursor = len;
+    if (screens[screen].commandline_cursor < 0)
+        screens[screen].commandline_cursor = 0;
+}
+
 void ui_run() {
     signal(SIGINT, interrupt);
     signal(SIGSEGV, interrupt);
@@ -605,16 +614,27 @@ void ui_run() {
             draw_outwin();
             continue;
         }
+        int index;
         switch (c) {
             case 27:
                 alt = qtrue;
                 continue;
             case KEY_BACKSPACE:
             case 127:
-                if (screens[screen].commandline_length > 0)
+                index = real_index(screens[screen].commandline, screens[screen].commandline_cursor) - 1;
+                if (index >= 0) {
+                    int i;
+                    for (i = index; screens[screen].commandline[i]; i++)
+                        screens[screen].commandline[i] = screens[screen].commandline[i + 1];
                     screens[screen].commandline_length--;
-                screens[screen].commandline[screens[screen].commandline_length] = '\0';
-                screens[screen].commandline_cursor = uncolored_length(screens[screen].commandline);
+                }
+                screens[screen].commandline_cursor = max(0, uncolored_index(screens[screen].commandline, index));
+                break;
+            case 260:
+                move_cursor(-1);
+                break;
+            case 261:
+                move_cursor(1);
                 break;
             case 21:
                 screens[screen].commandline_length = 0;

@@ -44,6 +44,8 @@ void parse_finish(parse_state_t *state);
 
 int uncolored_length(char *string);
 char *uncolor(char *string);
+int real_index(char *string, int uncolored_index);
+int uncolored_index(char *string, int real_index);
 
 qboolean partial_match(char *a, char *b);
 int insensitive_cmp(const void *a_raw, const void *b_raw);

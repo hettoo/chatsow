@@ -133,6 +133,52 @@ int uncolored_length(char *string) {
     return uncolor_length;
 }
 
+static qboolean real;
+static int other_index;
+static int real_length;
+static int reindex_result;
+
+void check_reindex_result() {
+    if (real) {
+        if (uncolor_length == other_index)
+            reindex_result = real_length;
+    } else {
+        if (real_length == other_index)
+            reindex_result = uncolor_length;
+    }
+}
+
+static void reindex_char(char c) {
+    real_length++;
+    uncolor_char(c);
+    check_reindex_result();
+}
+
+static void reindex_color(int color) {
+    real_length += 2;
+    check_reindex_result();
+}
+
+static int reindex(char *string, int index) {
+    other_index = index;
+    uncolor_length = 0;
+    real_length = 0;
+    reindex_result = -1;
+    check_reindex_result();
+    parse(string, reindex_char, reindex_color);
+    return reindex_result;
+}
+
+int real_index(char *string, int uncolored_index) {
+    real = qtrue;
+    return reindex(string, uncolored_index);
+}
+
+int uncolored_index(char *string, int real_index) {
+    real = qfalse;
+    return reindex(string, real_index);
+}
+
 static char uncolored_a[MAX_STRING_CHARS];
 static char uncolored_b[MAX_STRING_CHARS];
 
