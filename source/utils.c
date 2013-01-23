@@ -62,16 +62,17 @@ int timestring(char *string) {
     return strlen(string);
 }
 
-void parse(char *string, void (*f_char)(char c), void (*f_color)(int color)) {
+void parse(char *string, void (*f_char)(char c), void (*f_ghost)(char c), void (*f_color)(int color)) {
     parse_state_t state;
-    parse_init(&state, f_char, f_color, '\0');
+    parse_init(&state, f_char, f_ghost, f_color, '\0');
     parse_interleaved(string, &state);
     parse_finish(&state);
 }
 
-void parse_init(parse_state_t *state, void (*f_char)(char c), void (*f_color)(int color), char separator) {
+void parse_init(parse_state_t *state, void (*f_char)(char c), void (*f_ghost)(char c), void (*f_color)(int color), char separator) {
     state->set_color = qfalse;
     state->f_char = f_char;
+    state->f_ghost = f_ghost;
     state->f_color = f_color;
     state->separator = separator;
 }
@@ -86,8 +87,14 @@ char *parse_interleaved(char *string, parse_state_t *state) {
                 if (state->f_color)
                     state->f_color(color);
                 continue;
-            } else if (string[i] != '^' && state->f_char) {
-                state->f_char('^');
+            } else {
+                if (string[i] == '^') {
+                    if (state->f_ghost)
+                        state->f_ghost('^');
+                } else {
+                    if (state->f_char)
+                        state->f_char('^');
+                }
             }
         } else if (string[i] == '^') {
             state->set_color = qtrue;
@@ -122,14 +129,14 @@ static void uncolor_char(char c) {
 
 char *uncolor(char *string) {
     uncolor_length = 0;
-    parse(string, uncolor_char, NULL);
+    parse(string, uncolor_char, NULL, NULL);
     uncolor_result[uncolor_length] = '\0';
     return uncolor_result;
 }
 
 int uncolored_length(char *string) {
     uncolor_length = 0;
-    parse(string, uncolor_char, NULL);
+    parse(string, uncolor_char, NULL, NULL);
     return uncolor_length;
 }
 
@@ -154,6 +161,11 @@ static void reindex_char(char c) {
     check_reindex_result();
 }
 
+static void reindex_ghost(char c) {
+    real_length++;
+    check_reindex_result();
+}
+
 static void reindex_color(int color) {
     real_length += 2;
     check_reindex_result();
@@ -165,7 +177,7 @@ static int reindex(char *string, int index) {
     real_length = 0;
     reindex_result = -1;
     check_reindex_result();
-    parse(string, reindex_char, reindex_color);
+    parse(string, reindex_char, reindex_ghost, reindex_color);
     return reindex_result;
 }
 

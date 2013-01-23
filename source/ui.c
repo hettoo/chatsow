@@ -175,7 +175,7 @@ static int draw_colored_cursored(WINDOW *win, char *string, int cursor) {
     draw_len = 0;
     draw_win = win;
     draw_cursor = cursor;
-    parse(string, draw_colored_char, draw_colored_color);
+    parse(string, draw_colored_char, NULL, draw_colored_color);
     if (draw_len == cursor)
         draw_colored_char(' ');
     return draw_len;
@@ -394,7 +394,7 @@ static void ui_output_real(int client, char *string) {
     if (ui_output_screen->buffer_count == 0)
         ui_output_screen->next_line = qtrue;
     parse_state_t state;
-    parse_init(&state, ui_output_char, ui_output_color, '\n');
+    parse_init(&state, ui_output_char, NULL, ui_output_color, '\n');
     char *s = string;
     do {
         s = parse_interleaved(s, &state);
