@@ -51,6 +51,8 @@ typedef struct server_s {
     char players[MAX_TOKEN_SIZE];
 } server_t;
 
+static char filter[512];
+
 static server_t serverlist[MAX_SERVERS];
 static int server_count = 0;
 
@@ -81,6 +83,7 @@ void serverlist_init() {
 }
 
 void serverlist_query() {
+    strcpy(filter, cmd_argv(1));
     server_count = 0;
     sockfd = -1;
     if ((sockfd = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) == -1) {
@@ -198,7 +201,8 @@ void serverlist_frame() {
                 continue;
             skip_data(&rmsg, strlen("info\n"));
             read_server(serverlist + i, read_string(&rmsg));
-            ui_output(-2, "^5%i ^7(%i) %s %s\n", i, serverlist[i].ping_end - serverlist[i].ping_start, serverlist[i].players, serverlist[i].name, read_string(&rmsg));
+            if (partial_match(filter, serverlist[i].name))
+                ui_output(-2, "^5%i ^7(%i) %s %s\n", i, serverlist[i].ping_end - serverlist[i].ping_start, serverlist[i].players, serverlist[i].name, read_string(&rmsg));
         }
     }
     if (sockfd < 0)
