@@ -18,6 +18,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 */
 
+#include <libnotify/notify.h>
 #include <arpa/inet.h>
 #include <netinet/in.h>
 #include <stdio.h>
@@ -543,22 +544,38 @@ void cmd_pr() {
     ui_output(c->id, "%s^7", cmd_argv(1));
 }
 
+static void notify_chat(int id, char *name, char *text) {
+    notify_init("wrlc");
+    static char title[] = "wrlc(x)";
+    title[strlen(title) - 2] = '1' + id;
+    static char message[MAX_MSGLEN + MAX_CONFIGSTRING_CHARS + 2];
+    sprintf(message, "%s: %s", uncolor(name), text);
+    NotifyNotification* notification = notify_notification_new(title, message, NULL);
+    notify_notification_show(notification, NULL);
+}
+
 void cmd_ch() {
     client_t *c = clients + cmd_client();
-    ui_output(c->id, "%s^7: ^2%s^7\n", player_name(&c->cs, atoi(cmd_argv(1))), cmd_argv(2));
+    char *name = player_name(&c->cs, atoi(cmd_argv(1)));
+    ui_output(c->id, "%s^7: ^2%s^7\n", name, cmd_argv(2));
     ui_set_important(c->id);
+    notify_chat(c->id, name, cmd_argv(2));
 }
 
 void cmd_tch() {
     client_t *c = clients + cmd_client();
-    ui_output(c->id, "%s^7: ^3%s^7\n", player_name(&c->cs, atoi(cmd_argv(1))), cmd_argv(2));
+    char *name = player_name(&c->cs, atoi(cmd_argv(1)));
+    ui_output(c->id, "%s^7: ^3%s^7\n", name, cmd_argv(2));
     ui_set_important(c->id);
+    notify_chat(c->id, name, cmd_argv(2));
 }
 
 void cmd_tvch() {
     client_t *c = clients + cmd_client();
-    ui_output(c->id, "[TV]%s^7: ^2%s^7\n", cmd_argv(1), cmd_argv(2));
+    char *name = player_name(&c->cs, atoi(cmd_argv(1)));
+    ui_output(c->id, "[TV]%s^7: ^2%s^7\n", name, cmd_argv(2));
     ui_set_important(c->id);
+    notify_chat(c->id, name, cmd_argv(2));
 }
 
 void cmd_motd() {

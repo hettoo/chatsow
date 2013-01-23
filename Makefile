@@ -1,7 +1,8 @@
 CC = gcc
 DEBUG = -g
 CFLAGS = -O2 -Wall -c $(DEBUG)
-LFLAGS = -O2 -Wall -lncurses -lz -lm $(DEBUG)
+EXTRA_CFLAGS = $(shell pkg-config --cflags libnotify)
+LFLAGS = -O2 -Wall $(shell pkg-config --libs libnotify) -lncurses -lz -lm $(DEBUG)
 
 PROGRAM = wrlc
 
@@ -36,7 +37,7 @@ endef
 
 define module_compiler
 $(BUILD)$(1).o: $(SOURCE)$(1).c $(THIS)
-	$(CC) $(CFLAGS) $$< -o $$@
+	$(CC) $(EXTRA_CFLAGS) $(CFLAGS) $$< -o $$@
 endef
 
 $(foreach module, $(MODULES), $(eval $(call module_depender,$(module))))
