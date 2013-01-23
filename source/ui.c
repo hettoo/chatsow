@@ -456,87 +456,6 @@ static void screen_init(screen_t *s) {
     s->important = qfalse;
 }
 
-static char suggestions[MAX_CMDS][MAX_SUGGESTION_SIZE];
-static int suggestion_count;
-static int suggesting_offset;
-
-static qboolean apply_suggestions(qboolean complete_partial) {
-    qsort(suggestions, suggestion_count, MAX_SUGGESTION_SIZE, insensitive_cmp);
-    int skip = 0;
-    char *last = NULL;
-    int i;
-    for (i = 0; i + skip < suggestion_count; i++) {
-        if (last != NULL && !strcmp(suggestions[i], last))
-            skip++;
-        if (skip > 0 && i + skip < suggestion_count)
-            strcpy(suggestions[i], suggestions[i + skip]);
-        last = suggestions[i];
-    }
-    suggestion_count -= skip;
-
-    if (suggestion_count == 0)
-        return qfalse;
-
-    if (suggestion_count == 1 || complete_partial) {
-        int new_commandline_length = suggesting_offset;
-        qboolean valid = qtrue;
-        for (i = 0; valid; i++) {
-            char c = '\0';
-            if (suggestion_count > 1 && new_commandline_length < screens[screen].commandline_length)
-                c = screens[screen].commandline[new_commandline_length];
-            int j;
-            for (j = 0; j < suggestion_count; j++) {
-                if (i >= strlen(suggestions[j]) || (c != '\0' && tolower(suggestions[j][i]) != tolower(c)))
-                    valid = qfalse;
-                else
-                    c = suggestions[j][i];
-            }
-            if (c == '\0')
-                valid = qfalse;
-            if (valid)
-                screens[screen].commandline[new_commandline_length++] = c;
-        }
-        screens[screen].commandline_length = max(screens[screen].commandline_length, new_commandline_length);
-        screens[screen].commandline_cursor = uncolored_length(screens[screen].commandline);
-    }
-    if (suggestion_count > 1) {
-        ui_output(screen - 1, "\n^5Possibilities:\n");
-        for (i = 0; i < suggestion_count; i++)
-            ui_output(screen - 1, "%s\n", suggestions[i]);
-    }
-    screens[screen].commandline[screens[screen].commandline_length] = '\0';
-    return suggestion_count == 1;
-}
-
-static void complete_command() {
-    suggesting_offset = 1;
-    suggestion_count = cmd_suggest(screen - 1, screens[screen].commandline + suggesting_offset, suggestions);
-    if (apply_suggestions(qtrue)) {
-        screens[screen].commandline[screens[screen].commandline_length++] = ' ';
-        screens[screen].commandline[screens[screen].commandline_length] = '\0';
-        screens[screen].commandline_cursor = uncolored_length(screens[screen].commandline);
-    }
-}
-
-static void complete_chat() {
-    if (screen == 0)
-        return;
-
-    for (suggesting_offset = screens[screen].commandline_length - 1; suggesting_offset >= 0; suggesting_offset--) {
-        if (screens[screen].commandline[suggesting_offset] == ' ')
-            break;
-    }
-    suggesting_offset++;
-
-    suggestion_count = player_suggest(screen - 1, screens[screen].commandline + suggesting_offset, suggestions);
-    if (apply_suggestions(qfalse)) {
-        screens[screen].commandline[screens[screen].commandline_length++] = '^';
-        screens[screen].commandline[screens[screen].commandline_length++] = '2';
-        screens[screen].commandline[screens[screen].commandline_length] = '\0';
-        screens[screen].commandline_cursor = uncolored_length(screens[screen].commandline);
-    }
-}
-
 static void move_cursor(int d) {
     int len = uncolored_length(screens[screen].commandline);
     screens[screen].commandline_cursor += d;
@@ -568,6 +487,94 @@ static void insert(char c) {
         screens[screen].commandline_length++;
         screens[screen].commandline[screens[screen].commandline_length] = '\0';
         screens[screen].commandline_cursor = uncolored_index(screens[screen].commandline, index + 1);
+    }
+}
+
+static char suggestions[MAX_CMDS][MAX_SUGGESTION_SIZE];
+static int suggestion_count;
+static int suggesting_offset;
+
+static qboolean apply_suggestions(qboolean complete_partial) {
+    qsort(suggestions, suggestion_count, MAX_SUGGESTION_SIZE, insensitive_cmp);
+    int skip = 0;
+    char *last = NULL;
+    int i;
+    for (i = 0; i + skip < suggestion_count; i++) {
+        if (last != NULL && !strcmp(suggestions[i], last))
+            skip++;
+        if (skip > 0 && i + skip < suggestion_count)
+            strcpy(suggestions[i], suggestions[i + skip]);
+        last = suggestions[i];
+    }
+    suggestion_count -= skip;
+
+    if (suggestion_count == 0)
+        return qfalse;
+
+    int minlen = -1;
+    for (i = 0; i < suggestion_count; i++) {
+        int len = strlen(suggestions[i]);
+        if (minlen < 0 || len < minlen)
+            minlen = len;
+    }
+
+    int existing = real_index(screens[screen].commandline, screens[screen].commandline_cursor) - suggesting_offset;
+    if (suggestion_count == 1 || (complete_partial && minlen >= -1 && minlen > existing)) {
+        for (i = 0; i < existing; i++)
+            delete(qtrue);
+        qboolean valid = qtrue;
+        for (i = 0; valid; i++) {
+            char c = '\0';
+            int j;
+            for (j = 0; j < suggestion_count; j++) {
+                if (i >= strlen(suggestions[j]) || (c != '\0' && tolower(suggestions[j][i]) != tolower(c)))
+                    valid = qfalse;
+                else
+                    c = suggestions[j][i];
+            }
+            if (c == '\0')
+                valid = qfalse;
+            if (valid)
+                insert(c);
+        }
+    }
+    if (suggestion_count > 1) {
+        ui_output(screen - 1, "\n^5Possibilities:\n");
+        for (i = 0; i < suggestion_count; i++)
+            ui_output(screen - 1, "%s\n", suggestions[i]);
+    }
+    screens[screen].commandline[screens[screen].commandline_length] = '\0';
+    return suggestion_count == 1;
+}
+
+static void complete_command() {
+    suggesting_offset = 1;
+    char backup = screens[screen].commandline[screens[screen].commandline_cursor];
+    screens[screen].commandline[screens[screen].commandline_cursor] = '\0';
+    suggestion_count = cmd_suggest(screen - 1, screens[screen].commandline + suggesting_offset, suggestions);
+    screens[screen].commandline[screens[screen].commandline_cursor] = backup;
+    if (apply_suggestions(qtrue))
+        insert(' ');
+}
+
+static void complete_chat() {
+    if (screen == 0)
+        return;
+
+    int c = real_index(screens[screen].commandline, screens[screen].commandline_cursor);
+    for (suggesting_offset = c - 1; suggesting_offset >= 0; suggesting_offset--) {
+        if (screens[screen].commandline[suggesting_offset] == ' ')
+            break;
+    }
+    suggesting_offset++;
+
+    char backup = screens[screen].commandline[c];
+    screens[screen].commandline[c] = '\0';
+    suggestion_count = player_suggest(screen - 1, screens[screen].commandline + suggesting_offset, suggestions);
+    screens[screen].commandline[c] = backup;
+    if (apply_suggestions(qfalse)) {
+        insert('^');
+        insert('2');
     }
 }
 
@@ -671,7 +678,7 @@ void ui_run() {
                 screens[screen].commandline_cursor = uncolored_length(screens[screen].commandline);
                 break;
             case 9:
-                if (screens[screen].commandline[0] == '/')
+                if (screens[screen].commandline[0] == '/' && screens[screen].commandline_cursor > 0)
                     complete_command();
                 else
                     complete_chat();

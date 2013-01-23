@@ -96,7 +96,7 @@ void parse_cmd(char *cmd) {
         if (normal && o < MAX_ARG_SIZE - 1)
             argv[argc][o++] = args[i];
     }
-    if (o > 0) {
+    if (o > 0 || (i >= 1 && (args[i - 1] == ' ' || args[i - 1] == '\t' || args[i - 1] == '\n'))) {
         args_index[argc] = start;
         argv[argc][o] = '\0';
         argc++;
