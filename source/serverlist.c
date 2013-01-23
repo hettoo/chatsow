@@ -37,11 +37,18 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #define MAX_SERVERS 2048
 
+#define MAX_TOKEN_SIZE 512
+
 typedef struct server_s {
     char address[32];
     int port;
     int sockfd;
     struct sockaddr_in serv_addr;
+    int ping_start;
+    int ping_end;
+
+    char name[MAX_TOKEN_SIZE];
+    char players[MAX_TOKEN_SIZE];
 } server_t;
 
 static server_t serverlist[MAX_SERVERS];
@@ -126,6 +133,7 @@ static void ping_server(server_t *server) {
     write_string(&msg, "info 15 full empty");
 
     slen = sizeof(server->serv_addr);
+    server->ping_start = millis();
     if (sendto(server->sockfd, msg.data, msg.cursize, 0, (struct sockaddr*)&server->serv_addr, slen) == -1) {
         ui_output(-2, "sendto failed");
         server->sockfd = -1;
@@ -133,7 +141,44 @@ static void ping_server(server_t *server) {
 }
 
 static server_t *find_server(char *address, int port) {
+    int i;
+    for (i = 0; i < server_count; i++) {
+        if (serverlist[i].port == port && !strcmp(serverlist[i].address, address))
+            return serverlist + i;
+    }
     return NULL;
+}
+
+static void read_server(server_t *server, char *info) {
+    int i;
+    static char key[MAX_TOKEN_SIZE];
+    static char value[MAX_TOKEN_SIZE];
+    server->name[0] = '\0';
+    server->players[0] = '\0';
+    qboolean is_key = qtrue;
+    key[0] = '\0';
+    int len = strlen(info);
+    int o = 0;
+    for (i = 0; i < len; i++) {
+        if (info[i] == '\\' && info[i + 1] == '\\') {
+            value[o] = '\0';
+            is_key = !is_key;
+            if (is_key) {
+                strcpy(key, value);
+            } else {
+                if (!strcmp(key, "n"))
+                    strcpy(server->name, value);
+                else if (!strcmp(key, "u"))
+                    strcpy(server->players, value);
+                key[0] = '\0';
+            }
+            i++;
+            o = 0;
+        } else {
+            if (o > 0 || info[i] != ' ')
+                value[o++] = info[i];
+        }
+    }
 }
 
 void serverlist_frame() {
@@ -147,11 +192,13 @@ void serverlist_frame() {
                     continue;
                 die("recvfrom failed");
             }
+            serverlist[i].ping_end = millis();
             int seq = read_long(&rmsg);
             if (seq != -1)
                 continue;
             skip_data(&rmsg, strlen("info\n"));
-            ui_output(-2, "^5%i:^7%s\n", i, read_string(&rmsg));
+            read_server(serverlist + i, read_string(&rmsg));
+            ui_output(-2, "^5%i ^7(%i) %s %s\n", i, serverlist[i].ping_end - serverlist[i].ping_start, serverlist[i].players, serverlist[i].name, read_string(&rmsg));
         }
     }
     if (sockfd < 0)
