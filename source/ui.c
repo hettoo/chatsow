@@ -543,6 +543,31 @@ static void move_cursor(int d) {
         screens[screen].commandline_cursor = 0;
 }
 
+static void delete(qboolean before) {
+    int offset = before ? 1 : 0;
+    int index = real_index(screens[screen].commandline, screens[screen].commandline_cursor);
+    if (index >= offset && (before || index < screens[screen].commandline_length)) {
+        int i;
+        for (i = index - offset; screens[screen].commandline[i]; i++)
+            screens[screen].commandline[i] = screens[screen].commandline[i + 1];
+        screens[screen].commandline_length--;
+        screens[screen].commandline_cursor = uncolored_index(screens[screen].commandline, index - offset);
+    }
+}
+
+static void insert(char c) {
+    int index = real_index(screens[screen].commandline, screens[screen].commandline_cursor);
+    if (index >= 0) {
+        int i;
+        for (i = screens[screen].commandline_length - 1; i >= index; i--)
+            screens[screen].commandline[i + 1] = screens[screen].commandline[i];
+        screens[screen].commandline[index] = c;
+        screens[screen].commandline_length++;
+        screens[screen].commandline[screens[screen].commandline_length] = '\0';
+        screens[screen].commandline_cursor = uncolored_index(screens[screen].commandline, index + 1);
+    }
+}
+
 void ui_run() {
     signal(SIGINT, interrupt);
     signal(SIGSEGV, interrupt);
@@ -614,21 +639,16 @@ void ui_run() {
             draw_outwin();
             continue;
         }
-        int index;
         switch (c) {
             case 27:
                 alt = qtrue;
                 continue;
             case KEY_BACKSPACE:
             case 127:
-                index = real_index(screens[screen].commandline, screens[screen].commandline_cursor) - 1;
-                if (index >= 0) {
-                    int i;
-                    for (i = index; screens[screen].commandline[i]; i++)
-                        screens[screen].commandline[i] = screens[screen].commandline[i + 1];
-                    screens[screen].commandline_length--;
-                }
-                screens[screen].commandline_cursor = max(0, uncolored_index(screens[screen].commandline, index));
+                delete(qtrue);
+                break;
+            case 330:
+                delete(qfalse);
                 break;
             case 260:
                 move_cursor(-1);
@@ -669,9 +689,7 @@ void ui_run() {
                 draw_outwin();
                 break;
             default:
-                screens[screen].commandline[screens[screen].commandline_length++] = c;
-                screens[screen].commandline[screens[screen].commandline_length] = '\0';
-                screens[screen].commandline_cursor = uncolored_length(screens[screen].commandline);
+                insert(c);
                 break;
         }
         draw_inwin();
