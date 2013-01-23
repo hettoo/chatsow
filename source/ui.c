@@ -95,6 +95,7 @@ typedef struct screen_s {
 
     char commandline[MAX_INPUT_LENGTH];
     int commandline_length;
+    int commandline_cursor;
 
     qboolean updated;
     qboolean important;
@@ -154,21 +155,33 @@ static void set_color(WINDOW *win, int color) {
 
 static WINDOW *draw_win;
 static int draw_len;
+static int draw_cursor;
 
 static void draw_colored_char(char c) {
-    draw_len++;
+    if (draw_len == draw_cursor)
+        wattron(draw_win, A_REVERSE);
     waddch(draw_win, c);
+    if (draw_len == draw_cursor)
+        wattroff(draw_win, A_REVERSE);
+    draw_len++;
 }
 
 static void draw_colored_color(int color) {
     set_color(draw_win, color);
 }
 
-static int draw_colored(WINDOW *win, char *string) {
+static int draw_colored_cursored(WINDOW *win, char *string, int cursor) {
     draw_len = 0;
     draw_win = win;
+    draw_cursor = cursor;
     parse(string, draw_colored_char, draw_colored_color);
+    if (draw_len == cursor)
+        draw_colored_char(' ');
     return draw_len;
+}
+
+static int draw_colored(WINDOW *win, char *string) {
+    return draw_colored_cursored(win, string, -1);
 }
 
 static void draw_titlewin() {
@@ -301,8 +314,7 @@ static void draw_inwin() {
     wattroff(inwin, A_BOLD);
     if (screens[screen].commandline_length < 1 || screens[screen].commandline[0] != '/')
         wattrset(inwin, COLOR_PAIR(color_base + 2));
-    draw_colored(inwin, screens[screen].commandline);
-    waddch(inwin, '_');
+    draw_colored_cursored(inwin, screens[screen].commandline, screens[screen].commandline_cursor);
     wrefresh(inwin);
 }
 
@@ -435,6 +447,7 @@ static void screen_init(screen_t *s) {
     s->allow_time = qtrue;
 
     s->commandline_length = 0;
+    s->commandline_cursor = 0;
 
     s->updated = qfalse;
     s->important = qfalse;
@@ -481,6 +494,7 @@ static qboolean apply_suggestions(qboolean complete_partial) {
                 screens[screen].commandline[new_commandline_length++] = c;
         }
         screens[screen].commandline_length = max(screens[screen].commandline_length, new_commandline_length);
+        screens[screen].commandline_cursor = uncolored_length(screens[screen].commandline);
     }
     if (suggestion_count > 1) {
         ui_output(screen - 1, "\n^5Possibilities:\n");
@@ -497,6 +511,7 @@ static void complete_command() {
     if (apply_suggestions(qtrue)) {
         screens[screen].commandline[screens[screen].commandline_length++] = ' ';
         screens[screen].commandline[screens[screen].commandline_length] = '\0';
+        screens[screen].commandline_cursor = uncolored_length(screens[screen].commandline);
     }
 }
 
@@ -515,6 +530,7 @@ static void complete_chat() {
         screens[screen].commandline[screens[screen].commandline_length++] = '^';
         screens[screen].commandline[screens[screen].commandline_length++] = '2';
         screens[screen].commandline[screens[screen].commandline_length] = '\0';
+        screens[screen].commandline_cursor = uncolored_length(screens[screen].commandline);
     }
 }
 
@@ -598,10 +614,12 @@ void ui_run() {
                 if (screens[screen].commandline_length > 0)
                     screens[screen].commandline_length--;
                 screens[screen].commandline[screens[screen].commandline_length] = '\0';
+                screens[screen].commandline_cursor = uncolored_length(screens[screen].commandline);
                 break;
             case 21:
                 screens[screen].commandline_length = 0;
                 screens[screen].commandline[screens[screen].commandline_length] = '\0';
+                screens[screen].commandline_cursor = uncolored_length(screens[screen].commandline);
                 break;
             case 9:
                 if (screens[screen].commandline[0] == '/')
@@ -627,11 +645,13 @@ void ui_run() {
                 }
                 screens[old_screen].commandline_length = 0;
                 screens[old_screen].commandline[screens[old_screen].commandline_length] = '\0';
+                screens[old_screen].commandline_cursor = uncolored_length(screens[old_screen].commandline);
                 draw_outwin();
                 break;
             default:
                 screens[screen].commandline[screens[screen].commandline_length++] = c;
                 screens[screen].commandline[screens[screen].commandline_length] = '\0';
+                screens[screen].commandline_cursor = uncolored_length(screens[screen].commandline);
                 break;
         }
         draw_inwin();

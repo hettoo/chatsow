@@ -127,6 +127,12 @@ char *uncolor(char *string) {
     return uncolor_result;
 }
 
+int uncolored_length(char *string) {
+    uncolor_length = 0;
+    parse(string, uncolor_char, NULL);
+    return uncolor_length;
+}
+
 static char uncolored_a[MAX_STRING_CHARS];
 static char uncolored_b[MAX_STRING_CHARS];
 
