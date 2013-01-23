@@ -27,6 +27,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include "main.h"
 #include "utils.h"
+#include "serverlist.h"
 #include "client.h"
 #include "ui.h"
 
@@ -406,6 +407,8 @@ static void ui_output_real(int client, char *string) {
 }
 
 void ui_output(int client, char *format, ...) {
+    if (client == -2)
+        client = screen - 1;
     static char string[65536];
     string[0] = '^';
     string[1] = '7';
@@ -603,10 +606,12 @@ void ui_run() {
     draw_statuswin();
     draw_inwin();
 
+    serverlist_init();
     qboolean alt = qfalse;
     for (;;) {
         if (stopped)
             break;
+        serverlist_frame();
         for (i = 0; i < CLIENT_SCREENS; i++)
             client_frame(i);
         int c = wgetch(inwin);
@@ -649,6 +654,10 @@ void ui_run() {
                 break;
             case 330:
                 delete(qfalse);
+                break;
+            case 258:
+                break;
+            case 259:
                 break;
             case 260:
                 move_cursor(-1);

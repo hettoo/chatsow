@@ -131,7 +131,7 @@ void cmd_execute(int c, char *cmd) {
         int start = c;
         int end = c;
         int i;
-        if (c < 0) {
+        if (c < 0 && strcmp(cmd_argv(0), "list") && strcmp(cmd_argv(0), "c")) {
             if (!strcmp(cmd_argv(0), "connect")) {
                 for (i = 0; i < CLIENT_SCREENS; i++) {
                     if (!client_active(i)) {

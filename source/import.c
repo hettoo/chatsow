@@ -120,6 +120,13 @@ void Swap_Init( void )
 #endif
 }
 
+int read_char(msg_t *msg) {
+	int i = (signed char)msg->data[msg->readcount++];
+	if(msg->readcount > msg->cursize)
+		i = -1;
+	return i;
+}
+
 int read_byte(msg_t *msg) {
     int i = (qbyte)msg->data[msg->readcount++];
     if (msg->readcount > msg->cursize)

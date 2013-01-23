@@ -33,6 +33,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "config.h"
 #include "utils.h"
 #include "main.h"
+#include "net.h"
 #include "parser.h"
 #include "cmd.h"
 #include "client.h"
@@ -174,13 +175,6 @@ static void client_title(client_t *c) {
     set_title(c->id, cs_get(&c->cs, 0), c->level, c->game, c->host, c->port);
 }
 
-static void msg_clear(msg_t *msg) {
-    msg->readcount = 0;
-    msg->cursize = 0;
-    msg->maxsize = sizeof(msg->data);
-    msg->compressed = qfalse;
-}
-
 static void set_state(client_t *c, int new_state) {
     c->state = new_state;
     c->resend = 0;
@@ -223,11 +217,6 @@ static void msg_init(client_t *c, msg_t *msg) {
     write_long(msg, c->outseq++);
     write_long(msg, c->inseq);
     write_short(msg, c->port_int);
-}
-
-static void msg_init_outofband(msg_t *msg) {
-    msg_clear(msg);
-    write_long(msg, -1);
 }
 
 static void challenge(client_t *c);

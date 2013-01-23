@@ -392,6 +392,7 @@ void	Swap_Init( void );
 #define read_angle16( sb ) ( SHORT2ANGLE( read_short( ( sb ) ) ) )
 #define read_angle16_dummy( sb ) ( read_short( ( sb ) ) )
 
+int read_char(msg_t *msg);
 int read_byte(msg_t *msg);
 int read_short(msg_t *msg);
 int read_long(msg_t *msg);
