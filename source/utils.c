@@ -115,6 +115,22 @@ char *parse_peek(char *string, parse_state_t *state) {
     return result;
 }
 
+static qboolean parse_empty_result;
+
+static void f_empty_char(char c) {
+    if (c == '\n' || c != ' ')
+        parse_empty_result = qfalse;
+}
+
+qboolean parse_empty_last(char *string) {
+    parse_empty_result = qtrue;
+    parse_state_t state;
+    parse_init(&state, f_empty_char, NULL, NULL, '\0');
+    parse_interleaved(string, &state);
+    parse_finish(&state);
+    return parse_empty_result;
+}
+
 void parse_finish(parse_state_t *state) {
     if (state->set_color && state->f_char)
         state->f_char('^');

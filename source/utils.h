@@ -41,6 +41,7 @@ void parse(char *string, void (*f_char)(char c), void (*f_ghost)(char c), void (
 void parse_init(parse_state_t *state, void (*f_char)(char c), void (*f_ghost)(char c), void (*f_color)(int color), char separator);
 char *parse_interleaved(char *string, parse_state_t *state);
 char *parse_peek(char *string, parse_state_t *state);
+qboolean parse_empty_last(char *string);
 void parse_finish(parse_state_t *state);
 
 int uncolored_length(char *string);

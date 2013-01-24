@@ -347,7 +347,7 @@ static void client_recv(client_t *c) {
             fragment_length &= ~FRAGMENT_LAST;
             last = qtrue;
         }
-        memcpy(c->fragment_buffer + c->fragment_total, msg.data + msg.readcount, fragment_length);
+        read_data(&msg, c->fragment_buffer + c->fragment_total, fragment_length);
         c->fragment_total += fragment_length;
         msg.readcount = 0;
         if (last) {

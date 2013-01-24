@@ -421,9 +421,9 @@ static void ui_output_real(int client, char *string) {
     do {
         s = parse_interleaved(s, &state);
         if (s[-1] != '\0') {
+            ui_output_color(7);
             schedule_next_line();
-            char *peek = parse_peek(s, &state);
-            ui_output_screen->allow_time = peek[-1] == '\0' || peek - s - 1 == 0;
+            ui_output_screen->allow_time = parse_empty_last(s);
         }
     } while(s[-1] != '\0');
 }

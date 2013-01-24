@@ -212,7 +212,6 @@ static void cmd_execute_real(int c, char *name, int type) {
             return;
         }
     }
-    int executions = 0;
     for (client = start; client <= end; client++) {
         if (type == CT_SERVER)
             client_command(client, "%s", cmd_args(0));
