@@ -1,31 +1,45 @@
 /*
-   Copyright (C) 2013 hettoo (Gerco van Heerdt)
+Copyright (C) 2013 hettoo (Gerco van Heerdt)
 
-   This program is free software; you can redistribute it and/or
-   modify it under the terms of the GNU General Public License
-   as published by the Free Software Foundation; either version 2
-   of the License, or (at your option) any later version.
+This program is free software; you can redistribute it and/or
+modify it under the terms of the GNU General Public License
+as published by the Free Software Foundation; either version 2
+of the License, or (at your option) any later version.
 
-   This program is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
-   See the GNU General Public License for more details.
+See the GNU General Public License for more details.
 
-   You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 */
 
 #include "import.h"
+#include "utils.h"
 #include "cs.h"
 #include "client.h"
 #include "cmd.h"
 
+typedef enum cmd_type_e {
+    CT_NORMAL,
+    CT_FROM_SERVER,
+    CT_SERVER,
+    CT_GLOBAL,
+    CT_FIND_FREE,
+    CT_BROADCAST,
+    CT_BROADCAST_ALL,
+    CT_TOTAL
+} cmd_type_t;
+
 typedef struct cmd_s {
     char *name;
     void (*f)();
+    cmd_type_t type;
+    qboolean clients[CLIENTS];
 } cmd_t;
 
 static cmd_t cmds[MAX_CMDS];
@@ -103,86 +117,120 @@ void parse_cmd(char *cmd) {
     }
 }
 
-int cmd_suggest(int c, char *cmd, char suggestions[][MAX_SUGGESTION_SIZE]) {
+static qboolean cmd_type_extends(int type, int parent) {
+    if (type == parent)
+        return qtrue;
+
+    if (parent == CT_NORMAL && type == CT_SERVER)
+        return qtrue;
+
+    if (parent == CT_GLOBAL && (type == CT_FIND_FREE || type == CT_BROADCAST || type == CT_BROADCAST_ALL))
+        return qtrue;
+
+    return qfalse;
+}
+
+static qboolean cmd_type_compatible(int type, int parent) {
+    if (cmd_type_extends(type, parent))
+        return qtrue;
+
+    if (parent == CT_NORMAL && cmd_type_extends(type, CT_GLOBAL))
+        return qtrue;
+
+    return qfalse;
+}
+
+static cmd_t *cmd_find(cmd_t *cmd, int c, int type, qboolean partial) {
+    if (!partial && cmd_argc() == 0)
+        return NULL;
+
+    int i;
+    int len = strlen(cmd_argv(0));
+    for (i = cmd ? (cmd - cmds) + 1 : 0; i < cmd_count; i++) {
+        if (cmd_type_compatible(cmds[i].type, type)
+                && (partial ? !strncmp(cmds[i].name, cmd_argv(0), len)
+                    : !strcmp(cmds[i].name, cmd_argv(0)))
+                && (c < 0 || cmds[i].clients[c]))
+            return cmds + i;
+    }
+
+    return NULL;
+}
+
+static int normal_type(int c) {
+    return c >= 0 ? CT_NORMAL : CT_GLOBAL;
+}
+
+int cmd_suggest(int c, char *name, char suggestions[][MAX_SUGGESTION_SIZE]) {
+    int type = normal_type(c);
     int count = 0;
-    parse_cmd(cmd);
+    parse_cmd(name);
     if (argc <= 1) {
-        int i;
-        int len = strlen(cmd_argv(0));
-        for (i = 0; i < cmd_count; i++) {
-            if (!strncmp(cmd_argv(0), cmds[i].name, len))
-                strcpy(suggestions[count++], cmds[i].name);
-        }
-        if (c >= 0) {
-            for (i = CS_GAMECOMMANDS; i < CS_GAMECOMMANDS + MAX_GAMECOMMANDS; i++) {
-                char *cs = cs_get(client_cs(c), i);
-                if (cs[0] && !strncmp(cmd_argv(0), cs, len))
-                    strcpy(suggestions[count++], cs);
-            }
+        cmd_t *cmd = NULL;
+        while ((cmd = cmd_find(cmd, c, type, qtrue)) != NULL) {
+            if (cmd->name[0])
+                strcpy(suggestions[count++], cmd->name);
         }
     }
     return count;
 }
 
-void cmd_execute(int c, char *cmd) {
-    parse_cmd(cmd);
-    if (argc) {
-        qboolean switch_screen = qfalse;
-        int start = c;
-        int end = c;
-        int i;
-        if (c < 0 && strcmp(cmd_argv(0), "list") && strcmp(cmd_argv(0), "c")) {
-            if (!strcmp(cmd_argv(0), "connect")) {
-                for (i = 0; i < CLIENT_SCREENS; i++) {
-                    if (!client_active(i)) {
-                        start = i;
-                        end = i;
-                        switch_screen = qtrue;
-                        break;
-                    }
-                }
-                if (start < 0) {
-                    ui_output(c, "No free screen left\n");
-                    return;
-                }
-            } else {
-                start = 0;
-                end = CLIENT_SCREENS - 1;
-            }
-        }
-        int executions = 0;
-        for (client = start; client <= end; client++) {
-            qboolean done = qfalse;
-            for (i = 0; i < cmd_count; i++) {
-                if (!strcmp(cmd_argv(0), cmds[i].name)) {
-                    cmds[i].f();
-                    if (switch_screen)
-                        set_screen(client + 1);
-                    done = qtrue;
-                    break;
-                }
-            }
-            if (!done) {
-                for (i = CS_GAMECOMMANDS; i < CS_GAMECOMMANDS + MAX_GAMECOMMANDS; i++) {
-                    if (!strcmp(cmd_argv(0), cs_get(client_cs(client), i))) {
-                        client_command(c, "%s", cmd_args(0));
-                        if (switch_screen)
-                            set_screen(client + 1);
-                        done = qtrue;
-                        break;
-                    }
-                }
-            }
-            if (done)
-                executions++;
-            if (switch_screen)
-                set_screen(client + 1);
-        }
-        if (executions == 0)
-            ui_output(c, "Unrecognized command: %s\n", cmd);
-        else if ((c < 0 && strcmp(cmd_argv(0), "connect")) || executions > 1)
-            ui_output(c, "Command executed on %d clients\n", executions);
+static void cmd_execute_real(int c, char *name, int type) {
+    parse_cmd(name);
+
+    cmd_t *cmd = cmd_find(NULL, c, type, qfalse);
+    if (!cmd) {
+        ui_output(c, "Unknown command: \"%s\"\n", cmd_argv(0));
+        return;
     }
+
+    int start = c;
+    int end = c;
+    qboolean switch_screen = qfalse;
+    if (cmd_type_compatible(cmd->type, type))
+        type = cmd->type;
+    if (type == CT_BROADCAST) {
+        start = 0;
+        end = CLIENTS - 1;
+    } else if (type == CT_BROADCAST_ALL) {
+        start = -1;
+        end = CLIENTS - 1;
+    } else if (type == CT_FIND_FREE && c < 0) {
+        int i;
+        qboolean found = qfalse;
+        for (i = 0; i < CLIENTS && !found; i++) {
+            if (!client_active(i)) {
+                start = i;
+                end = i;
+                found = qtrue;
+                switch_screen = qtrue;
+                break;
+            }
+        }
+        if (!found) {
+            ui_output(c, "No free client found.\n");
+            return;
+        }
+    }
+    int executions = 0;
+    for (client = start; client <= end; client++) {
+        if (type == CT_SERVER)
+            client_command(client, "%s", cmd_args(0));
+        else
+            cmd->f();
+        if (switch_screen)
+            set_screen(client + 1);
+    }
+    if (type == CT_BROADCAST)
+        ui_output(c, "Command executed on %d clients.\n", executions);
+}
+
+void cmd_execute(int c, char *cmd) {
+    cmd_execute_real(c, cmd, normal_type(c));
+}
+
+void cmd_execute_from_server(int c, char *cmd) {
+    cmd_execute_real(c, cmd, CT_FROM_SERVER);
 }
 
 int cmd_client() {
@@ -205,8 +253,71 @@ char *cmd_args(int start) {
     return args + args_index[start];
 }
 
-void cmd_add(char *name, void (*f)()) {
-    cmds[cmd_count].name = name;
-    cmds[cmd_count].f = f;
-    cmd_count++;
+static cmd_t *cmd_find_exact(char *name, void(*f)(), int type) {
+    int i;
+    for (i = 0; i < cmd_count; i++) {
+        if (cmds[i].f == f && cmds[i].name == name && cmds[i].type == type)
+            return cmds + i;
+    }
+    return NULL;
+}
+
+static cmd_t *cmd_reserve(char *name, void (*f)(), int type) {
+    cmd_t *cmd = cmd_find_exact(name, f, type);
+    if (cmd)
+        return cmd;
+
+    if (cmd_count == MAX_CMDS)
+        die("Command count overflow.\n");
+    cmd = cmds + cmd_count++;
+
+    int i;
+    for (i = 0; i < CLIENTS; i++)
+        cmd->clients[i] = qfalse;
+    cmd->name = name;
+    cmd->f = f;
+    cmd->type = type;
+
+    return cmd;
+}
+
+static void cmd_allow_all(cmd_t *cmd) {
+    int i;
+    for (i = 0; i < CLIENTS; i++)
+        cmd->clients[i] = qtrue;
+}
+
+void cmd_add(int client, char *name, void (*f)()) {
+    cmd_t *cmd = cmd_reserve(name, f, CT_NORMAL);
+    cmd->clients[client] = qtrue;
+}
+
+void cmd_add_from_server(char *name, void (*f)()) {
+    cmd_t *cmd = cmd_reserve(name, f, CT_FROM_SERVER);
+    cmd_allow_all(cmd);
+}
+
+void cmd_add_server(int client, char *name) {
+    cmd_t *cmd = cmd_reserve(name, NULL, CT_SERVER);
+    cmd->clients[client] = qtrue;
+}
+
+void cmd_add_global(char *name, void (*f)()) {
+    cmd_t *cmd = cmd_reserve(name, f, CT_GLOBAL);
+    cmd_allow_all(cmd);
+}
+
+void cmd_add_find_free(char *name, void (*f)()) {
+    cmd_t *cmd = cmd_reserve(name, f, CT_FIND_FREE);
+    cmd_allow_all(cmd);
+}
+
+void cmd_add_broadcast(char *name, void (*f)()) {
+    cmd_t *cmd = cmd_reserve(name, f, CT_BROADCAST);
+    cmd_allow_all(cmd);
+}
+
+void cmd_add_broadcast_all(char *name, void (*f)()) {
+    cmd_t *cmd = cmd_reserve(name, f, CT_BROADCAST_ALL);
+    cmd_allow_all(cmd);
 }

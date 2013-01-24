@@ -72,14 +72,14 @@ void serverlist_connect() {
         sprintf(cmd, "connect %s %d", serverlist[id].address, serverlist[id].port);
         cmd_execute(-2, cmd);
     } else {
-        ui_output(-2, "invalid id\n");
+        ui_output(-2, "Invalid id.\n");
     }
 }
 
 void serverlist_init() {
     sockfd = -1;
-    cmd_add("list", serverlist_query);
-    cmd_add("c", serverlist_connect);
+    cmd_add_global("list", serverlist_query);
+    cmd_add_global("c", serverlist_connect);
 }
 
 void serverlist_query() {

@@ -132,6 +132,13 @@ static void reset(client_t *c) {
     cs_init(&c->cs);
 }
 
+void register_configstring_commands(client_t *c) {
+    int max = CS_GAMECOMMANDS + MAX_GAMECOMMANDS;
+    int i;
+    for (i = CS_GAMECOMMANDS; i < max; i++)
+        cmd_add_server(c->id, cs_get(&c->cs, i));
+}
+
 cs_t *client_cs(int id) {
     return &clients[id].cs;
 }
@@ -310,7 +317,7 @@ static void client_recv(client_t *c) {
     }
     int seq = read_long(&msg);
     if (seq == -1) {
-        cmd_execute(c->id, read_string(&msg));
+        cmd_execute_from_server(c->id, read_string(&msg));
         return;
     }
     qboolean compressed = qfalse;
@@ -604,37 +611,37 @@ void cmd_quit() {
 }
 
 void client_register_commands() {
-    cmd_add("challenge", cmd_challenge);
-    cmd_add("client_connect", cmd_client_connect);
-    cmd_add("cs", cmd_cs);
-    cmd_add("cmd", cmd_cmd);
-    cmd_add("precache", cmd_precache);
-    cmd_add("disconnect", cmd_disconnect);
-    cmd_add("forcereconnect", cmd_reconnect);
-    cmd_add("reconnect", cmd_reconnect);
+    cmd_add_from_server("challenge", cmd_challenge);
+    cmd_add_from_server("client_connect", cmd_client_connect);
+    cmd_add_from_server("cs", cmd_cs);
+    cmd_add_from_server("cmd", cmd_cmd);
+    cmd_add_from_server("precache", cmd_precache);
+    cmd_add_from_server("disconnect", cmd_disconnect);
+    cmd_add_from_server("forcereconnect", cmd_reconnect);
+    cmd_add_from_server("reconnect", cmd_reconnect);
 
-    cmd_add("mm", cmd_nop);
-    cmd_add("plstats", cmd_nop);
-    cmd_add("scb", cmd_nop);
-    cmd_add("cvarinfo", cmd_nop);
-    cmd_add("obry", cmd_nop);
-    cmd_add("ti", cmd_nop);
-    cmd_add("changing", cmd_nop);
+    cmd_add_from_server("mm", cmd_nop);
+    cmd_add_from_server("plstats", cmd_nop);
+    cmd_add_from_server("scb", cmd_nop);
+    cmd_add_from_server("cvarinfo", cmd_nop);
+    cmd_add_from_server("obry", cmd_nop);
+    cmd_add_from_server("ti", cmd_nop);
+    cmd_add_from_server("changing", cmd_nop);
+    cmd_add_from_server("cp", cmd_nop);
 
-    cmd_add("dstart", cmd_nop);
-    cmd_add("dstop", cmd_nop);
-    cmd_add("dcancel", cmd_nop);
-    cmd_add("cp", cmd_nop);
+    cmd_add_from_server("dstart", cmd_nop);
+    cmd_add_from_server("dstop", cmd_nop);
+    cmd_add_from_server("dcancel", cmd_nop);
 
-    cmd_add("pr", cmd_pr);
-    cmd_add("ch", cmd_ch);
-    cmd_add("tch", cmd_tch);
-    cmd_add("tvch", cmd_tvch);
-    cmd_add("motd", cmd_motd);
+    cmd_add_from_server("pr", cmd_pr);
+    cmd_add_from_server("ch", cmd_ch);
+    cmd_add_from_server("tch", cmd_tch);
+    cmd_add_from_server("tvch", cmd_tvch);
+    cmd_add_from_server("motd", cmd_motd);
 
-    cmd_add("connect", cmd_connect);
-    cmd_add("name", cmd_name);
-    cmd_add("quit", cmd_quit);
+    cmd_add_find_free("connect", cmd_connect);
+    cmd_add_global("name", cmd_name);
+    cmd_add_global("quit", cmd_quit);
 }
 
 int player_suggest(int id, char *partial, char suggestions[][MAX_SUGGESTION_SIZE]) {
@@ -651,6 +658,7 @@ int player_suggest(int id, char *partial, char suggestions[][MAX_SUGGESTION_SIZE
 void client_start(int id) {
     client_t *c = clients + id;
     reset(c);
+    register_configstring_commands(c);
 
     strcpy(c->name, "chatter");
     set_state(c, CA_DISCONNECTED);
@@ -677,5 +685,5 @@ void execute(int id, char *cmd, qbyte *targets, int target_count) {
         if (!found)
             return;
     }
-    cmd_execute(id, cmd);
+    cmd_execute_from_server(id, cmd);
 }

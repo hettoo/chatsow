@@ -21,7 +21,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #ifndef WRLC_CMD_H
 #define WRLC_CMD_H
 
-#define MAX_CMDS 128
+#define MAX_CMDS 2048
 #define MAX_ARGC 512
 #define MAX_ARG_SIZE 512
 #define MAX_ARGS_SIZE (MAX_ARGC * MAX_ARG_SIZE)
@@ -29,12 +29,20 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "ui.h"
 
 void cmd_execute(int c, char *cmd);
+void cmd_execute_from_server(int c, char *cmd);
 int cmd_suggest(int c, char *cmd, char suggestions[][MAX_SUGGESTION_SIZE]);
+
 int cmd_client();
 int cmd_argc();
 char *cmd_argv(int index);
 char *cmd_args(int start);
 
-void cmd_add(char *name, void (*f)());
+void cmd_add(int client, char *name, void (*f)());
+void cmd_add_from_server(char *name, void (*f)());
+void cmd_add_server(int client, char *name);
+void cmd_add_global(char *name, void (*f)());
+void cmd_add_find_free(char *name, void (*f)());
+void cmd_add_broadcast(char *name, void (*f)());
+void cmd_add_broadcast_all(char *name, void (*f)());
 
 #endif
