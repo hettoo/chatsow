@@ -180,7 +180,7 @@ void set_bitflags(int id, int new_bitflags) {
 }
 
 static void client_title(client_t *c) {
-    set_title(c->id, cs_get(&c->cs, 0), c->level, c->game, c->host, c->port);
+    set_title(c->id, c->level, c->game, c->host, c->port);
 }
 
 static void set_state(client_t *c, int new_state) {
@@ -420,7 +420,7 @@ void client_frame(int id) {
     client_t *c = clients + id;
     int m = millis();
     if (c->last_status == 0 || m >= c->last_status + 1000) {
-        draw_status(id, c->name);
+        draw_status(id, c->name, cs_get(&c->cs, 0));
         c->last_status = m;
     }
 

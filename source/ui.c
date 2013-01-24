@@ -76,13 +76,13 @@ static WINDOW *statuswin;
 static WINDOW *inwin;
 
 typedef struct screen_s {
-    char *server;
     char *level;
     char *game;
     char *host;
     char *port;
 
     char *last_name;
+    char *last_server;
 
     char buffer[MAX_BUFFER_SIZE][MAX_OUTPUT_LENGTH];
     int buffer_count;
@@ -191,10 +191,6 @@ static void draw_titlewin() {
     set_color(titlewin, 7);
     int i = 1;
     waddstr(titlewin, " ");
-    if (screens[screen].server) {
-        i += draw_colored(titlewin, screens[screen].server);
-        i += draw_colored(titlewin, " ^5");
-    }
     if (screens[screen].level) {
         i += draw_colored(titlewin, "[^7");
         i += draw_colored(titlewin, screens[screen].level);
@@ -218,8 +214,7 @@ static void draw_titlewin() {
     wrefresh(titlewin);
 }
 
-void set_title(int client, char *new_server, char *new_level, char *new_game, char *new_host, char *new_port) {
-    screens[client + 1].server = new_server;
+void set_title(int client, char *new_level, char *new_game, char *new_host, char *new_port) {
     screens[client + 1].level = new_level;
     screens[client + 1].game = new_game;
     screens[client + 1].host = new_host;
@@ -293,16 +288,21 @@ static void draw_statuswin() {
     i += draw_colored(statuswin, "^5[^7");
     sprintf(number, "%d", screen);
     i += draw_colored(statuswin, number);
-    if (screen == 0)
+    if (screen == 0) {
         i += draw_colored(statuswin, ":STATUS");
+    } else if (screens[screen].last_server != NULL && screens[screen].last_server[0]) {
+        i += draw_colored(statuswin, ":^7");
+        i += draw_colored(statuswin, screens[screen].last_server);
+    }
     i += draw_colored(statuswin, "^5] ");
     for (; i < COLS; i++)
         waddch(statuswin, ' ');
     wrefresh(statuswin);
 }
 
-void draw_status(int client, char *name) {
+void draw_status(int client, char *name, char *server) {
     screens[client + 1].last_name = name;
+    screens[client + 1].last_server = server;
     draw_statuswin();
 }
 
@@ -608,7 +608,7 @@ void ui_run() {
             client_start(i - 1);
     }
 
-    set_title(-1, NULL, NULL, NULL, NULL, NULL);
+    set_title(-1, NULL, NULL, NULL, NULL);
     draw_outwin();
     draw_statuswin();
     draw_inwin();
