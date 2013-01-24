@@ -92,6 +92,7 @@ typedef struct client_s {
     int protocol;
     int spawn_count;
     int playernum;
+    char motd[MAX_STRING_CHARS];
     char game[MAX_STRING_CHARS];
     char level[MAX_STRING_CHARS];
 } client_t;
@@ -125,6 +126,7 @@ static void reset(client_t *c) {
     c->bitflags = 0;
     c->spawn_count = 0;
     c->playernum = 0;
+    c->motd[0] = '\0';
     c->game[0] = '\0';
     c->level[0] = '\0';
 
@@ -180,7 +182,7 @@ void set_bitflags(int id, int new_bitflags) {
 }
 
 static void client_title(client_t *c) {
-    set_title(c->id, c->level, c->game, c->host, c->port);
+    set_title(c->id, c->motd, c->level, c->game, c->host, c->port);
 }
 
 static void set_state(client_t *c, int new_state) {
@@ -587,7 +589,7 @@ void cmd_tvch() {
 
 void cmd_motd() {
     client_t *c = clients + cmd_client();
-    ui_output(c->id, "^5Message of the day:^7\n%s", cmd_argv(2));
+    strcpy(c->motd, cmd_argv(2));
 }
 
 void cmd_connect() {
@@ -640,7 +642,7 @@ void client_register_commands() {
     cmd_add_from_server("motd", cmd_motd);
 
     cmd_add_find_free("connect", cmd_connect);
-    cmd_add_global("name", cmd_name);
+    cmd_add_broadcast("name", cmd_name);
     cmd_add_global("quit", cmd_quit);
 }
 

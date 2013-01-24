@@ -76,6 +76,7 @@ static WINDOW *statuswin;
 static WINDOW *inwin;
 
 typedef struct screen_s {
+    char *motd;
     char *level;
     char *game;
     char *host;
@@ -191,21 +192,25 @@ static void draw_titlewin() {
     set_color(titlewin, 7);
     int i = 1;
     waddstr(titlewin, " ");
-    if (screens[screen].level) {
-        i += draw_colored(titlewin, "[^7");
+    if (screens[screen].motd && screens[screen].motd[0]) {
+        i += draw_colored(titlewin, screens[screen].motd);
+        i += draw_colored(titlewin, " ");
+    }
+    if (screens[screen].level && screens[screen].level[0]) {
+        i += draw_colored(titlewin, "^5[^7");
         i += draw_colored(titlewin, screens[screen].level);
         i += draw_colored(titlewin, "^5] ");
     }
-    if (screens[screen].game) {
+    if (screens[screen].game && screens[screen].game[0]) {
         i += draw_colored(titlewin, "[^7");
         i += draw_colored(titlewin, screens[screen].game);
         i += draw_colored(titlewin, "^5] ");
     }
-    if (screens[screen].host || screens[screen].port)
+    if ((screens[screen].host && screens[screen].host[0]) || (screens[screen].port && screens[screen].port[0]))
         i += draw_colored(titlewin, "@ ^7");
-    if (screens[screen].host)
+    if (screens[screen].host && screens[screen].host[0])
         i += draw_colored(titlewin, screens[screen].host);
-    if (screens[screen].port) {
+    if (screens[screen].port && screens[screen].port[0]) {
         i += draw_colored(titlewin, "^5:^7");
         i += draw_colored(titlewin, screens[screen].port);
     }
@@ -214,7 +219,8 @@ static void draw_titlewin() {
     wrefresh(titlewin);
 }
 
-void set_title(int client, char *new_level, char *new_game, char *new_host, char *new_port) {
+void set_title(int client, char *new_motd, char *new_level, char *new_game, char *new_host, char *new_port) {
+    screens[client + 1].motd = new_motd;
     screens[client + 1].level = new_level;
     screens[client + 1].game = new_game;
     screens[client + 1].host = new_host;
@@ -306,6 +312,22 @@ void draw_status(int client, char *name, char *server) {
     draw_statuswin();
 }
 
+static int command_mode_prefix_length() {
+    return screen == 0 ? 0 : 1;
+}
+
+static qboolean explicit_command_mode() {
+    return screens[screen].commandline_length >= command_mode_prefix_length() && screens[screen].commandline[0] == '/';
+}
+
+static qboolean command_mode() {
+    return screen == 0 || explicit_command_mode();
+}
+
+static int command_mode_actual_prefix_length() {
+    return explicit_command_mode() ? 1 : 0;
+}
+
 static void draw_inwin() {
     color_base = NORMAL_BASE + 1;
     werase(inwin);
@@ -313,7 +335,7 @@ static void draw_inwin() {
     wattron(inwin, A_BOLD);
     draw_colored(inwin, "> ");
     wattroff(inwin, A_BOLD);
-    if (screens[screen].commandline_length < 1 || screens[screen].commandline[0] != '/')
+    if (!command_mode())
         wattrset(inwin, COLOR_PAIR(color_base + 2));
     draw_colored_cursored(inwin, screens[screen].commandline, screens[screen].commandline_cursor);
     wrefresh(inwin);
@@ -548,7 +570,7 @@ static qboolean apply_suggestions(qboolean complete_partial) {
 }
 
 static void complete_command() {
-    suggesting_offset = 1;
+    suggesting_offset = command_mode_actual_prefix_length();
     char backup = screens[screen].commandline[screens[screen].commandline_cursor];
     screens[screen].commandline[screens[screen].commandline_cursor] = '\0';
     suggestion_count = cmd_suggest(screen - 1, screens[screen].commandline + suggesting_offset, suggestions);
@@ -608,7 +630,7 @@ void ui_run() {
             client_start(i - 1);
     }
 
-    set_title(-1, NULL, NULL, NULL, NULL);
+    set_title(-1, NULL, NULL, NULL, NULL, NULL);
     draw_outwin();
     draw_statuswin();
     draw_inwin();
@@ -678,7 +700,7 @@ void ui_run() {
                 screens[screen].commandline_cursor = uncolored_length(screens[screen].commandline);
                 break;
             case 9:
-                if (screens[screen].commandline[0] == '/' && screens[screen].commandline_cursor > 0)
+                if (command_mode() && screens[screen].commandline_cursor >= command_mode_prefix_length())
                     complete_command();
                 else
                     complete_chat();
@@ -688,15 +710,12 @@ void ui_run() {
                 screens[screen].commandline[screens[screen].commandline_length] = '\0';
                 screens[screen].scroll_up = 0;
                 int old_screen = screen;
-                if (screens[screen].commandline_length > (screens[screen].commandline[0] == '/' ? 1 : 0)) {
-                    if (screens[screen].commandline[0] == '/') {
+                if (screens[screen].commandline_length > (command_mode() ? command_mode_prefix_length() : 0)) {
+                    if (command_mode()) {
                         ui_output(screen - 1, "%s\n", screens[screen].commandline);
-                        cmd_execute(screen - 1, screens[screen].commandline + 1);
+                        cmd_execute(screen - 1, screens[screen].commandline + command_mode_actual_prefix_length());
                     } else {
-                        if (screen == 0)
-                            ui_output(screen - 1, "^5If you really want to broadcast your message, invoke /say manually.\n");
-                        else
-                            client_command(screen - 1, "say %s", screens[screen].commandline);
+                        client_command(screen - 1, "say %s", screens[screen].commandline);
                     }
                 }
                 screens[old_screen].commandline_length = 0;

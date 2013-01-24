@@ -221,8 +221,6 @@ static void cmd_execute_real(int c, char *name, int type) {
         if (switch_screen)
             set_screen(client + 1);
     }
-    if (type == CT_BROADCAST)
-        ui_output(c, "Command executed on %d clients.\n", executions);
 }
 
 void cmd_execute(int c, char *cmd) {
