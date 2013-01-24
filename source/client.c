@@ -659,6 +659,8 @@ void client_start(int id) {
     client_t *c = clients + id;
     reset(c);
     register_configstring_commands(c);
+    cmd_add(id, "reconnect", cmd_reconnect);
+    cmd_add(id, "disconnect", cmd_disconnect);
 
     strcpy(c->name, "chatter");
     set_state(c, CA_DISCONNECTED);
