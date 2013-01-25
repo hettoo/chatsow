@@ -160,6 +160,7 @@ static int draw_len;
 static int draw_cursor;
 static int draw_skip;
 static int draw_max;
+static int draw_total_len;
 
 static void draw_colored_char(char c) {
     if (draw_max < 0 || draw_len < draw_skip + draw_max) {
@@ -172,6 +173,7 @@ static void draw_colored_char(char c) {
         }
         draw_len++;
     }
+    draw_total_len++;
 }
 
 static void draw_colored_color(int color) {
@@ -180,6 +182,7 @@ static void draw_colored_color(int color) {
 
 static int draw_colored_cursored_scroll(WINDOW *win, char *string, int cursor, int max_width) {
     draw_len = 0;
+    draw_total_len = 0;
     draw_win = win;
     draw_cursor = cursor;
     if (max_width > 0) {
@@ -344,13 +347,27 @@ static int command_mode_actual_prefix_length() {
 static void draw_inwin() {
     color_base = NORMAL_BASE + 1;
     werase(inwin);
+    wmove(inwin, 0, 3);
+    if (command_mode())
+        set_color(inwin, 7);
+    else
+        wattrset(inwin, COLOR_PAIR(color_base + 3));
+    draw_colored_cursored_scroll(inwin, screens[screen].commandline, screens[screen].commandline_cursor, COLS - 3);
+    qboolean skipped = draw_skip > 0;
+    qboolean hidden = draw_skip + draw_max < draw_total_len;
+    wmove(inwin, 0, 0);
     set_color(inwin, 7);
     wattron(inwin, A_BOLD);
-    int i = draw_colored(inwin, "> ");
+    if (skipped)
+        draw_colored(inwin, "<");
+    else
+        draw_colored(inwin, "[");
+    if (hidden)
+        draw_colored(inwin, ">");
+    else
+        draw_colored(inwin, "]");
+    draw_colored(inwin, " ");
     wattroff(inwin, A_BOLD);
-    if (!command_mode())
-        wattrset(inwin, COLOR_PAIR(color_base + 2));
-    draw_colored_cursored_scroll(inwin, screens[screen].commandline, screens[screen].commandline_cursor, COLS - i);
     wrefresh(inwin);
 }
 
