@@ -694,6 +694,12 @@ void ui_run() {
             case 261:
                 move_cursor(1);
                 break;
+            case 262:
+                screens[screen].commandline_cursor = 0;
+                break;
+            case 360:
+                screens[screen].commandline_cursor = uncolored_length(screens[screen].commandline);
+                break;
             case 21:
                 screens[screen].commandline_length = 0;
                 screens[screen].commandline[screens[screen].commandline_length] = '\0';
