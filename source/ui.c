@@ -158,24 +158,37 @@ static void set_color(WINDOW *win, int color) {
 static WINDOW *draw_win;
 static int draw_len;
 static int draw_cursor;
+static int draw_skip;
+static int draw_max;
 
 static void draw_colored_char(char c) {
-    if (draw_len == draw_cursor)
-        wattron(draw_win, A_REVERSE);
-    waddch(draw_win, c);
-    if (draw_len == draw_cursor)
-        wattroff(draw_win, A_REVERSE);
-    draw_len++;
+    if (draw_max < 0 || draw_len < draw_skip + draw_max) {
+        if (draw_len >= draw_skip) {
+            if (draw_len == draw_cursor)
+                wattron(draw_win, A_REVERSE);
+            waddch(draw_win, c);
+            if (draw_len == draw_cursor)
+                wattroff(draw_win, A_REVERSE);
+        }
+        draw_len++;
+    }
 }
 
 static void draw_colored_color(int color) {
     set_color(draw_win, color);
 }
 
-static int draw_colored_cursored(WINDOW *win, char *string, int cursor) {
+static int draw_colored_cursored_scroll(WINDOW *win, char *string, int cursor, int max_width) {
     draw_len = 0;
     draw_win = win;
     draw_cursor = cursor;
+    if (max_width > 0) {
+        draw_skip = cursor >= max_width ? cursor / max_width * max_width : 0;
+        draw_max = max(cursor - draw_skip, max_width);
+    } else {
+        draw_skip = 0;
+        draw_max = -1;
+    }
     parse(string, draw_colored_char, NULL, draw_colored_color);
     if (draw_len == cursor)
         draw_colored_char(' ');
@@ -183,7 +196,7 @@ static int draw_colored_cursored(WINDOW *win, char *string, int cursor) {
 }
 
 static int draw_colored(WINDOW *win, char *string) {
-    return draw_colored_cursored(win, string, -1);
+    return draw_colored_cursored_scroll(win, string, -1, 0);
 }
 
 static void draw_titlewin() {
@@ -333,11 +346,11 @@ static void draw_inwin() {
     werase(inwin);
     set_color(inwin, 7);
     wattron(inwin, A_BOLD);
-    draw_colored(inwin, "> ");
+    int i = draw_colored(inwin, "> ");
     wattroff(inwin, A_BOLD);
     if (!command_mode())
         wattrset(inwin, COLOR_PAIR(color_base + 2));
-    draw_colored_cursored(inwin, screens[screen].commandline, screens[screen].commandline_cursor);
+    draw_colored_cursored_scroll(inwin, screens[screen].commandline, screens[screen].commandline_cursor, COLS - i);
     wrefresh(inwin);
 }
 
@@ -500,6 +513,9 @@ static void delete(qboolean before) {
 }
 
 static void insert(char c) {
+    if (screens[screen].commandline_length == MAX_INPUT_LENGTH - 1)
+        return;
+
     int index = real_index(screens[screen].commandline, screens[screen].commandline_cursor);
     if (index >= 0) {
         int i;
