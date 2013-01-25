@@ -560,7 +560,9 @@ static void notify_chat(int id, char *name, char *text) {
     static char message[MAX_MSGLEN + MAX_CONFIGSTRING_CHARS + 2];
     sprintf(message, "%s: %s", uncolor(name), text);
     NotifyNotification* notification = notify_notification_new(title, message, NULL);
+    notify_notification_set_timeout(notification, 2000);
     notify_notification_show(notification, NULL);
+    g_object_unref(G_OBJECT(notification));
 }
 
 void cmd_ch() {
