@@ -351,7 +351,7 @@ static void draw_inwin() {
     if (command_mode())
         set_color(inwin, 7);
     else
-        wattrset(inwin, COLOR_PAIR(color_base + 3));
+        wattrset(inwin, COLOR_PAIR(color_base + 2));
     draw_colored_cursored_scroll(inwin, screens[screen].commandline, screens[screen].commandline_cursor, COLS - 3);
     qboolean skipped = draw_skip > 0;
     qboolean hidden = draw_skip + draw_max < draw_total_len;
