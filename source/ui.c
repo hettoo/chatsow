@@ -247,7 +247,8 @@ void set_title(int client, char *new_motd, char *new_level, char *new_game, char
     screens[client + 1].game = new_game;
     screens[client + 1].host = new_host;
     screens[client + 1].port = new_port;
-    draw_titlewin(client + 1);
+    if (titlewin != NULL)
+        draw_titlewin(client + 1);
 }
 
 static void draw_outwin() {
@@ -678,17 +679,7 @@ static void complete_chat() {
     }
 }
 
-void ui_run() {
-    signal(SIGINT, interrupt);
-    signal(SIGSEGV, interrupt);
-
-    mainwin = initscr();
-    init_colors();
-    nonl();
-    cbreak();
-    noecho();
-    curs_set(0);
-
+static void redesign() {
     titlewin = subwin(mainwin, 1, COLS, 0, 0);
 
     outwin = subwin(mainwin, LINES - 3, COLS, 1, 0);
@@ -700,6 +691,23 @@ void ui_run() {
     keypad(inwin, TRUE);
     wtimeout(inwin, INPUT_TIME);
 
+    redraw();
+}
+
+void ui_run() {
+    signal(SIGINT, interrupt);
+    signal(SIGSEGV, interrupt);
+
+    mainwin = initscr();
+    init_colors();
+    nonl();
+    cbreak();
+    noecho();
+    curs_set(0);
+
+    titlewin = NULL;
+    set_title(-1, NULL, NULL, NULL, NULL, NULL);
+
     client_register_commands();
     int i;
     for (i = 0; i < SCREENS; i++) {
@@ -708,14 +716,17 @@ void ui_run() {
             client_start(i - 1);
     }
 
-    set_title(-1, NULL, NULL, NULL, NULL, NULL);
-    draw_outwin();
-    draw_statuswin();
-    draw_inwin();
-
     serverlist_init();
+
     qboolean alt = qfalse;
+    int last_cols = 0;
+    int last_lines = 0;
     for (;;) {
+        if (last_cols != COLS && last_lines != LINES) {
+            redesign();
+            last_cols = COLS;
+            last_lines = LINES;
+        }
         if (stopped)
             break;
         serverlist_frame();
@@ -809,6 +820,8 @@ void ui_run() {
                 screens[old_screen].commandline[screens[old_screen].commandline_length] = '\0';
                 screens[old_screen].commandline_cursor = uncolored_length(screens[old_screen].commandline);
                 draw_outwin();
+                break;
+            case 410:
                 break;
             default:
                 insert(c);
