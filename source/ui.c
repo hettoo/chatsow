@@ -31,9 +31,10 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "client.h"
 #include "ui.h"
 
-#define MAX_BUFFER_SIZE 512
-#define MAX_OUTPUT_LENGTH 128
-#define MAX_INPUT_LENGTH 128
+#define MAX_BUFFER_SIZE 1024
+#define MAX_OUTPUT_LENGTH 256
+#define MAX_INPUT_LENGTH 256
+#define MAX_HISTORY 128
 
 #define SCROLL_SPEED 10
 
@@ -96,8 +97,13 @@ typedef struct screen_s {
     qboolean allow_time;
 
     char commandline[MAX_INPUT_LENGTH];
+    char backup[MAX_INPUT_LENGTH];
     int commandline_length;
     int commandline_cursor;
+    char history[MAX_HISTORY][MAX_INPUT_LENGTH];
+    int history_count;
+    int history_index;
+    int history_lookup;
 
     qboolean updated;
     qboolean important;
@@ -504,8 +510,47 @@ static void screen_init(screen_t *s) {
     s->commandline_length = 0;
     s->commandline_cursor = 0;
 
+    s->history_count = 0;
+    s->history_index = -1;
+    s->history_lookup = -1;
+
     s->updated = qfalse;
     s->important = qfalse;
+}
+
+static void add_history() {
+    if (screens[screen].history_count < MAX_HISTORY)
+        screens[screen].history_count++;
+    screens[screen].history_index = (screens[screen].history_index + 1) % MAX_HISTORY;
+    strcpy(screens[screen].history[screens[screen].history_index], screens[screen].commandline);
+    screens[screen].history_lookup = -1;
+}
+
+static void move_history(int d) {
+    if (d == 0)
+        return;
+
+    screen_t *s = screens + screen;
+    if (s->history_lookup == -1 && d < 0)
+        return;
+    if (s->history_lookup == s->history_count - 1 && d > 0)
+        return;
+
+    if (s->history_lookup == -1)
+        strcpy(s->backup, s->commandline);
+
+    s->history_lookup += d;
+    if (s->history_lookup > s->history_count - 1)
+        s->history_lookup = s->history_count - 1;
+    if (s->history_lookup < -1)
+        s->history_lookup = -1;
+
+    if (s->history_lookup == -1)
+        strcpy(s->commandline, s->backup);
+    else
+        strcpy(s->commandline, s->history[(s->history_index - s->history_lookup + MAX_HISTORY) % MAX_HISTORY]);
+    s->commandline_length = strlen(s->commandline);
+    screens[screen].commandline_cursor = uncolored_length(s->commandline);
 }
 
 static void move_cursor(int d) {
@@ -718,8 +763,10 @@ void ui_run() {
                 delete(qfalse);
                 break;
             case 258:
+                move_history(-1);
                 break;
             case 259:
+                move_history(1);
                 break;
             case 260:
                 move_cursor(-1);
@@ -750,6 +797,7 @@ void ui_run() {
                 screens[screen].scroll_up = 0;
                 int old_screen = screen;
                 if (screens[screen].commandline_length > (command_mode() ? command_mode_prefix_length() : 0)) {
+                    add_history();
                     if (command_mode()) {
                         ui_output(screen - 1, "%s\n", screens[screen].commandline);
                         cmd_execute(screen - 1, screens[screen].commandline + command_mode_actual_prefix_length());
