@@ -70,11 +70,11 @@ typedef enum color_e {
 
 static color_t color_base;
 
-static WINDOW *mainwin;
-static WINDOW *titlewin;
-static WINDOW *outwin;
-static WINDOW *statuswin;
-static WINDOW *inwin;
+static WINDOW *mainwin = NULL;
+static WINDOW *titlewin = NULL;
+static WINDOW *outwin = NULL;
+static WINDOW *statuswin = NULL;
+static WINDOW *inwin = NULL;
 
 typedef struct screen_s {
     char *motd;
@@ -107,6 +107,8 @@ typedef struct screen_s {
 
     qboolean updated;
     qboolean important;
+
+    qboolean redraw_outwin;
 } screen_t;
 
 static screen_t screens[SCREENS];
@@ -118,7 +120,8 @@ void ui_stop() {
     int i;
     for (i = 0; i < CLIENT_SCREENS; i++)
         disconnect(i);
-    endwin();
+    if (mainwin != NULL)
+        endwin();
     stopped = TRUE;
 }
 
@@ -275,6 +278,7 @@ static void draw_outwin() {
         draw_colored(outwin, screens[screen].buffer[index]);
     }
     wrefresh(outwin);
+    screens[screen].redraw_outwin = qfalse;
 }
 
 static void draw_statuswin() {
@@ -482,7 +486,7 @@ void ui_output(int client, char *format, ...) {
     vsprintf(string + len, format, argptr);
 	va_end(argptr);
     ui_output_real(client, string);
-    draw_outwin();
+    screens[client + 1].redraw_outwin = qtrue;
     if (client + 1 != screen || screens[client + 1].scroll_up != 0) {
         screens[client + 1].updated = qtrue;
         draw_statuswin();
@@ -501,7 +505,7 @@ static void screen_init(screen_t *s) {
 
     s->buffer_count = 0;
     s->ghost_line = qfalse;
-    s->buffer_index = 0;
+    s->buffer_index = -1;
     s->output_length = 0;
     s->visual_output_length = 0;
     s->scroll_up = 0;
@@ -517,14 +521,29 @@ static void screen_init(screen_t *s) {
 
     s->updated = qfalse;
     s->important = qfalse;
+
+    s->redraw_outwin = qfalse;
 }
 
 static void add_history() {
-    if (screens[screen].history_count < MAX_HISTORY)
-        screens[screen].history_count++;
-    screens[screen].history_index = (screens[screen].history_index + 1) % MAX_HISTORY;
-    strcpy(screens[screen].history[screens[screen].history_index], screens[screen].commandline);
-    screens[screen].history_lookup = -1;
+    screen_t *s = screens + screen;
+    s->history_lookup = -1;
+
+    if (!strcmp(s->history[s->history_index], s->commandline))
+        return;
+
+    if (s->history_count < MAX_HISTORY)
+        s->history_count++;
+    s->history_index = (s->history_index + 1) % MAX_HISTORY;
+
+    strcpy(s->history[s->history_index], s->commandline);
+}
+
+static void update_history() {
+    screen_t *s = screens + screen;
+    if (s->history_lookup == -1)
+        return;
+    strcpy(s->history[(s->history_index - s->history_lookup + MAX_HISTORY) % MAX_HISTORY], s->commandline);
 }
 
 static void move_history(int d) {
@@ -551,7 +570,7 @@ static void move_history(int d) {
     else
         strcpy(s->commandline, s->history[(s->history_index - s->history_lookup + MAX_HISTORY) % MAX_HISTORY]);
     s->commandline_length = strlen(s->commandline);
-    screens[screen].commandline_cursor = uncolored_length(s->commandline);
+    s->commandline_cursor = uncolored_length(s->commandline);
 }
 
 static void move_cursor(int d) {
@@ -679,7 +698,20 @@ static void complete_chat() {
     }
 }
 
+static void remove_subwindows() {
+    if (titlewin)
+        delwin(titlewin);
+    if (outwin)
+        delwin(outwin);
+    if (statuswin)
+        delwin(statuswin);
+    if (inwin)
+        delwin(inwin);
+}
+
 static void redesign() {
+    remove_subwindows();
+
     titlewin = subwin(mainwin, 1, COLS, 0, 0);
 
     outwin = subwin(mainwin, LINES - 3, COLS, 1, 0);
@@ -705,7 +737,6 @@ void ui_run() {
     noecho();
     curs_set(0);
 
-    titlewin = NULL;
     set_title(-1, NULL, NULL, NULL, NULL, NULL);
 
     client_register_commands();
@@ -729,6 +760,8 @@ void ui_run() {
         }
         if (stopped)
             break;
+        if (screens[screen].redraw_outwin)
+            draw_outwin();
         serverlist_frame();
         for (i = 0; i < CLIENT_SCREENS; i++)
             client_frame(i);
@@ -743,6 +776,12 @@ void ui_run() {
         }
         bool handled = TRUE;
         switch (c) {
+            case 11:
+                screens[screen].scroll_up++;
+                break;
+            case 10:
+                screens[screen].scroll_up--;
+                break;
             case KEY_PPAGE:
                 screens[screen].scroll_up += SCROLL_SPEED;
                 break;
@@ -766,7 +805,6 @@ void ui_run() {
             case 27:
                 alt = qtrue;
                 continue;
-            case KEY_BACKSPACE:
             case 127:
                 delete(qtrue);
                 break;
@@ -779,10 +817,15 @@ void ui_run() {
             case 259:
                 move_history(1);
                 break;
+            case 5:
+                update_history();
+                break;
             case 260:
+            case 263:
                 move_cursor(-1);
                 break;
             case 261:
+            case 12:
                 move_cursor(1);
                 break;
             case 262:
@@ -802,7 +845,6 @@ void ui_run() {
                 else
                     complete_chat();
                 break;
-            case KEY_ENTER:
             case 13:
                 screens[screen].commandline[screens[screen].commandline_length] = '\0';
                 screens[screen].scroll_up = 0;
@@ -819,7 +861,6 @@ void ui_run() {
                 screens[old_screen].commandline_length = 0;
                 screens[old_screen].commandline[screens[old_screen].commandline_length] = '\0';
                 screens[old_screen].commandline_cursor = uncolored_length(screens[old_screen].commandline);
-                draw_outwin();
                 break;
             case 410:
                 break;
