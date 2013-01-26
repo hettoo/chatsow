@@ -80,8 +80,6 @@ typedef struct client_s {
 
     int command_seq;
 
-    unsigned int last_status;
-
     unsigned int resend;
     unsigned int last_send;
 
@@ -114,8 +112,6 @@ static void reset(client_t *c) {
     c->inseq = 0;
 
     c->command_seq = 1;
-
-    c->last_status = 0;
 
     c->resend = 0;
     c->last_send = 0;
@@ -420,11 +416,6 @@ static void request_serverdata(client_t *c) {
 
 void client_frame(int id) {
     client_t *c = clients + id;
-    int m = millis();
-    if (c->last_status == 0 || m >= c->last_status + 1000) {
-        draw_status(id, c->name, cs_get(&c->cs, 0));
-        c->last_status = m;
-    }
 
     if (c->state == CA_DISCONNECTED)
         return;
@@ -508,6 +499,7 @@ void cmd_cs() {
             cs_set(&c->cs, atoi(cmd_argv(i)), cmd_argv(i + 1));
     }
     strcpy(c->name, player_name(&c->cs, c->playernum));
+    set_status(c->id, c->name, cs_get(&c->cs, 0));
 }
 
 void cmd_cmd() {
@@ -606,6 +598,7 @@ void cmd_connect() {
 void cmd_name() {
     client_t *c = clients + cmd_client();
     strcpy(c->name, cmd_argv(1));
+    set_status(c->id, c->name, cs_get(&c->cs, 0));
     if (c->state >= CA_SETUP)
         client_command(c->id, "usri \"\\name\\%s\"", c->name);
 }
@@ -669,6 +662,7 @@ void client_start(int id) {
     strcpy(c->name, "chatter");
     set_state(c, CA_DISCONNECTED);
     set_server(c, NULL, NULL);
+    set_status(c->id, c->name, cs_get(&c->cs, 0));
 }
 
 void demoinfo_key(int id, char *key) {

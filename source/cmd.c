@@ -189,7 +189,7 @@ static void cmd_execute_real(int c, char *name, int type) {
     qboolean switch_screen = qfalse;
     if (cmd_type_compatible(cmd->type, type))
         type = cmd->type;
-    if (type == CT_BROADCAST) {
+    if (type == CT_BROADCAST && c < 0) {
         start = 0;
         end = CLIENTS - 1;
     } else if (type == CT_BROADCAST_ALL) {

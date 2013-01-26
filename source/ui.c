@@ -281,7 +281,7 @@ static void draw_outwin() {
     screens[screen].redraw_outwin = qfalse;
 }
 
-static void draw_statuswin() {
+void draw_statuswin() {
     color_base = STATUS_BASE + 1;
     werase(statuswin);
     set_color(statuswin, 7);
@@ -333,7 +333,7 @@ static void draw_statuswin() {
     wrefresh(statuswin);
 }
 
-void draw_status(int client, char *name, char *server) {
+void set_status(int client, char *name, char *server) {
     screens[client + 1].last_name = name;
     screens[client + 1].last_server = server;
     draw_statuswin();
@@ -752,6 +752,7 @@ void ui_run() {
     qboolean alt = qfalse;
     int last_cols = 0;
     int last_lines = 0;
+    int last_status = 0;
     for (;;) {
         if (last_cols != COLS && last_lines != LINES) {
             redesign();
@@ -760,6 +761,11 @@ void ui_run() {
         }
         if (stopped)
             break;
+        int m = millis();
+        if (last_status == 0 || m / 60000 >= last_status / 60000 + 1) {
+            draw_statuswin();
+            last_status = m;
+        }
         if (screens[screen].redraw_outwin)
             draw_outwin();
         serverlist_frame();
