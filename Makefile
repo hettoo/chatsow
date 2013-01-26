@@ -4,7 +4,7 @@ CFLAGS = -O2 -Wall -c $(DEBUG)
 EXTRA_CFLAGS = $(shell pkg-config --cflags libnotify)
 LFLAGS = -O2 -Wall $(shell pkg-config --libs libnotify) -lncurses -lz -lm $(DEBUG)
 
-PROGRAM = wrlc
+PROGRAM = chatsow
 
 SOURCE = source/
 BUILD = build/
