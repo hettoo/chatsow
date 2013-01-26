@@ -18,6 +18,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 */
 
+#include <libnotify/notify.h>
+
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
@@ -493,11 +495,36 @@ void ui_output(int client, char *format, ...) {
     }
 }
 
-void ui_set_important(int client) {
-    if (screens[client + 1].updated) {
+void ui_output_important(int client, char *format, ...) {
+    if (client == -2)
+        client = screen - 1;
+    static char string[65536];
+    string[0] = '^';
+    string[1] = '7';
+    int len = 2;
+    if (screens[client + 1].allow_time) {
+        len += timestring(string + len);
+        string[len++] = ' ';
+    }
+
+	va_list	argptr;
+	va_start(argptr, format);
+    vsprintf(string + len, format, argptr);
+	va_end(argptr);
+    ui_output_real(client, string);
+    screens[client + 1].redraw_outwin = qtrue;
+    if (client + 1 != screen || screens[client + 1].scroll_up != 0) {
+        screens[client + 1].updated = qtrue;
         screens[client + 1].important = qtrue;
         draw_statuswin();
     }
+    notify_init("wrlc");
+    static char title[] = "wrlc(x)";
+    title[strlen(title) - 2] = '1' + client;
+    NotifyNotification* notification = notify_notification_new(title, uncolor(string), NULL);
+    notify_notification_set_timeout(notification, 5000);
+    notify_notification_show(notification, NULL);
+    g_object_unref(G_OBJECT(notification));
 }
 
 static void screen_init(screen_t *s) {

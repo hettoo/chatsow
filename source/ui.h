@@ -33,7 +33,7 @@ void ui_run();
 void ui_stop();
 void set_screen(int new_screen);
 void ui_output(int client, char *format, ...);
-void ui_set_important(int client);
+void ui_output_important(int client, char *format, ...);
 void set_title(int client, char *new_motd, char *new_level, char *new_game, char *new_host, char *new_port);
 void set_status(int client, char *name, char *server);
 
