@@ -28,4 +28,9 @@ typedef struct columnifier_s {
     int real_index;
 } columnifier_t;
 
+void columnifier_init(columnifier_t *c, int max_width);
+void columnifier_preprocess(columnifier_t *c, char *s);
+void columnifier_process(columnifier_t *c, char *r, char *s);
+void columnifier_finish(columnifier_t *c, char *r);
+
 #endif

@@ -177,7 +177,7 @@ void set_bitflags(int id, int new_bitflags) {
 }
 
 static void client_title(client_t *c) {
-    set_title(c->id, c->motd, c->level, c->game, c->host, c->port);
+    set_title(c->id, c->state == CA_DISCONNECTED ? "Disconnected" : c->motd, c->level, c->game, c->host, c->port);
 }
 
 static void set_state(client_t *c, int new_state) {
@@ -191,6 +191,7 @@ static void force_disconnect(client_t *c) {
 
     close(c->sockfd);
     set_state(c, CA_DISCONNECTED);
+    reset(c);
     client_title(c);
 }
 
@@ -230,7 +231,6 @@ static void client_connect(client_t *c) {
     socket_connect(c);
     if (c->state == CA_DISCONNECTED)
         return;
-    reset(c);
     challenge(c);
 }
 
