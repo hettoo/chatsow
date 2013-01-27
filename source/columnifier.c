@@ -20,6 +20,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include <string.h>
 
+#include "utils.h"
 #include "columnifier.h"
 
 void columnifier_init(columnifier_t *c, int max_width) {
@@ -30,7 +31,7 @@ void columnifier_init(columnifier_t *c, int max_width) {
 }
 
 void columnifier_preprocess(columnifier_t *c, char *s) {
-    int len = strlen(s) + 2;
+    int len = uncolored_length(s) + 2;
     if (c->actual_max_width == -1 || len > c->actual_max_width)
         c->actual_max_width = len;
 }
@@ -41,7 +42,8 @@ void columnifier_process(columnifier_t *c, char *r, char *s) {
         *(r++) = '\n';
     strcpy(r, s);
     int len = strlen(r);
-    for (; len < c->actual_max_width; len++)
+    int actual_len = uncolored_length(r);
+    for (; actual_len < c->actual_max_width; actual_len++, len++)
         r[len] = ' ';
     r[len] = '\0';
     c->index = (c->index + 1) % columns;
