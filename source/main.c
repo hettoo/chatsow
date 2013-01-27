@@ -26,6 +26,7 @@ void quit() {
 }
 
 int main(int argc, char *argv[]) {
+    init(argv[0]);
     ui_run();
 
     return 0;

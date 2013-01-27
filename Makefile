@@ -2,7 +2,7 @@ CC = gcc
 DEBUG = -g
 CFLAGS = -O2 -Wall -c $(DEBUG)
 EXTRA_CFLAGS = $(shell pkg-config --cflags libnotify)
-LFLAGS = -O2 -Wall $(shell pkg-config --libs libnotify) -lncurses -lz -lm $(DEBUG)
+LFLAGS = -O2 -Wall $(shell pkg-config --libs libnotify) -lncurses -lz -ldl -lm $(DEBUG)
 
 PROGRAM = chatsow
 

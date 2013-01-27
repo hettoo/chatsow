@@ -383,6 +383,16 @@ extern float ( *LittleFloat )(float l);
 
 void	Swap_Init( void );
 
+enum
+{
+	TEAM_SPECTATOR,
+	TEAM_PLAYERS,
+	TEAM_ALPHA,
+	TEAM_BETA,
+
+	GS_MAX_TEAMS
+};
+
 #define read_coord( sb ) ( (float)read_int3( ( sb ) )*( 1.0/PM_VECTOR_SNAP ) )
 #define read_coord_dummy( sb ) ( read_int3( ( sb ) ) )
 #define read_pos( sb, pos ) ( ( pos )[0] = read_coord( ( sb ) ), ( pos )[1] = read_coord( ( sb ) ), ( pos )[2] = read_coord( ( sb ) ) )

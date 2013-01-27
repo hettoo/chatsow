@@ -31,6 +31,9 @@ typedef struct parse_state_s {
     char separator;
 } parse_state_t;
 
+void init(char *location);
+void register_general_commands();
+
 int die(char *format, ...);
 int min(int a, int b);
 int max(int a, int b);

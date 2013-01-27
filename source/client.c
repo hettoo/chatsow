@@ -526,48 +526,48 @@ void client_activate(int id) {
     cmd_execute(id, "players");
 }
 
-void cmd_disconnect() {
+static void cmd_disconnect() {
     client_t *c = clients + cmd_client();
     disconnect(c->id);
 }
 
-void cmd_reconnect() {
+static void cmd_reconnect() {
     client_t *c = clients + cmd_client();
     reconnect(c);
 }
 
-void cmd_nop() {
+static void cmd_nop() {
 }
 
-void cmd_pr() {
+static void cmd_pr() {
     client_t *c = clients + cmd_client();
     ui_output(c->id, "%s^7", cmd_argv(1));
 }
 
-void cmd_ch() {
+static void cmd_ch() {
     client_t *c = clients + cmd_client();
     char *name = player_name(&c->cs, atoi(cmd_argv(1)));
     ui_output_important(c->id, "%s^7: ^2%s^7\n", name, cmd_argv(2));
 }
 
-void cmd_tch() {
+static void cmd_tch() {
     client_t *c = clients + cmd_client();
     char *name = player_name(&c->cs, atoi(cmd_argv(1)));
     ui_output_important(c->id, "%s^7: ^3%s^7\n", name, cmd_argv(2));
 }
 
-void cmd_tvch() {
+static void cmd_tvch() {
     client_t *c = clients + cmd_client();
     char *name = player_name(&c->cs, atoi(cmd_argv(1)));
     ui_output_important(c->id, "[TV]%s^7: ^2%s^7\n", name, cmd_argv(2));
 }
 
-void cmd_motd() {
+static void cmd_motd() {
     client_t *c = clients + cmd_client();
     strcpy(c->motd, cmd_argv(2));
 }
 
-void cmd_connect() {
+static void cmd_connect() {
     client_t *c = clients + cmd_client();
     char *new_host = cmd_argv(1);
     char *new_port = "44400";
@@ -576,16 +576,12 @@ void cmd_connect() {
     set_server(c, new_host, new_port);
 }
 
-void cmd_name() {
+static void cmd_name() {
     client_t *c = clients + cmd_client();
     strcpy(c->name, cmd_argv(1));
     set_status(c->id, c->name, cs_get(&c->cs, 0));
     if (c->state >= CA_SETUP)
         client_command(c->id, "usri \"\\name\\%s\"", c->name);
-}
-
-void cmd_quit() {
-    quit();
 }
 
 void client_register_commands() {
@@ -619,7 +615,6 @@ void client_register_commands() {
 
     cmd_add_find_free("connect", cmd_connect);
     cmd_add_broadcast("name", cmd_name);
-    cmd_add_global("quit", cmd_quit);
 }
 
 int player_suggest(int id, char *partial, char suggestions[][MAX_SUGGESTION_SIZE]) {

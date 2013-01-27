@@ -770,6 +770,7 @@ void ui_run() {
 
     set_title(-1, NULL, NULL, NULL, NULL, NULL);
 
+    register_general_commands();
     client_register_commands();
     int i;
     for (i = 0; i < SCREENS; i++) {
