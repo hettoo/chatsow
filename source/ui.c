@@ -29,6 +29,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include "main.h"
 #include "utils.h"
+#include "columnifier.h"
 #include "serverlist.h"
 #include "client.h"
 #include "ui.h"
@@ -691,8 +692,17 @@ static qboolean apply_suggestions(qboolean complete_partial) {
     }
     if (suggestion_count > 1) {
         ui_output(screen - 1, "\n^5Possibilities:\n");
+        columnifier_t c;
+        columnifier_init(&c, COLS);
         for (i = 0; i < suggestion_count; i++)
-            ui_output(screen - 1, "%s\n", suggestions[i]);
+            columnifier_preprocess(&c, suggestions[i]);
+        static char temp[MAX_SUGGESTION_SIZE + 1];
+        for (i = 0; i < suggestion_count; i++) {
+            columnifier_process(&c, temp, suggestions[i]);
+            ui_output(screen - 1, "%s", temp);
+        }
+        columnifier_finish(&c, temp);
+        ui_output(screen - 1, "%s", temp);
     }
     screens[screen].commandline[screens[screen].commandline_length] = '\0';
     return suggestion_count == 1;
