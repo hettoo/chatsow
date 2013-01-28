@@ -40,6 +40,8 @@ void columnifier_process(columnifier_t *c, char *r, char *s) {
     int columns = c->max_width / c->actual_max_width;
     if (c->index == 0 && c->real_index != 0)
         *(r++) = '\n';
+    *(r++) = '^';
+    *(r++) = '7';
     strcpy(r, s);
     int len = strlen(r);
     int actual_len = uncolored_length(r);
