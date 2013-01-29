@@ -21,12 +21,21 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #ifndef WRLC_PLUGINS_H
 #define WRLC_PLUGINS_H
 
+#include "cs.h"
+
 typedef struct plugin_interface_s {
     char *(*path)(char *format, ...);
 
+    int (*ui_client)();
     void (*ui_output)(int client, char *format, ...);
 
+    cs_t *(*client_cs)(int id);
+
+    void (*cmd_execute)(int c, char *cmd);
+    int (*cmd_client)();
+
     void (*cmd_add_global)(char *name, void (*f)());
+    void (*cmd_add_generic)(char *name, void (*f)());
 } plugin_interface_t;
 
 #endif

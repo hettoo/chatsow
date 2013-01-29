@@ -21,17 +21,27 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <stdio.h>
 
 #include "../plugins.h"
+#include "../import.h"
+#include "../cs.h"
 
 plugin_interface_t *trap;
 
 static void cmd_racenet() {
-    FILE *fp = popen(trap->path("plugins/racenet.pl wrace1"), "r");
+    FILE *fp = popen(trap->path("plugins/racenet.pl %s", cs_get(trap->client_cs(trap->ui_client()), CS_MAPNAME)), "r");
+    static char cmd[MAX_STRING_CHARS];
+    strcpy(cmd, "say \"");
+    int i = strlen(cmd);
     int c;
     while ((c = fgetc(fp)) != EOF)
-        trap->ui_output(-2, "%c", c);
+        cmd[i++] = (char)c;
+    if (cmd[i - 1] == '\n')
+        i--;
+    cmd[i++] = '"';
+    cmd[i++] = '\0';
+    trap->cmd_execute(trap->cmd_client(), cmd);
 }
 
 void racenet(plugin_interface_t *new_trap) {
     trap = new_trap;
-    trap->cmd_add_global("racenet", cmd_racenet);
+    trap->cmd_add_generic("racenet", cmd_racenet);
 }

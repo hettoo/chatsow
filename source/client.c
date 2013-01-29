@@ -593,6 +593,7 @@ void client_register_commands() {
     cmd_add_from_server("disconnect", cmd_disconnect);
     cmd_add_from_server("forcereconnect", cmd_reconnect);
     cmd_add_from_server("reconnect", cmd_reconnect);
+    cmd_add_from_server("reject", cmd_disconnect);
 
     cmd_add_from_server("mm", cmd_nop);
     cmd_add_from_server("plstats", cmd_nop);
@@ -632,7 +633,7 @@ void client_start(int id) {
     client_t *c = clients + id;
     reset(c);
     register_configstring_commands(c);
-    cmd_add(id, "reconnect", cmd_reconnect);
+    cmd_add_persistent(id, "reconnect", cmd_reconnect);
     cmd_add(id, "disconnect", cmd_disconnect);
 
     strcpy(c->name, "chatter");

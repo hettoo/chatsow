@@ -27,6 +27,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "import.h"
 #include "plugins.h"
 #include "cmd.h"
+#include "ui.h"
+#include "client.h"
 #include "global.h"
 
 static char base[512];
@@ -42,8 +44,13 @@ void init(char *location) {
     *p = '\0';
 
     trap.path = path;
+    trap.ui_client = ui_client;
     trap.ui_output = ui_output;
+    trap.client_cs = client_cs;
+    trap.cmd_execute = cmd_execute;
+    trap.cmd_client = cmd_client;
     trap.cmd_add_global = cmd_add_global;
+    trap.cmd_add_generic = cmd_add_generic;
 }
 
 static void cmd_load() {
@@ -52,7 +59,7 @@ static void cmd_load() {
 
     char *name = cmd_argv(1);
     static char plugin_path[MAX_STRING_CHARS];
-    sprintf(plugin_path, "%splugins/%s.so", base, name);
+    strcpy(plugin_path, path("plugins/%s.so", name));
 
     handle = dlopen(plugin_path, RTLD_NOW);
     if (handle == NULL) {

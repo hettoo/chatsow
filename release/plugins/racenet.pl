@@ -23,6 +23,8 @@ my $time = $1;
 $entry =~ /<a href="\/player\/index\/id\/\d+\/">(.*?)<\/a>/;
 my $name = $1;
 $name =~ s/<\/?span.*?>//g;
+$name =~ s/&lt;/</g;
+$name =~ s/&gt;/>/g;
 print "Racenet record: $time by $name\n";
 exit;
 

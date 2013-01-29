@@ -38,6 +38,8 @@ char *cmd_argv(int index);
 char *cmd_args(int start);
 
 void cmd_add(int client, char *name, void (*f)());
+void cmd_add_persistent(int client, char *name, void (*f)());
+void cmd_add_generic(char *name, void (*f)());
 void cmd_add_from_server(char *name, void (*f)());
 void cmd_add_server(int client, char *name);
 void cmd_add_global(char *name, void (*f)());

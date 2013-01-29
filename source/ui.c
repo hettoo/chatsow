@@ -359,6 +359,10 @@ static int command_mode_actual_prefix_length() {
     return explicit_command_mode() ? 1 : 0;
 }
 
+int ui_client() {
+    return screen - 1;
+}
+
 static void draw_inwin() {
     color_base = NORMAL_BASE + 1;
     werase(inwin);

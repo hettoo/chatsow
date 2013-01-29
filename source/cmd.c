@@ -26,6 +26,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 typedef enum cmd_type_e {
     CT_NORMAL,
+    CT_PERSISTENT,
     CT_FROM_SERVER,
     CT_SERVER,
     CT_GLOBAL,
@@ -121,7 +122,7 @@ static qboolean cmd_type_extends(int type, int parent) {
     if (type == parent)
         return qtrue;
 
-    if (parent == CT_NORMAL && type == CT_SERVER)
+    if (parent == CT_NORMAL && (type == CT_PERSISTENT || type == CT_SERVER))
         return qtrue;
 
     if (parent == CT_GLOBAL && (type == CT_FIND_FREE || type == CT_BROADCAST || type == CT_BROADCAST_ALL))
@@ -140,17 +141,21 @@ static qboolean cmd_type_compatible(int type, int parent) {
     return qfalse;
 }
 
+static qboolean cmd_valid(cmd_t *cmd, int c, qboolean partial) {
+    int len = strlen(cmd_argv(0));
+    return (partial ? !strncmp(cmd->name, cmd_argv(0), len)
+            : !strcmp(cmd->name, cmd_argv(0)))
+        && (c < 0 || cmd->clients[c])
+        && (cmd->type != CT_NORMAL || client_active(c));
+}
+
 static cmd_t *cmd_find(cmd_t *cmd, int c, int type, qboolean partial) {
     if (!partial && cmd_argc() == 0)
         return NULL;
 
     int i;
-    int len = strlen(cmd_argv(0));
     for (i = cmd ? (cmd - cmds) + 1 : 0; i < cmd_count; i++) {
-        if (cmd_type_compatible(cmds[i].type, type)
-                && (partial ? !strncmp(cmds[i].name, cmd_argv(0), len)
-                    : !strcmp(cmds[i].name, cmd_argv(0)))
-                && (c < 0 || cmds[i].clients[c]))
+        if (cmd_type_compatible(cmds[i].type, type) && cmd_valid(cmds + i, c, partial))
             return cmds + i;
     }
 
@@ -287,6 +292,17 @@ static void cmd_allow_all(cmd_t *cmd) {
 void cmd_add(int client, char *name, void (*f)()) {
     cmd_t *cmd = cmd_reserve(name, f, CT_NORMAL);
     cmd->clients[client] = qtrue;
+}
+
+void cmd_add_persistent(int client, char *name, void (*f)()) {
+    cmd_t *cmd = cmd_reserve(name, f, CT_PERSISTENT);
+    cmd->clients[client] = qtrue;
+}
+
+void cmd_add_generic(char *name, void (*f)()) {
+    int i;
+    for (i = 0; i < CLIENTS; i++)
+        cmd_add(i, name, f);
 }
 
 void cmd_add_from_server(char *name, void (*f)()) {
