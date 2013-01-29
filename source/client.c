@@ -546,7 +546,7 @@ static void chat_command(client_t *c, char *command) {
 
 static void cmd_pr() {
     client_t *c = clients + cmd_client();
-    ui_output(c->id, "%s^7", cmd_argv(1));
+    ui_output(c->id, "%s", cmd_argv(1));
 }
 
 static void cmd_ch() {

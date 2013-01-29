@@ -37,7 +37,7 @@ static int cmd_client;
 
 static void cmd_racenet() {
     if (fp != NULL) {
-        trap->ui_output(cmd_client, "A query is already running\n");
+        trap->cmd_execute(cmd_client, "say \"A query is already running\"");
         return;
     }
 

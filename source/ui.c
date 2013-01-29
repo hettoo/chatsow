@@ -470,13 +470,9 @@ static void ui_output_real(int client, char *string) {
     do {
         s = parse_interleaved(s, &state);
         if (s[-1] != '\0') {
-            if (parse_empty_last(s)) {
-                ui_output_color(7);
-                ui_output_screen->allow_time = qtrue;
-            } else {
-                ui_output_screen->allow_time = qfalse;
-            }
+            ui_output_color(7);
             schedule_next_line();
+            ui_output_screen->allow_time = parse_empty_last(s);
         }
     } while(s[-1] != '\0');
 }
@@ -485,10 +481,10 @@ void ui_output(int client, char *format, ...) {
     if (client == -2)
         client = screen - 1;
     static char string[65536];
-    string[0] = '^';
-    string[1] = '7';
-    int len = 2;
+    int len = 0;
     if (screens[client + 1].allow_time) {
+        string[len++] = '^';
+        string[len++] = '7';
         len += timestring(string + len);
         string[len++] = ' ';
     }

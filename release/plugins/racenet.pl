@@ -31,7 +31,7 @@ for my $entry(@entries) {
     $name =~ s/<\/?span.*?>//g;
     $name =~ s/&lt;/</g;
     $name =~ s/&gt;/>/g;
-    print "^2Racenet record: ^" . ($pj ? "1" : "7") . "$time^2 by $name\n";
+    print "^5Racenet " . ($pj ? "pj" : "nopj") . " record: ^" . ($pj ? "1" : "2") . "$time^5 by ^7$name\n";
     if ($pj) {
         $pj_done = 1;
     } else {
