@@ -13,7 +13,7 @@ if (!defined $1) {
 }
 $content = query($1);
 my @entries = $content =~ /<tr class="racenet_row rankedmaps_click" >(.*?)<\/tr>/sg;
-if (!defined $1) {
+if (@entries == 0) {
     print "No highscore found\n";
     exit;
 }
@@ -31,7 +31,7 @@ for my $entry(@entries) {
     $name =~ s/<\/?span.*?>//g;
     $name =~ s/&lt;/</g;
     $name =~ s/&gt;/>/g;
-    print "Racenet " . ($pj ? "PJ" : "NOPJ") . " record: $time by $name\n";
+    print "^2Racenet record: ^" . ($pj ? "1" : "7") . "$time^2 by $name\n";
     if ($pj) {
         $pj_done = 1;
     } else {

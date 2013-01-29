@@ -19,6 +19,9 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
 #include <stdio.h>
+#include <unistd.h>
+#include <errno.h>
+#include <fcntl.h>
 
 #include "../plugins.h"
 #include "../import.h"
@@ -26,19 +29,24 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 plugin_interface_t *trap;
 
+static FILE *fp = NULL;
+static int fn;
+static char cmd[MAX_STRING_CHARS];
+static int cmd_len;
+static int cmd_client;
+
 static void cmd_racenet() {
-    FILE *fp = popen(trap->path("plugins/racenet.pl %s", cs_get(trap->client_cs(trap->ui_client()), CS_MAPNAME)), "r");
-    static char cmd[MAX_STRING_CHARS];
+    if (fp != NULL) {
+        trap->ui_output(cmd_client, "A query is already running\n");
+        return;
+    }
+
+    fp = popen(trap->path("plugins/racenet.pl %s", cs_get(trap->client_cs(trap->ui_client()), CS_MAPNAME)), "r");
+    fn = fileno(fp);
+    fcntl(fn, F_SETFL, O_NONBLOCK);
     strcpy(cmd, "say \"");
-    int i = strlen(cmd);
-    int c;
-    while ((c = fgetc(fp)) != EOF)
-        cmd[i++] = (char)c;
-    if (cmd[i - 1] == '\n')
-        i--;
-    cmd[i++] = '"';
-    cmd[i++] = '\0';
-    trap->cmd_execute(trap->cmd_client(), cmd);
+    cmd_len = strlen(cmd);
+    cmd_client = trap->cmd_client();
 }
 
 void init(plugin_interface_t *new_trap) {
@@ -47,7 +55,27 @@ void init(plugin_interface_t *new_trap) {
 }
 
 void frame() {
+    if (fp == NULL)
+        return;
+
+    char c;
+    ssize_t r = read(fn, &c, 1);
+    if (r == -1 && errno == EAGAIN) {
+    } else if (r > 0) {
+        cmd[cmd_len++] = (char)c;
+    } else {
+        if (cmd[cmd_len - 1] == '\n')
+            cmd_len--;
+        cmd[cmd_len++] = '"';
+        cmd[cmd_len++] = '\0';
+        trap->cmd_execute(cmd_client, cmd);
+        pclose(fp);
+        fp = NULL;
+    }
 }
 
 void shutdown() {
+    if (fp != NULL)
+        pclose(fp);
+    fp = NULL;
 }

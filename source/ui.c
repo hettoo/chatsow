@@ -470,9 +470,13 @@ static void ui_output_real(int client, char *string) {
     do {
         s = parse_interleaved(s, &state);
         if (s[-1] != '\0') {
-            ui_output_color(7);
+            if (parse_empty_last(s)) {
+                ui_output_color(7);
+                ui_output_screen->allow_time = qtrue;
+            } else {
+                ui_output_screen->allow_time = qfalse;
+            }
             schedule_next_line();
-            ui_output_screen->allow_time = parse_empty_last(s);
         }
     } while(s[-1] != '\0');
 }
