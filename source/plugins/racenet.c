@@ -41,7 +41,13 @@ static void cmd_racenet() {
     trap->cmd_execute(trap->cmd_client(), cmd);
 }
 
-void racenet(plugin_interface_t *new_trap) {
+void init(plugin_interface_t *new_trap) {
     trap = new_trap;
     trap->cmd_add_special_generic("racenet", cmd_racenet);
+}
+
+void frame() {
+}
+
+void shutdown() {
 }

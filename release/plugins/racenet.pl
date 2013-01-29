@@ -12,20 +12,32 @@ if (!defined $1) {
     exit;
 }
 $content = query($1);
-$content =~ /<tr class="racenet_row rankedmaps_click" >(.*?)<\/tr>/s;
+my @entries = $content =~ /<tr class="racenet_row rankedmaps_click" >(.*?)<\/tr>/sg;
 if (!defined $1) {
     print "No highscore found\n";
     exit;
 }
-my $entry = $1;
-$entry =~ /(\d+:\d{2}.\d{3})/;
-my $time = $1;
-$entry =~ /<a href="\/player\/index\/id\/\d+\/">(.*?)<\/a>/;
-my $name = $1;
-$name =~ s/<\/?span.*?>//g;
-$name =~ s/&lt;/</g;
-$name =~ s/&gt;/>/g;
-print "Racenet record: $time by $name\n";
+my $nopj_done = 0;
+my $pj_done = 0;
+for my $entry(@entries) {
+    my $pj = $entry =~ /color: red/;
+    if (($pj && $pj_done) || (!$pj && $nopj_done)) {
+        next;
+    }
+    $entry =~ /(\d+:\d{2}.\d{3})/;
+    my $time = $1;
+    $entry =~ /<a href="\/player\/index\/id\/\d+\/">(.*?)<\/a>/;
+    my $name = $1;
+    $name =~ s/<\/?span.*?>//g;
+    $name =~ s/&lt;/</g;
+    $name =~ s/&gt;/>/g;
+    print "Racenet " . ($pj ? "PJ" : "NOPJ") . " record: $time by $name\n";
+    if ($pj) {
+        $pj_done = 1;
+    } else {
+        $nopj_done = 1;
+    }
+}
 exit;
 
 sub query {

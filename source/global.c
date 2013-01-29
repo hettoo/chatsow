@@ -31,6 +31,19 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "client.h"
 #include "global.h"
 
+#define MAX_PLUGINS 64
+
+typedef struct plugin_s {
+    char name[MAX_STRING_CHARS];
+    void *handle;
+    void (*init)(plugin_interface_t *);
+    void (*frame)();
+    void (*shutdown)();
+} plugin_t;
+
+plugin_t plugins[MAX_PLUGINS];
+int plugin_count = 0;
+
 static char base[512];
 
 static plugin_interface_t trap;
@@ -73,24 +86,64 @@ void init(char *location) {
 }
 
 static void cmd_load() {
-    void *handle;
-    void (*loader)(plugin_interface_t *);
+    if (plugin_count == MAX_PLUGINS) {
+        ui_output(cmd_client(), "Too many plugins\n");
+        return;
+    }
 
-    char *name = cmd_argv(1);
+    plugin_t *plugin = plugins + plugin_count++;
+    strcpy(plugin->name, cmd_argv(1));
     static char plugin_path[MAX_STRING_CHARS];
-    strcpy(plugin_path, path("plugins/%s.so", name));
+    strcpy(plugin_path, path("plugins/%s.so", plugin->name));
 
-    handle = dlopen(plugin_path, RTLD_NOW);
-    if (handle == NULL) {
-        ui_output(cmd_client(), "Error loading %s: %s\n", name, dlerror());
+    plugin->handle = dlopen(plugin_path, RTLD_NOW);
+    if (plugin->handle == NULL) {
+        ui_output(cmd_client(), "Error loading %s: %s\n", plugin->name, dlerror());
+        plugin_count--;
         return;
     }
-    loader = (void (*)(plugin_interface_t *))dlsym(handle, name);
-    if (loader == NULL) {
-        ui_output(cmd_client(), "Error finding function %s: %s\n", name, dlerror());
+    plugin->init = (void (*)(plugin_interface_t *))dlsym(plugin->handle, "init");
+    if (plugin->init == NULL) {
+        ui_output(cmd_client(), "Error finding function init: %s\n", dlerror());
+        dlclose(plugin->handle);
+        plugin_count--;
         return;
     }
-    loader(&trap);
+    plugin->frame = (void (*)())dlsym(plugin->handle, "frame");
+    if (plugin->frame == NULL) {
+        ui_output(cmd_client(), "Error finding function frame: %s\n", dlerror());
+        dlclose(plugin->handle);
+        plugin_count--;
+        return;
+    }
+    plugin->shutdown = (void (*)())dlsym(plugin->handle, "shutdown");
+    if (plugin->shutdown == NULL) {
+        ui_output(cmd_client(), "Error finding function shutdown: %s\n", dlerror());
+        dlclose(plugin->handle);
+        plugin_count--;
+        return;
+    }
+    plugin->init(&trap);
+}
+
+static void cmd_plugins() {
+    ui_output(-2, "^5Loaded plugins:\n");
+    int i;
+    for (i = 0; i < plugin_count; i++) {
+        ui_output(-2, "%s\n", plugins[i].name);
+    }
+}
+
+void plugin_frame() {
+    int i;
+    for (i = 0; i < plugin_count; i++)
+        plugins[i].frame();
+}
+
+void plugin_shutdown() {
+    int i;
+    for (i = 0; i < plugin_count; i++)
+        plugins[i].shutdown();
 }
 
 static void cmd_quit() {
@@ -99,6 +152,7 @@ static void cmd_quit() {
 
 void register_general_commands() {
     cmd_add_global("load", cmd_load);
+    cmd_add_global("plugins", cmd_plugins);
     cmd_add_global("quit", cmd_quit);
 }
 

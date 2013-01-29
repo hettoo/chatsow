@@ -24,6 +24,9 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 void init(char *location);
 void register_general_commands();
 
+void plugin_frame();
+void plugin_shutdown();
+
 char *path(char *format, ...);
 int die(char *format, ...);
 

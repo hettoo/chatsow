@@ -818,6 +818,7 @@ void ui_run() {
         serverlist_frame();
         for (i = 0; i < CLIENT_SCREENS; i++)
             client_frame(i);
+        plugin_frame();
         int c = wgetch(inwin);
         if (c == -1)
             continue;
