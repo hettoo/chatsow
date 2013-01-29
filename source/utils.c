@@ -18,69 +18,11 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 */
 
-#include <stdlib.h>
-#include <stdio.h>
-#include <stdarg.h>
 #include <string.h>
 #include <time.h>
 #include <sys/time.h>
-#include <dlfcn.h>
 
-#include "main.h"
-#include "cmd.h"
 #include "utils.h"
-
-static char base[512];
-
-void init(char *location) {
-    strcpy(base, location);
-    char *p;
-    for (p = base + strlen(base) - 1; p >= base && *p != '/'; p--)
-        ;
-    p++;
-    *p = '\0';
-}
-
-static void cmd_load() {
-    void *handle;
-    void (*loader)();
-
-    char *name = cmd_argv(1);
-    static char plugin_path[MAX_STRING_CHARS];
-    sprintf(plugin_path, "%splugins/%s/%s.so", base, name, name);
-
-    handle = dlopen(plugin_path, RTLD_NOW);
-    if (handle == NULL) {
-        ui_output(cmd_client(), "Error loading %s: %s\n", name, dlerror());
-        return;
-    }
-    loader = (void (*)())dlsym(handle, name);
-    if (loader == NULL) {
-        ui_output(cmd_client(), "Error finding function %s: %s\n", name, dlerror());
-        return;
-    }
-    loader();
-    dlclose(handle);
-}
-
-static void cmd_quit() {
-    quit();
-}
-
-void register_general_commands() {
-    cmd_add_global("load", cmd_load);
-    cmd_add_global("quit", cmd_quit);
-}
-
-int die(char *format, ...) {
-    quit();
-	va_list	argptr;
-	va_start(argptr, format);
-    vprintf(format, argptr);
-	va_end(argptr);
-    printf("\n");
-    exit(1);
-}
 
 int min(int a, int b) {
     return a < b ? a : b;

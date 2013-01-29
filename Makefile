@@ -1,30 +1,48 @@
 CC = gcc
 DEBUG = -g
-CFLAGS = -O2 -Wall -c $(DEBUG)
+CFLAGS_COMMON = -O2 -Wall -c $(DEBUG)
+CFLAGS = $(CFLAGS_COMMON)
+CFLAGS_PLUGINS = -fPIC $(CFLAGS_COMMON)
 EXTRA_CFLAGS = $(shell pkg-config --cflags libnotify)
-LFLAGS = -O2 -Wall $(shell pkg-config --libs libnotify) -lncurses -lz -ldl -lm $(DEBUG)
+LFLAGS_COMMON = -O2 -Wall $(DEBUG)
+LFLAGS = $(shell pkg-config --libs libnotify) -lncurses -lz -ldl -lm $(LFLAGS_COMMON)
+LFLAGS_PLUGINS = -shared $(LFLAGS_COMMON)
 
 PROGRAM = chatsow
 
 SOURCE = source/
 BUILD = build/
+RELEASE = release/
+PLUGINS = $(SOURCE)plugins/
+BUILD_PLUGINS = $(BUILD)plugins/
+RELEASE_PLUGINS = $(RELEASE)plugins/
 
 THIS = Makefile
+
 CFILES = $(wildcard $(SOURCE)*.c)
 MODULES = $(patsubst $(SOURCE)%.c,%,$(CFILES))
 OBJS = $(addprefix $(BUILD),$(addsuffix .o,$(MODULES)))
 $(shell mkdir -p $(BUILD))
 
-default: $(BUILD)$(PROGRAM)
+CFILES_PLUGINS = $(wildcard $(PLUGINS)*.c)
+MODULES_PLUGINS = $(patsubst $(PLUGINS)%.c,%,$(CFILES_PLUGINS))
+OBJS_PLUGINS = $(addprefix $(BUILD_PLUGINS),$(addsuffix .o,$(MODULES_PLUGINS)))
+LIBS_PLUGINS = $(addprefix $(RELEASE_PLUGINS),$(addsuffix .so,$(MODULES_PLUGINS)))
+
+default: program plugins
+
+program: $(RELEASE)$(PROGRAM)
+
+plugins: $(LIBS_PLUGINS)
 
 clean:
 	rm -rf $(BUILD)
 
-test: $(BUILD)$(PROGRAM)
-	./$(BUILD)$(PROGRAM)
+test: program plugins
+	./$(RELEASE)$(PROGRAM)
 
-$(BUILD)$(PROGRAM): $(OBJS)
-	$(CC) $(LFLAGS) $(OBJS) -o $@
+$(RELEASE)$(PROGRAM): $(OBJS)
+	$(CC) $(LFLAGS) $^ -o $@
 
 define module_depender
 $(shell mkdir -p $(BUILD))
@@ -43,4 +61,23 @@ endef
 $(foreach module, $(MODULES), $(eval $(call module_depender,$(module))))
 $(foreach module, $(MODULES), $(eval $(call module_compiler,$(module))))
 
-.PHONY: default clean test
+define plugin_module_depender
+$(shell mkdir -p $(BUILD_PLUGINS))
+$(shell touch $(BUILD_PLUGINS)$(1).d)
+$(shell makedepend -f $(BUILD_PLUGINS)$(1).d -- $(CFLAGS_PLUGINS) -- $(PLUGINS)$(1).c
+	2>/dev/null)
+$(shell sed -i 's~^$(PLUGINS)~$(BUILD_PLUGINS)~g' $(BUILD_PLUGINS)$(1).d)
+-include $(BUILD_PLUGINS)$(1).d
+endef
+
+define plugin_module_compiler
+$(BUILD_PLUGINS)$(1).o: $(PLUGINS)$(1).c $(THIS)
+	$(CC) $(CFLAGS_PLUGINS) $$< -o $$@
+$(RELEASE_PLUGINS)$(1).so: $(BUILD_PLUGINS)$(1).o $(BUILD)import.o $(BUILD)utils.o
+	$(CC) $(LFLAGS_PLUGINS) $$^ -o $$@
+endef
+
+$(foreach module, $(MODULES_PLUGINS), $(eval $(call plugin_module_depender,$(module))))
+$(foreach module, $(MODULES_PLUGINS), $(eval $(call plugin_module_compiler,$(module))))
+
+.PHONY: default program plugins clean test

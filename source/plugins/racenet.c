@@ -18,16 +18,20 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 */
 
-#include "global.h"
-#include "ui.h"
+#include <stdio.h>
 
-void quit() {
-    ui_stop();
+#include "../plugins.h"
+
+plugin_interface_t *trap;
+
+static void cmd_racenet() {
+    FILE *fp = popen(trap->path("plugins/racenet.pl wrace1"), "r");
+    int c;
+    while ((c = fgetc(fp)) != EOF)
+        trap->ui_output(-2, "%c", c);
 }
 
-int main(int argc, char *argv[]) {
-    init(argv[0]);
-    ui_run();
-
-    return 0;
+void racenet(plugin_interface_t *new_trap) {
+    trap = new_trap;
+    trap->cmd_add_global("racenet", cmd_racenet);
 }

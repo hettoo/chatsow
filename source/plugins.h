@@ -18,16 +18,15 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 */
 
-#include "global.h"
-#include "ui.h"
+#ifndef WRLC_PLUGINS_H
+#define WRLC_PLUGINS_H
 
-void quit() {
-    ui_stop();
-}
+typedef struct plugin_interface_s {
+    char *(*path)(char *format, ...);
 
-int main(int argc, char *argv[]) {
-    init(argv[0]);
-    ui_run();
+    void (*ui_output)(int client, char *format, ...);
 
-    return 0;
-}
+    void (*cmd_add_global)(char *name, void (*f)());
+} plugin_interface_t;
+
+#endif

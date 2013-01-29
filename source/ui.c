@@ -28,6 +28,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <time.h>
 
 #include "main.h"
+#include "global.h"
 #include "utils.h"
 #include "columnifier.h"
 #include "serverlist.h"

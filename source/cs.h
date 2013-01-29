@@ -21,6 +21,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #ifndef WRLC_CS_H
 #define WRLC_CS_H
 
+#include "import.h"
+
 typedef struct cs_s {
     char css[MAX_CONFIGSTRINGS][MAX_CONFIGSTRING_CHARS];
 } cs_t;

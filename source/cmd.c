@@ -19,7 +19,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
 #include "import.h"
-#include "utils.h"
+#include "global.h"
 #include "cs.h"
 #include "client.h"
 #include "cmd.h"

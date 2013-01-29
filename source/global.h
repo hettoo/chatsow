@@ -18,16 +18,13 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 */
 
-#include "global.h"
-#include "ui.h"
+#ifndef WRLC_GLOBAL_H
+#define WRLC_GLOBAL_H
 
-void quit() {
-    ui_stop();
-}
+void init(char *location);
+void register_general_commands();
 
-int main(int argc, char *argv[]) {
-    init(argv[0]);
-    ui_run();
+char *path(char *format, ...);
+int die(char *format, ...);
 
-    return 0;
-}
+#endif
