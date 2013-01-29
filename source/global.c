@@ -44,13 +44,32 @@ void init(char *location) {
     *p = '\0';
 
     trap.path = path;
+
     trap.ui_client = ui_client;
     trap.ui_output = ui_output;
+
     trap.client_cs = client_cs;
+
     trap.cmd_execute = cmd_execute;
+    trap.cmd_execute_special = cmd_execute_special;
+
     trap.cmd_client = cmd_client;
-    trap.cmd_add_global = cmd_add_global;
+    trap.cmd_argc = cmd_argc;
+    trap.cmd_argv = cmd_argv;
+    trap.cmd_args = cmd_args;
+
+    trap.cmd_add = cmd_add;
+    trap.cmd_add_persistent = cmd_add_persistent;
     trap.cmd_add_generic = cmd_add_generic;
+    trap.cmd_add_special = cmd_add_special;
+    trap.cmd_add_special_persistent = cmd_add_special_persistent;
+    trap.cmd_add_special_generic = cmd_add_special_generic;
+    trap.cmd_add_from_server = cmd_add_from_server;
+    trap.cmd_add_server = cmd_add_server;
+    trap.cmd_add_global = cmd_add_global;
+    trap.cmd_add_find_free = cmd_add_find_free;
+    trap.cmd_add_broadcast = cmd_add_broadcast;
+    trap.cmd_add_broadcast_all = cmd_add_broadcast_all;
 }
 
 static void cmd_load() {

@@ -27,6 +27,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 typedef enum cmd_type_e {
     CT_NORMAL,
     CT_PERSISTENT,
+    CT_SPECIAL,
+    CT_SPECIAL_PERSISTENT,
     CT_FROM_SERVER,
     CT_SERVER,
     CT_GLOBAL,
@@ -125,6 +127,9 @@ static qboolean cmd_type_extends(int type, int parent) {
     if (parent == CT_NORMAL && (type == CT_PERSISTENT || type == CT_SERVER))
         return qtrue;
 
+    if (parent == CT_SPECIAL && type == CT_SPECIAL_PERSISTENT)
+        return qtrue;
+
     if (parent == CT_GLOBAL && (type == CT_FIND_FREE || type == CT_BROADCAST || type == CT_BROADCAST_ALL))
         return qtrue;
 
@@ -146,7 +151,7 @@ static qboolean cmd_valid(cmd_t *cmd, int c, qboolean partial) {
     return (partial ? !strncmp(cmd->name, cmd_argv(0), len)
             : !strcmp(cmd->name, cmd_argv(0)))
         && (c < 0 || cmd->clients[c])
-        && (cmd->type != CT_NORMAL || client_active(c));
+        && (cmd->type != CT_NORMAL || cmd->type != CT_SPECIAL || client_active(c));
 }
 
 static cmd_t *cmd_find(cmd_t *cmd, int c, int type, qboolean partial) {
@@ -185,7 +190,8 @@ static void cmd_execute_real(int c, char *name, int type) {
 
     cmd_t *cmd = cmd_find(NULL, c, type, qfalse);
     if (!cmd) {
-        ui_output(c, "Unknown command: \"%s\"\n", cmd_argv(0));
+        if (!cmd_type_compatible(type, CT_SPECIAL))
+            ui_output(c, "Unknown command: \"%s\"\n", cmd_argv(0));
         return;
     }
 
@@ -229,6 +235,10 @@ static void cmd_execute_real(int c, char *name, int type) {
 
 void cmd_execute(int c, char *cmd) {
     cmd_execute_real(c, cmd, normal_type(c));
+}
+
+void cmd_execute_special(int c, char *cmd) {
+    cmd_execute_real(c, cmd, CT_SPECIAL);
 }
 
 void cmd_execute_from_server(int c, char *cmd) {
@@ -303,6 +313,22 @@ void cmd_add_generic(char *name, void (*f)()) {
     int i;
     for (i = 0; i < CLIENTS; i++)
         cmd_add(i, name, f);
+}
+
+void cmd_add_special(int client, char *name, void (*f)()) {
+    cmd_t *cmd = cmd_reserve(name, f, CT_SPECIAL);
+    cmd->clients[client] = qtrue;
+}
+
+void cmd_add_special_persistent(int client, char *name, void (*f)()) {
+    cmd_t *cmd = cmd_reserve(name, f, CT_SPECIAL_PERSISTENT);
+    cmd->clients[client] = qtrue;
+}
+
+void cmd_add_special_generic(char *name, void (*f)()) {
+    int i;
+    for (i = 0; i < CLIENTS; i++)
+        cmd_add_special(i, name, f);
 }
 
 void cmd_add_from_server(char *name, void (*f)()) {

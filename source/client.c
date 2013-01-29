@@ -539,6 +539,11 @@ static void cmd_reconnect() {
 static void cmd_nop() {
 }
 
+static void chat_command(client_t *c, char *command) {
+    if (command[0] == '!')
+        cmd_execute_special(c->id, command + 1);
+}
+
 static void cmd_pr() {
     client_t *c = clients + cmd_client();
     ui_output(c->id, "%s^7", cmd_argv(1));
@@ -548,18 +553,21 @@ static void cmd_ch() {
     client_t *c = clients + cmd_client();
     char *name = player_name(&c->cs, atoi(cmd_argv(1)));
     ui_output_important(c->id, "%s^7: ^2%s^7\n", name, cmd_argv(2));
+    chat_command(c, cmd_argv(2));
 }
 
 static void cmd_tch() {
     client_t *c = clients + cmd_client();
     char *name = player_name(&c->cs, atoi(cmd_argv(1)));
     ui_output_important(c->id, "%s^7: ^3%s^7\n", name, cmd_argv(2));
+    chat_command(c, cmd_argv(2));
 }
 
 static void cmd_tvch() {
     client_t *c = clients + cmd_client();
     char *name = player_name(&c->cs, atoi(cmd_argv(1)));
     ui_output_important(c->id, "[TV]%s^7: ^2%s^7\n", name, cmd_argv(2));
+    chat_command(c, cmd_argv(2));
 }
 
 static void cmd_motd() {
