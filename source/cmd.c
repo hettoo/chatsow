@@ -24,6 +24,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "client.h"
 #include "cmd.h"
 
+#define CMD_STACK_SIZE 16
+
 typedef enum cmd_type_e {
     CT_NORMAL,
     CT_PERSISTENT,
@@ -45,22 +47,46 @@ typedef struct cmd_s {
     qboolean clients[CLIENTS];
 } cmd_t;
 
-static cmd_t cmds[MAX_CMDS];
-static int cmd_count = 0;
+typedef struct cmd_stack_s {
+    int client;
+    int argc;
+    char argv[MAX_ARGC][MAX_ARG_SIZE];
+    char args[MAX_ARGS_SIZE];
+    int args_index[MAX_ARGC];
+} cmd_stack_t;
 
-static int client = -1;
-static int argc = 0;
-static char argv[MAX_ARGC][MAX_ARG_SIZE];
-static char args[MAX_ARGS_SIZE];
-static int args_index[MAX_ARGC];
+cmd_t cmds[MAX_CMDS];
+int cmd_count = 0;
+
+static cmd_stack_t cmd_stack[CMD_STACK_SIZE];
+static int cmd_stack_count = 0;
+
+static cmd_stack_t *s = NULL;
+
+static void cmd_stack_push() {
+    if (cmd_stack_count == CMD_STACK_SIZE)
+        die("Command stack overflow");
+    s = cmd_stack + cmd_stack_count++;
+    s->client = -1;
+    s->argc = 0;
+    return;
+}
+
+static void cmd_stack_pop() {
+    cmd_stack_count--;
+    if (cmd_stack_count == 0)
+        s = NULL;
+    else
+        s = cmd_stack + cmd_stack_count - 1;
+}
 
 void parse_cmd(char *cmd) {
-    argc = 0;
-    strcpy(args, cmd);
+    s->argc = 0;
+    strcpy(s->args, cmd);
     int i;
     qboolean escaped = qfalse;
     char quote = '\0';
-    int len = strlen(args);
+    int len = strlen(s->args);
     int o = 0;
     int start = 0;
     for (i = 0; i < len; i++) {
@@ -68,12 +94,12 @@ void parse_cmd(char *cmd) {
         qboolean skip = qfalse;
         char add = '\0';
         if (escaped) {
-            if (quote != args[i] && args[i] != '\\')
+            if (quote != s->args[i] && s->args[i] != '\\')
                 add = '\\';
             escaped = qfalse;
             normal = qtrue;
         } else {
-            switch (args[i]) {
+            switch (s->args[i]) {
                 case '\\':
                     escaped = qtrue;
                     break;
@@ -89,10 +115,10 @@ void parse_cmd(char *cmd) {
                     break;
                 case '\'':
                 case '"':
-                    if (quote == args[i])
+                    if (quote == s->args[i])
                         skip = qtrue;
                     else if (quote == '\0')
-                        quote = args[i];
+                        quote = s->args[i];
                     else
                         normal = qtrue;
                     break;
@@ -102,21 +128,21 @@ void parse_cmd(char *cmd) {
             }
         }
         if (skip) {
-            args_index[argc] = start;
-            argv[argc][o] = '\0';
-            argc++;
+            s->args_index[s->argc] = start;
+            s->argv[s->argc][o] = '\0';
+            s->argc++;
             o = 0;
             start = i + 1;
         }
         if (add != '\0' && o < MAX_ARG_SIZE - 1)
-            argv[argc][o++] = add;
+            s->argv[s->argc][o++] = add;
         if (normal && o < MAX_ARG_SIZE - 1)
-            argv[argc][o++] = args[i];
+            s->argv[s->argc][o++] = s->args[i];
     }
-    if (o > 0 || (i >= 1 && (args[i - 1] == ' ' || args[i - 1] == '\t' || args[i - 1] == '\n'))) {
-        args_index[argc] = start;
-        argv[argc][o] = '\0';
-        argc++;
+    if (o > 0 || (i >= 1 && (s->args[i - 1] == ' ' || s->args[i - 1] == '\t' || s->args[i - 1] == '\n'))) {
+        s->args_index[s->argc] = start;
+        s->argv[s->argc][o] = '\0';
+        s->argc++;
     }
 }
 
@@ -174,24 +200,28 @@ static int normal_type(int c) {
 int cmd_suggest(int c, char *name, char suggestions[][MAX_SUGGESTION_SIZE]) {
     int type = normal_type(c);
     int count = 0;
+    cmd_stack_push();
     parse_cmd(name);
-    if (argc <= 1) {
+    if (cmd_argc() <= 1) {
         cmd_t *cmd = NULL;
         while ((cmd = cmd_find(cmd, c, type, qtrue)) != NULL) {
             if (cmd->name[0])
                 strcpy(suggestions[count++], cmd->name);
         }
     }
+    cmd_stack_pop();
     return count;
 }
 
 static void cmd_execute_real(int c, char *name, int type) {
+    cmd_stack_push();
     parse_cmd(name);
 
     cmd_t *cmd = cmd_find(NULL, c, type, qfalse);
     if (!cmd) {
         if (!cmd_type_compatible(type, CT_SPECIAL))
             ui_output(c, "Unknown command: \"%s\"\n", cmd_argv(0));
+        cmd_stack_pop();
         return;
     }
 
@@ -220,17 +250,19 @@ static void cmd_execute_real(int c, char *name, int type) {
         }
         if (!found) {
             ui_output(c, "No free client found.\n");
+            cmd_stack_pop();
             return;
         }
     }
-    for (client = start; client <= end; client++) {
+    for (s->client = start; s->client <= end; s->client++) {
         if (type == CT_SERVER)
-            client_command(client, "%s", cmd_args(0));
+            client_command(s->client, "%s", cmd_args(0));
         else
             cmd->f();
         if (switch_screen)
-            set_screen(client + 1);
+            set_screen(s->client + 1);
     }
+    cmd_stack_pop();
 }
 
 void cmd_execute(int c, char *cmd) {
@@ -246,23 +278,23 @@ void cmd_execute_from_server(int c, char *cmd) {
 }
 
 int cmd_client() {
-    return client;
+    return s->client;
 }
 
 int cmd_argc() {
-    return argc;
+    return s->argc;
 }
 
 char *cmd_argv(int index) {
-    if (index >= argc)
+    if (index >= s->argc)
         return "";
-    return argv[index];
+    return s->argv[index];
 }
 
 char *cmd_args(int start) {
-    if (start >= argc)
+    if (start >= s->argc)
         return "";
-    return args + args_index[start];
+    return s->args + s->args_index[start];
 }
 
 static cmd_t *cmd_find_exact(char *name, void(*f)(), int type) {
