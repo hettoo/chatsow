@@ -10,6 +10,7 @@ LFLAGS_PLUGINS = -shared $(LFLAGS_COMMON)
 
 PROGRAM = chatsow
 
+LOCAL = ~/.$(PROGRAM)/
 SOURCE = source/
 BUILD = build/
 RELEASE = release/
@@ -29,7 +30,13 @@ MODULES_PLUGINS = $(patsubst $(PLUGINS)%.c,%,$(CFILES_PLUGINS))
 OBJS_PLUGINS = $(addprefix $(BUILD_PLUGINS),$(addsuffix .o,$(MODULES_PLUGINS)))
 LIBS_PLUGINS = $(addprefix $(RELEASE_PLUGINS),$(addsuffix .so,$(MODULES_PLUGINS)))
 
+$(shell mkdir -p $(BUILD))
+$(shell mkdir -p $(BUILD_PLUGINS))
+
 default: program plugins
+
+local: program plugins
+	rsync -av $(RELEASE) $(LOCAL)
 
 program: $(RELEASE)$(PROGRAM)
 
@@ -38,14 +45,13 @@ plugins: $(LIBS_PLUGINS)
 clean:
 	rm -rf $(BUILD)
 
-test: program plugins
+test: local
 	./$(RELEASE)$(PROGRAM)
 
 $(RELEASE)$(PROGRAM): $(OBJS)
 	$(CC) $(LFLAGS) $^ -o $@
 
 define module_depender
-$(shell mkdir -p $(BUILD))
 $(shell touch $(BUILD)$(1).d)
 $(shell makedepend -f $(BUILD)$(1).d -- $(CFLAGS) -- $(SOURCE)$(1).c
 	2>/dev/null)
@@ -62,7 +68,6 @@ $(foreach module, $(MODULES), $(eval $(call module_depender,$(module))))
 $(foreach module, $(MODULES), $(eval $(call module_compiler,$(module))))
 
 define plugin_module_depender
-$(shell mkdir -p $(BUILD_PLUGINS))
 $(shell touch $(BUILD_PLUGINS)$(1).d)
 $(shell makedepend -f $(BUILD_PLUGINS)$(1).d -- $(CFLAGS_PLUGINS) -- $(PLUGINS)$(1).c
 	2>/dev/null)

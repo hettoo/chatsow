@@ -22,6 +22,9 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <stdio.h>
 #include <stdarg.h>
 #include <dlfcn.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <pwd.h>
 
 #include "main.h"
 #include "import.h"
@@ -45,6 +48,7 @@ plugin_t plugins[MAX_PLUGINS];
 int plugin_count = 0;
 
 static char base[512];
+static char home_base[512];
 
 static plugin_interface_t trap;
 
@@ -55,6 +59,10 @@ void init(char *location) {
         ;
     p++;
     *p = '\0';
+
+    struct passwd *pw = getpwuid(getuid());
+    strcpy(home_base, pw->pw_dir);
+    strcat(home_base, "/.chatsow/");
 
     trap.path = path;
 
@@ -158,10 +166,10 @@ void register_general_commands() {
 
 char *path(char *format, ...) {
     static char result[MAX_STRING_CHARS];
-    strcpy(result, base);
+    strcpy(result, home_base);
     va_list argptr;
     va_start(argptr, format);
-    vsprintf(result + strlen(base), format, argptr);
+    vsprintf(result + strlen(home_base), format, argptr);
     va_end(argptr);
     return result;
 }
