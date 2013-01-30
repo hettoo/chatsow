@@ -70,10 +70,12 @@ void init(char *location) {
     trap.ui_client = ui_client;
     trap.ui_output = ui_output;
 
+    trap.client_say = client_say;
     trap.client_cs = client_cs;
 
     trap.cmd_execute = cmd_execute;
     trap.cmd_execute_special = cmd_execute_special;
+    trap.cmd_execute_from_server = cmd_execute_from_server;
 
     trap.cmd_client = cmd_client;
     trap.cmd_argc = cmd_argc;
@@ -86,6 +88,7 @@ void init(char *location) {
     trap.cmd_add_special = cmd_add_special;
     trap.cmd_add_special_persistent = cmd_add_special_persistent;
     trap.cmd_add_special_generic = cmd_add_special_generic;
+    trap.cmd_add_event = cmd_add_event;
     trap.cmd_add_from_server = cmd_add_from_server;
     trap.cmd_add_server = cmd_add_server;
     trap.cmd_add_global = cmd_add_global;

@@ -32,6 +32,7 @@ typedef enum cmd_type_e {
     CT_PERSISTENT,
     CT_SPECIAL,
     CT_SPECIAL_PERSISTENT,
+    CT_EVENT,
     CT_FROM_SERVER,
     CT_SERVER,
     CT_GLOBAL,
@@ -219,50 +220,58 @@ static void cmd_execute_real(int c, char *name, int type) {
     cmd_stack_push();
     parse_cmd(name);
 
-    cmd_t *cmd = cmd_find(NULL, c, type, qfalse);
-    if (!cmd) {
-        if (!cmd_type_compatible(type, CT_SPECIAL))
+    cmd_t *cmd = NULL;
+    int cmds = 0;
+    while ((cmd = cmd_find(cmd, c, type, qfalse)) != NULL) {
+        cmds++;
+
+        int start = c;
+        int end = c;
+        qboolean switch_screen = qfalse;
+        int old_type = type;
+        if (cmd_type_compatible(cmd->type, type))
+            type = cmd->type;
+        if (type == CT_BROADCAST && c < 0) {
+            start = 0;
+            end = CLIENTS - 1;
+        } else if (type == CT_BROADCAST_ALL) {
+            start = -1;
+            end = CLIENTS - 1;
+        } else if (type == CT_FIND_FREE && c < 0) {
+            int i;
+            qboolean found = qfalse;
+            for (i = 0; i < CLIENTS && !found; i++) {
+                if (!client_active(i)) {
+                    start = i;
+                    end = i;
+                    found = qtrue;
+                    switch_screen = qtrue;
+                    break;
+                }
+            }
+            if (!found) {
+                ui_output(c, "No free client found.\n");
+                cmd_stack_pop();
+                return;
+            }
+        }
+        for (s->client = start; s->client <= end; s->client++) {
+            if (type == CT_SERVER)
+                client_command(s->client, "%s", cmd_args(0));
+            else
+                cmd->f();
+            if (switch_screen)
+                set_screen(s->client + 1);
+        }
+        type = old_type;
+    }
+    if (cmds == 0) {
+        if (cmd_type_compatible(type, CT_SPECIAL))
+            client_say(c, "Unknown command: \"%s\"", cmd_argv(0));
+        else if (!cmd_type_compatible(type, CT_EVENT))
             ui_output(c, "Unknown command: \"%s\"\n", cmd_argv(0));
         cmd_stack_pop();
         return;
-    }
-
-    int start = c;
-    int end = c;
-    qboolean switch_screen = qfalse;
-    if (cmd_type_compatible(cmd->type, type))
-        type = cmd->type;
-    if (type == CT_BROADCAST && c < 0) {
-        start = 0;
-        end = CLIENTS - 1;
-    } else if (type == CT_BROADCAST_ALL) {
-        start = -1;
-        end = CLIENTS - 1;
-    } else if (type == CT_FIND_FREE && c < 0) {
-        int i;
-        qboolean found = qfalse;
-        for (i = 0; i < CLIENTS && !found; i++) {
-            if (!client_active(i)) {
-                start = i;
-                end = i;
-                found = qtrue;
-                switch_screen = qtrue;
-                break;
-            }
-        }
-        if (!found) {
-            ui_output(c, "No free client found.\n");
-            cmd_stack_pop();
-            return;
-        }
-    }
-    for (s->client = start; s->client <= end; s->client++) {
-        if (type == CT_SERVER)
-            client_command(s->client, "%s", cmd_args(0));
-        else
-            cmd->f();
-        if (switch_screen)
-            set_screen(s->client + 1);
     }
     cmd_stack_pop();
 }
@@ -273,6 +282,10 @@ void cmd_execute(int c, char *cmd) {
 
 void cmd_execute_special(int c, char *cmd) {
     cmd_execute_real(c, cmd, CT_SPECIAL);
+}
+
+void cmd_execute_event(int c, char *cmd) {
+    cmd_execute_real(c, cmd, CT_EVENT);
 }
 
 void cmd_execute_from_server(int c, char *cmd) {
@@ -371,6 +384,12 @@ int cmd_add_special_persistent(int client, char *name, void (*f)()) {
 
 int cmd_add_special_generic(char *name, void (*f)()) {
     cmd_t *cmd = cmd_reserve(name, f, CT_SPECIAL);
+    cmd_allow_all(cmd);
+    return cmd_index(cmd);
+}
+
+int cmd_add_event(char *name, void (*f)()) {
+    cmd_t *cmd = cmd_reserve(name, f, CT_EVENT);
     cmd_allow_all(cmd);
     return cmd_index(cmd);
 }

@@ -915,7 +915,7 @@ void ui_run() {
                         ui_output(screen - 1, "%s\n", screens[screen].commandline);
                         cmd_execute(screen - 1, screens[screen].commandline + command_mode_actual_prefix_length());
                     } else {
-                        client_command(screen - 1, "say %s", screens[screen].commandline);
+                        client_say(screen - 1, "%s", screens[screen].commandline);
                     }
                 }
                 screens[old_screen].commandline_length = 0;

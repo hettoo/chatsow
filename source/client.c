@@ -275,6 +275,17 @@ static void client_send(client_t *c, msg_t *msg) {
     c->last_send = millis();
 }
 
+void client_say(int id, char *format, ...) {
+    static char string[MAX_MSGLEN];
+    strcpy(string, "say \"");
+	va_list	argptr;
+	va_start(argptr, format);
+    vsprintf(string + strlen(string), format, argptr);
+	va_end(argptr);
+    strcat(string, "\"");
+    cmd_execute(id, string);
+}
+
 void client_command(int id, char *format, ...) {
     client_t *c = clients + id;
     if (c->state < CA_SETUP) {

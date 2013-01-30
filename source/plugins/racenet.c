@@ -31,23 +31,23 @@ plugin_interface_t *trap;
 
 static FILE *fp = NULL;
 static int fn;
-static char cmd[MAX_STRING_CHARS];
-static int cmd_len;
+static char msg[MAX_STRING_CHARS];
+static int msg_len;
 static int cmd_client;
 
 static int cmd_index;
 
 static void cmd_racenet() {
     if (fp != NULL) {
-        trap->cmd_execute(cmd_client, "say \"A query is already running\"");
+        trap->client_say(cmd_client, "A query is already running");
         return;
     }
 
     fp = popen(trap->path("plugins/racenet.pl %s", cs_get(trap->client_cs(trap->ui_client()), CS_MAPNAME)), "r");
     fn = fileno(fp);
     fcntl(fn, F_SETFL, O_NONBLOCK);
-    strcpy(cmd, "say \"");
-    cmd_len = strlen(cmd);
+    strcpy(msg, "\"");
+    msg_len = strlen(msg);
     cmd_client = trap->cmd_client();
 }
 
@@ -64,13 +64,12 @@ void frame() {
     ssize_t r = read(fn, &c, 1);
     if (r == -1 && errno == EAGAIN) {
     } else if (r > 0) {
-        cmd[cmd_len++] = (char)c;
+        msg[msg_len++] = (char)c;
     } else {
-        if (cmd[cmd_len - 1] == '\n')
-            cmd_len--;
-        cmd[cmd_len++] = '"';
-        cmd[cmd_len++] = '\0';
-        trap->cmd_execute(cmd_client, cmd);
+        if (msg[msg_len - 1] == '\n')
+            msg_len--;
+        msg[msg_len++] = '\0';
+        trap->client_say(cmd_client, msg);
         pclose(fp);
         fp = NULL;
     }

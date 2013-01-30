@@ -30,6 +30,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 void cmd_execute(int c, char *cmd);
 void cmd_execute_special(int c, char *cmd);
+void cmd_execute_event(int c, char *cmd);
 void cmd_execute_from_server(int c, char *cmd);
 int cmd_suggest(int c, char *cmd, char suggestions[][MAX_SUGGESTION_SIZE]);
 
@@ -44,6 +45,7 @@ int cmd_add_generic(char *name, void (*f)());
 int cmd_add_special(int client, char *name, void (*f)());
 int cmd_add_special_persistent(int client, char *name, void (*f)());
 int cmd_add_special_generic(char *name, void (*f)());
+int cmd_add_event(char *name, void (*f)());
 int cmd_add_from_server(char *name, void (*f)());
 int cmd_add_server(int client, char *name);
 int cmd_add_global(char *name, void (*f)());
