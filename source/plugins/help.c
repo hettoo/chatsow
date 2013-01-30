@@ -27,10 +27,16 @@ static int cmd_index;
 
 static void cmd_help() {
     char *text = trap->cmd_argv(2);
-    if ((partial_match("how", text) || partial_match("help", text)) && (partial_match("run", text)
-                || partial_match("jump", text) || partial_match("move", text))) {
-        trap->client_say(trap->cmd_client(), "To learn racing: spectate someone, Google strafe jumping or find a Warsow movement tutorial video");
-        trap->client_say(trap->cmd_client(), "Also go to mgxrace.com to download a strafehud");
+    if (partial_match("how", text) && (partial_match("start", text) || partial_match("join", text)))
+        trap->client_say(trap->cmd_client(), "Press escape and choose join to start");
+    if ((partial_match("how", text) || partial_match("help", text))
+            && (partial_match("run", text) || partial_match("jump", text)
+                || partial_match("move", text) || partial_match("fast", text))) {
+        trap->client_say(trap->cmd_client(),
+                "Open the console (below escape) and type cg_oldmovement 1\n"
+                "^2Go to mgxrace.com to download a strafehud");
+        trap->client_say(trap->cmd_client(),
+                "To learn racing: spectate someone, Google strafe jumping or find a Warsow movement tutorial video");
     }
 }
 

@@ -266,10 +266,12 @@ static void cmd_execute_real(int c, char *name, int type) {
         type = old_type;
     }
     if (cmds == 0) {
-        if (cmd_type_compatible(type, CT_SPECIAL))
-            client_say(c, "Unknown command: \"%s\"", cmd_argv(0));
-        else if (!cmd_type_compatible(type, CT_EVENT))
+        if (cmd_type_compatible(type, CT_SPECIAL)) {
+            if (cmd_argv(0)[0])
+                client_say(c, "Unknown command: \"%s\"", cmd_argv(0));
+        } else if (!cmd_type_compatible(type, CT_EVENT)) {
             ui_output(c, "Unknown command: \"%s\"\n", cmd_argv(0));
+        }
         cmd_stack_pop();
         return;
     }
