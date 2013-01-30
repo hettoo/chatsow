@@ -93,6 +93,25 @@ void init(char *location) {
     trap.cmd_add_broadcast_all = cmd_add_broadcast_all;
 }
 
+static void cmd_exec() {
+    static char script[MAX_STRING_CHARS];
+    strcpy(script, cmd_argv(1));
+    int client = cmd_client();
+
+    static char current[MAX_STRING_CHARS];
+
+    FILE *fp = fopen(path("%s", script), "r");
+    if (!fp)
+        return;
+
+    while (fgets(current, MAX_STRING_CHARS, fp) > 0) {
+        if (current[0] != '\n')
+            cmd_execute(client, current);
+    }
+
+    fclose(fp);
+}
+
 static void cmd_load() {
     if (plugin_count == MAX_PLUGINS) {
         ui_output(cmd_client(), "Too many plugins\n");
@@ -159,6 +178,7 @@ static void cmd_quit() {
 }
 
 void register_general_commands() {
+    cmd_add_global("exec", cmd_exec);
     cmd_add_global("load", cmd_load);
     cmd_add_global("plugins", cmd_plugins);
     cmd_add_global("quit", cmd_quit);

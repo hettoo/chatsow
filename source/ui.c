@@ -800,11 +800,16 @@ void ui_run() {
     int last_cols = 0;
     int last_lines = 0;
     int last_status = 0;
+    qboolean first = qtrue;
     for (;;) {
         if (last_cols != COLS && last_lines != LINES) {
             redesign();
             last_cols = COLS;
             last_lines = LINES;
+        }
+        if (first) {
+            cmd_execute(screen - 1, "exec config.cfg");
+            first = qfalse;
         }
         if (stopped)
             break;
