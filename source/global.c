@@ -94,19 +94,15 @@ void init(char *location) {
 }
 
 static void cmd_exec() {
-    static char script[MAX_STRING_CHARS];
-    strcpy(script, cmd_argv(1));
-    int client = cmd_client();
+    char current[MAX_STRING_CHARS];
 
-    static char current[MAX_STRING_CHARS];
-
-    FILE *fp = fopen(path("%s", script), "r");
+    FILE *fp = fopen(path("%s", cmd_argv(1)), "r");
     if (!fp)
         return;
 
     while (fgets(current, MAX_STRING_CHARS, fp) > 0) {
         if (current[0] != '\n')
-            cmd_execute(client, current);
+            cmd_execute(cmd_client(), current);
     }
 
     fclose(fp);
@@ -116,6 +112,13 @@ static void cmd_load() {
     if (plugin_count == MAX_PLUGINS) {
         ui_output(cmd_client(), "Too many plugins\n");
         return;
+    }
+    int i;
+    for (i = 0; i < plugin_count; i++) {
+        if (!strcmp(plugins[i].name, cmd_argv(1))) {
+            ui_output(cmd_client(), "%s is already loaded\n", plugins[i].name);
+            return;
+        }
     }
 
     plugin_t *plugin = plugins + plugin_count++;
@@ -153,6 +156,23 @@ static void cmd_load() {
     plugin->init(&trap);
 }
 
+static void cmd_unload() {
+    int i;
+    int skip = 0;
+    for (i = 0; i < plugin_count - skip; i++) {
+        if (!strcmp(plugins[i].name, cmd_argv(1))) {
+            plugins[i].shutdown();
+            dlclose(plugins[i].handle);
+            skip++;
+        }
+        if (i < plugin_count - skip)
+            plugins[i] = plugins[i + skip];
+    }
+    plugin_count -= skip;
+    if (skip == 0)
+        ui_output(-2, "Plugin %s not loaded\n", cmd_argv(1));
+}
+
 static void cmd_plugins() {
     ui_output(-2, "^5Loaded plugins:\n");
     int i;
@@ -169,8 +189,10 @@ void plugin_frame() {
 
 void plugin_shutdown() {
     int i;
-    for (i = 0; i < plugin_count; i++)
+    for (i = 0; i < plugin_count; i++) {
         plugins[i].shutdown();
+        dlclose(plugins[i].handle);
+    }
 }
 
 static void cmd_quit() {
@@ -180,6 +202,7 @@ static void cmd_quit() {
 void register_general_commands() {
     cmd_add_global("exec", cmd_exec);
     cmd_add_global("load", cmd_load);
+    cmd_add_global("unload", cmd_unload);
     cmd_add_global("plugins", cmd_plugins);
     cmd_add_global("quit", cmd_quit);
 }
