@@ -1,8 +1,8 @@
 CC = gcc
 DEBUG = -g
-CFLAGS_COMMON = -O2 -Wall -c $(DEBUG)
+CFLAGS_COMMON = -O2 -Wall -fPIC -c $(DEBUG)
 CFLAGS = $(CFLAGS_COMMON)
-CFLAGS_PLUGINS = -fPIC $(CFLAGS_COMMON)
+CFLAGS_PLUGINS = $(CFLAGS_COMMON)
 EXTRA_CFLAGS = $(shell pkg-config --cflags libnotify)
 LFLAGS_COMMON = -O2 -Wall $(DEBUG)
 LFLAGS = $(shell pkg-config --libs libnotify) -lncurses -lz -ldl -lm $(LFLAGS_COMMON)

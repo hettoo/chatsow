@@ -51,4 +51,6 @@ int uncolored_index(char *string, int real_index);
 qboolean partial_match(char *a, char *b);
 int insensitive_cmp(const void *a_raw, const void *b_raw);
 
+qboolean rm(void *array, int element_size, int *size, qboolean (*f_test)(void *x));
+
 #endif

@@ -219,3 +219,17 @@ int insensitive_cmp(const void *a_raw, const void *b_raw) {
     strcpy(uncolored_b, uncolor(b));
     return strcasecmp(uncolored_a, uncolored_b);
 }
+
+qboolean rm(void *array, int element_size, int *size, qboolean (*f_test)(void *x)) {
+    int i;
+    int skip = 0;
+    int total = *size * element_size;
+    for (i = 0; i < total; i += element_size) {
+        if (skip > 0)
+            memcpy(array + i - skip, array + i, element_size);
+        if (f_test(array + i))
+            skip += element_size;
+    }
+    *size -= skip / element_size;
+    return skip > 0;
+}

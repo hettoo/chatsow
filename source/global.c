@@ -28,6 +28,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include "main.h"
 #include "import.h"
+#include "utils.h"
 #include "plugins.h"
 #include "cmd.h"
 #include "ui.h"
@@ -158,21 +159,22 @@ static void cmd_load() {
     plugin->init(&trap);
 }
 
-static void cmd_unload() {
-    int i;
-    int skip = 0;
-    for (i = 0; i < plugin_count - skip; i++) {
-        if (!strcmp(plugins[i].name, cmd_argv(1))) {
-            plugins[i].shutdown();
-            dlclose(plugins[i].handle);
-            skip++;
-        }
-        if (i < plugin_count - skip)
-            plugins[i] = plugins[i + skip];
+static char *remove_plugin;
+
+static qboolean plugin_remove_test(void *x) {
+    plugin_t *plugin = (plugin_t *)x;
+    qboolean result = !strcmp(plugin->name, remove_plugin);
+    if (result) {
+        plugin->shutdown();
+        dlclose(plugin->handle);
     }
-    plugin_count -= skip;
-    if (skip == 0)
-        ui_output(-2, "Plugin %s not loaded\n", cmd_argv(1));
+    return result;
+}
+
+static void cmd_unload() {
+    remove_plugin = cmd_argv(1);
+    if (!rm(plugins, sizeof(plugins[0]), &plugin_count, plugin_remove_test))
+        ui_output(-2, "Plugin %s not loaded\n", remove_plugin);
 }
 
 static void cmd_plugins() {

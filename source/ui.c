@@ -651,24 +651,25 @@ static char suggestions[MAX_CMDS][MAX_SUGGESTION_SIZE];
 static int suggestion_count;
 static int suggesting_offset;
 
+static qboolean suggestion_remove_test(void *x) {
+    char *suggestion = (char *)x;
+    int i;
+    for (i = 0; suggestions[i] != suggestion; i++) {
+        if (!strcmp(suggestion, suggestions[i]))
+            return qtrue;
+    }
+    return qfalse;
+}
+
 static qboolean apply_suggestions(qboolean complete_partial) {
     qsort(suggestions, suggestion_count, MAX_SUGGESTION_SIZE, insensitive_cmp);
-    int skip = 0;
-    char *last = NULL;
-    int i;
-    for (i = 0; i + skip < suggestion_count; i++) {
-        if (last != NULL && !strcmp(suggestions[i], last))
-            skip++;
-        if (skip > 0 && i + skip < suggestion_count)
-            strcpy(suggestions[i], suggestions[i + skip]);
-        last = suggestions[i];
-    }
-    suggestion_count -= skip;
+    rm(suggestions, sizeof(suggestions[0]), &suggestion_count, suggestion_remove_test);
 
     if (suggestion_count == 0)
         return qfalse;
 
     int minlen = -1;
+    int i;
     for (i = 0; i < suggestion_count; i++) {
         int len = strlen(suggestions[i]);
         if (minlen < 0 || len < minlen)

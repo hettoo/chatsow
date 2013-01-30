@@ -20,6 +20,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include "import.h"
 #include "global.h"
+#include "utils.h"
 #include "cs.h"
 #include "client.h"
 #include "cmd.h"
@@ -410,13 +411,14 @@ int cmd_add_broadcast_all(char *name, void (*f)()) {
     return cmd_index(cmd);
 }
 
+static int cmd_remove_index;
+
+static qboolean cmd_remove_test(void *x) {
+    cmd_t *cmd = (cmd_t *)x;
+    return cmd->index == cmd_remove_index;
+}
+
 void cmd_remove(int index) {
-    int i;
-    int skip = 0;
-    for (i = 0; i + skip < cmd_count; i++) {
-        if (cmds[i].index == index)
-            skip++;
-        if (skip > 0 && i + skip < cmd_count)
-            cmds[i] = cmds[i + skip];
-    }
+    cmd_remove_index = index;
+    rm(cmds, sizeof(cmds[0]), &cmd_count, cmd_remove_test);
 }
