@@ -39,18 +39,20 @@ typedef struct plugin_interface_s {
     char *(*cmd_argv)(int index);
     char *(*cmd_args)(int start);
 
-    void (*cmd_add)(int client, char *name, void (*f)());
-    void (*cmd_add_persistent)(int client, char *name, void (*f)());
-    void (*cmd_add_generic)(char *name, void (*f)());
-    void (*cmd_add_special)(int client, char *name, void (*f)());
-    void (*cmd_add_special_persistent)(int client, char *name, void (*f)());
-    void (*cmd_add_special_generic)(char *name, void (*f)());
-    void (*cmd_add_from_server)(char *name, void (*f)());
-    void (*cmd_add_server)(int client, char *name);
-    void (*cmd_add_global)(char *name, void (*f)());
-    void (*cmd_add_find_free)(char *name, void (*f)());
-    void (*cmd_add_broadcast)(char *name, void (*f)());
-    void (*cmd_add_broadcast_all)(char *name, void (*f)());
+    int (*cmd_add)(int client, char *name, void (*f)());
+    int (*cmd_add_persistent)(int client, char *name, void (*f)());
+    int (*cmd_add_generic)(char *name, void (*f)());
+    int (*cmd_add_special)(int client, char *name, void (*f)());
+    int (*cmd_add_special_persistent)(int client, char *name, void (*f)());
+    int (*cmd_add_special_generic)(char *name, void (*f)());
+    int (*cmd_add_from_server)(char *name, void (*f)());
+    int (*cmd_add_server)(int client, char *name);
+    int (*cmd_add_global)(char *name, void (*f)());
+    int (*cmd_add_find_free)(char *name, void (*f)());
+    int (*cmd_add_broadcast)(char *name, void (*f)());
+    int (*cmd_add_broadcast_all)(char *name, void (*f)());
+
+    void (*cmd_remove)(int index);
 } plugin_interface_t;
 
 #endif

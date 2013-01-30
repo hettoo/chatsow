@@ -45,6 +45,7 @@ typedef struct cmd_s {
     void (*f)();
     cmd_type_t type;
     qboolean clients[CLIENTS];
+    int index;
 } cmd_t;
 
 typedef struct cmd_stack_s {
@@ -331,64 +332,91 @@ static void cmd_allow_all(cmd_t *cmd) {
         cmd->clients[i] = qtrue;
 }
 
-void cmd_add(int client, char *name, void (*f)()) {
+static int cmd_index(cmd_t *cmd) {
+    static int index = 0;
+    cmd->index = index++;
+    return cmd->index;
+}
+
+int cmd_add(int client, char *name, void (*f)()) {
     cmd_t *cmd = cmd_reserve(name, f, CT_NORMAL);
     cmd->clients[client] = qtrue;
+    return cmd_index(cmd);
 }
 
-void cmd_add_persistent(int client, char *name, void (*f)()) {
+int cmd_add_persistent(int client, char *name, void (*f)()) {
     cmd_t *cmd = cmd_reserve(name, f, CT_PERSISTENT);
     cmd->clients[client] = qtrue;
+    return cmd_index(cmd);
 }
 
-void cmd_add_generic(char *name, void (*f)()) {
-    int i;
-    for (i = 0; i < CLIENTS; i++)
-        cmd_add(i, name, f);
+int cmd_add_generic(char *name, void (*f)()) {
+    cmd_t *cmd = cmd_reserve(name, f, CT_NORMAL);
+    cmd_allow_all(cmd);
+    return cmd_index(cmd);
 }
 
-void cmd_add_special(int client, char *name, void (*f)()) {
+int cmd_add_special(int client, char *name, void (*f)()) {
     cmd_t *cmd = cmd_reserve(name, f, CT_SPECIAL);
     cmd->clients[client] = qtrue;
+    return cmd_index(cmd);
 }
 
-void cmd_add_special_persistent(int client, char *name, void (*f)()) {
+int cmd_add_special_persistent(int client, char *name, void (*f)()) {
     cmd_t *cmd = cmd_reserve(name, f, CT_SPECIAL_PERSISTENT);
     cmd->clients[client] = qtrue;
+    return cmd_index(cmd);
 }
 
-void cmd_add_special_generic(char *name, void (*f)()) {
-    int i;
-    for (i = 0; i < CLIENTS; i++)
-        cmd_add_special(i, name, f);
+int cmd_add_special_generic(char *name, void (*f)()) {
+    cmd_t *cmd = cmd_reserve(name, f, CT_SPECIAL);
+    cmd_allow_all(cmd);
+    return cmd_index(cmd);
 }
 
-void cmd_add_from_server(char *name, void (*f)()) {
+int cmd_add_from_server(char *name, void (*f)()) {
     cmd_t *cmd = cmd_reserve(name, f, CT_FROM_SERVER);
     cmd_allow_all(cmd);
+    return cmd_index(cmd);
 }
 
-void cmd_add_server(int client, char *name) {
+int cmd_add_server(int client, char *name) {
     cmd_t *cmd = cmd_reserve(name, NULL, CT_SERVER);
     cmd->clients[client] = qtrue;
+    return cmd_index(cmd);
 }
 
-void cmd_add_global(char *name, void (*f)()) {
+int cmd_add_global(char *name, void (*f)()) {
     cmd_t *cmd = cmd_reserve(name, f, CT_GLOBAL);
     cmd_allow_all(cmd);
+    return cmd_index(cmd);
 }
 
-void cmd_add_find_free(char *name, void (*f)()) {
+int cmd_add_find_free(char *name, void (*f)()) {
     cmd_t *cmd = cmd_reserve(name, f, CT_FIND_FREE);
     cmd_allow_all(cmd);
+    return cmd_index(cmd);
 }
 
-void cmd_add_broadcast(char *name, void (*f)()) {
+int cmd_add_broadcast(char *name, void (*f)()) {
     cmd_t *cmd = cmd_reserve(name, f, CT_BROADCAST);
     cmd_allow_all(cmd);
+    return cmd_index(cmd);
 }
 
-void cmd_add_broadcast_all(char *name, void (*f)()) {
+int cmd_add_broadcast_all(char *name, void (*f)()) {
     cmd_t *cmd = cmd_reserve(name, f, CT_BROADCAST_ALL);
     cmd_allow_all(cmd);
+    return cmd_index(cmd);
+}
+
+void cmd_remove(int index) {
+    int i;
+    int skip = 0;
+    for (i = 0; i + skip < cmd_count; i++) {
+        if (cmds[i].index == index)
+            skip++;
+        if (skip > 0 && i + skip < cmd_count)
+            cmds[i] = cmds[i + skip];
+    }
 }

@@ -91,6 +91,8 @@ void init(char *location) {
     trap.cmd_add_find_free = cmd_add_find_free;
     trap.cmd_add_broadcast = cmd_add_broadcast;
     trap.cmd_add_broadcast_all = cmd_add_broadcast_all;
+
+    trap.cmd_remove = cmd_remove;
 }
 
 static void cmd_exec() {

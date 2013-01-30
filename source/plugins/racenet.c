@@ -35,6 +35,8 @@ static char cmd[MAX_STRING_CHARS];
 static int cmd_len;
 static int cmd_client;
 
+static int cmd_index;
+
 static void cmd_racenet() {
     if (fp != NULL) {
         trap->cmd_execute(cmd_client, "say \"A query is already running\"");
@@ -51,7 +53,7 @@ static void cmd_racenet() {
 
 void init(plugin_interface_t *new_trap) {
     trap = new_trap;
-    trap->cmd_add_special_generic("racenet", cmd_racenet);
+    cmd_index = trap->cmd_add_special_generic("racenet", cmd_racenet);
 }
 
 void frame() {
@@ -78,4 +80,5 @@ void shutdown() {
     if (fp != NULL)
         pclose(fp);
     fp = NULL;
+    trap->cmd_remove(cmd_index);
 }
