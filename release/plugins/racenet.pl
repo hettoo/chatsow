@@ -42,5 +42,11 @@ exit;
 
 sub query {
     my($page) = @_;
-    return get('http://www.warsow-race.net' . $page);
+    $page = 'http://www.warsow-race.net' . $page;
+    my $result = get($page);
+    if (!defined $result) {
+        print "Unable to get $page\n";
+        exit;
+    }
+    return $result;
 }
