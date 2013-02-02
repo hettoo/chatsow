@@ -55,9 +55,19 @@ static char filter[512];
 static server_t serverlist[MAX_SERVERS];
 static int server_count = 0;
 
-static sock_t sock;
+typedef struct master_s {
+    char *address;
+    sock_t sock;
+} master_t;
 
-#define MASTER "64.22.107.125"
+static master_t masters[] = {
+    {"64.22.107.125"},
+    {"65.59.212.88"},
+    {"92.62.40.73"},
+    {"78.46.47.231"},
+    {""}
+};
+
 #define PORT_MASTER 27950
 
 void serverlist_connect() {
@@ -72,8 +82,11 @@ void serverlist_connect() {
 }
 
 void serverlist_init() {
-    sock_init(&sock);
-    sock_connect(&sock, MASTER, PORT_MASTER);
+    master_t *master;
+    for (master = masters; master->address[0]; master++) {
+        sock_init(&master->sock);
+        sock_connect(&master->sock, master->address, PORT_MASTER);
+    }
     cmd_add_global("list", serverlist_query);
     cmd_add_global("c", serverlist_connect);
 }
@@ -85,9 +98,12 @@ void serverlist_query() {
         sock_disconnect(&serverlist[i].sock);
     server_count = 0;
 
-    msg_t *msg = sock_init_send(&sock, qfalse);
-    write_string(msg, "getservers Warsow 15 full empty");
-    sock_send(&sock);
+    master_t *master;
+    for (master = masters; master->address[0]; master++) {
+        msg_t *msg = sock_init_send(&master->sock, qfalse);
+        write_string(msg, "getservers Warsow 15 full empty");
+        sock_send(&master->sock);
+    }
 }
 
 static void ping_server(server_t *server) {
@@ -158,36 +174,39 @@ void serverlist_frame() {
             ping_server(serverlist + i);
     }
 
-    msg_t *msg = sock_recv(&sock);
-    if (!msg)
-        return;
+    master_t *master;
+    for (master = masters; master->address[0]; master++) {
+        msg_t *msg = sock_recv(&master->sock);
+        if (!msg)
+            continue;
 
-    char address_string[32];
-    qbyte address[4];
-    unsigned short port;
+        char address_string[32];
+        qbyte address[4];
+        unsigned short port;
 
-    skip_data(msg, strlen("getserversResponse"));
-	while (msg->readcount + 7 <= msg->cursize) {
-        char prefix = read_char(msg);
-        port = 0;
+        skip_data(msg, strlen("getserversResponse"));
+        while (msg->readcount + 7 <= msg->cursize) {
+            char prefix = read_char(msg);
+            port = 0;
 
-        if (prefix == '\\') {
-            read_data(msg, address, 4);
-            port = ShortSwap(read_short(msg));
-            sprintf(address_string, "%u.%u.%u.%u", address[0], address[1], address[2], address[3]);
-        }
+            if (prefix == '\\') {
+                read_data(msg, address, 4);
+                port = ShortSwap(read_short(msg));
+                sprintf(address_string, "%u.%u.%u.%u", address[0], address[1], address[2], address[3]);
+            }
 
-        if (port != 0) {
-            server_t *server = find_server(address_string, port);
-            if (server != NULL)
-                continue;
-            server = serverlist + server_count++;
-            sock_init(&server->sock);
-            strcpy(server->address, address_string);
-            server->port = port;
-            serverlist[i].received = qfalse;
-            server->ping_retries = MAX_PING_RETRIES + 1;
-            ping_server(server);
+            if (port != 0) {
+                server_t *server = find_server(address_string, port);
+                if (server != NULL)
+                    continue;
+                server = serverlist + server_count++;
+                sock_init(&server->sock);
+                strcpy(server->address, address_string);
+                server->port = port;
+                serverlist[i].received = qfalse;
+                server->ping_retries = MAX_PING_RETRIES + 1;
+                ping_server(server);
+            }
         }
     }
 }
