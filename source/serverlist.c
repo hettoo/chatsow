@@ -18,16 +18,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 */
 
-#include <arpa/inet.h>
-#include <netinet/in.h>
 #include <stdio.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <unistd.h>
-#include <errno.h>
 #include <stdlib.h>
-#include <stdarg.h>
-#include <string.h>
 
 #include "global.h"
 #include "utils.h"
@@ -43,8 +35,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 typedef struct server_s {
     char address[32];
     int port;
-    int sockfd;
-    struct sockaddr_in serv_addr;
+
+    sock_t sock;
     int ping_start;
     int ping_end;
 
@@ -57,11 +49,7 @@ static char filter[512];
 static server_t serverlist[MAX_SERVERS];
 static int server_count = 0;
 
-static int sockfd;
-static struct sockaddr_in serv_addr;
-static socklen_t slen;
-static msg_t msg;
-static msg_t rmsg;
+static sock_t sock;
 
 #define MASTER "64.22.107.125"
 #define PORT_MASTER 27950
@@ -78,7 +66,7 @@ void serverlist_connect() {
 }
 
 void serverlist_init() {
-    sockfd = -1;
+    sock_init(&sock);
     cmd_add_global("list", serverlist_query);
     cmd_add_global("c", serverlist_connect);
 }
@@ -86,62 +74,21 @@ void serverlist_init() {
 void serverlist_query() {
     strcpy(filter, cmd_argv(1));
     server_count = 0;
-    sockfd = -1;
-    if ((sockfd = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) == -1) {
-        ui_output(-2, "Unable to create socket.\n");
-        return;
-    }
 
-    bzero(&serv_addr, sizeof(serv_addr));
+    sock_connect(&sock, MASTER, PORT_MASTER);
 
-    serv_addr.sin_family = AF_INET;
-    serv_addr.sin_port = htons(PORT_MASTER);
-
-    if (inet_aton(MASTER, &serv_addr.sin_addr) == 0) {
-        ui_output(-2, "Invalid hostname.\n");
-        sockfd = -1;
-        return;
-    }
-
-    msg_clear(&msg);
-    write_long(&msg, -1);
-    write_string(&msg, "getservers Warsow 15 full empty");
-
-    slen = sizeof(serv_addr);
-    if (sendto(sockfd, msg.data, msg.cursize, 0, (struct sockaddr*)&serv_addr, slen) == -1) {
-        ui_output(-2, "sendto failed");
-        sockfd = -1;
-    }
+    msg_t *msg = sock_init_send(&sock, qfalse);
+    write_string(msg, "getservers Warsow 15 full empty");
+    sock_send(&sock);
 }
 
 static void ping_server(server_t *server) {
-    server->sockfd = -1;
-    if ((server->sockfd = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) == -1) {
-        ui_output(-2, "Unable to create socket.\n");
-        return;
-    }
+    sock_connect(&server->sock, server->address, server->port);
 
-    bzero(&server->serv_addr, sizeof(server->serv_addr));
-
-    server->serv_addr.sin_family = AF_INET;
-    server->serv_addr.sin_port = htons(server->port);
-
-    if (inet_aton(server->address, &server->serv_addr.sin_addr) == 0) {
-        ui_output(-2, "Invalid hostname.\n");
-        server->sockfd = -1;
-        return;
-    }
-
-    msg_clear(&msg);
-    write_long(&msg, -1);
-    write_string(&msg, "info 15 full empty");
-
-    slen = sizeof(server->serv_addr);
+    msg_t *msg = sock_init_send(&server->sock, qfalse);
+    write_string(msg, "info 15 full empty");
+    sock_send(&server->sock);
     server->ping_start = millis();
-    if (sendto(server->sockfd, msg.data, msg.cursize, 0, (struct sockaddr*)&server->serv_addr, slen) == -1) {
-        ui_output(-2, "sendto failed");
-        server->sockfd = -1;
-    }
 }
 
 static server_t *find_server(char *address, int port) {
@@ -188,49 +135,32 @@ static void read_server(server_t *server, char *info) {
 void serverlist_frame() {
     int i;
     for (i = 0; i < server_count; i++) {
-        if (serverlist[i].sockfd) {
-            msg_clear(&rmsg);
-            msg_clear(&rmsg);
-            if ((rmsg.cursize = recvfrom(serverlist[i].sockfd, rmsg.data, rmsg.maxsize, MSG_DONTWAIT, (struct sockaddr*)&serv_addr, &slen)) == -1) {
-                if (errno == EAGAIN)
-                    continue;
-                die("recvfrom failed");
-            }
-            serverlist[i].ping_end = millis();
-            int seq = read_long(&rmsg);
-            if (seq != -1)
-                continue;
-            skip_data(&rmsg, strlen("info\n"));
-            read_server(serverlist + i, read_string(&rmsg));
-            if (partial_match(filter, serverlist[i].name))
-                ui_output(-2, "^5%i ^7(%i) %s %s\n", i, serverlist[i].ping_end - serverlist[i].ping_start, serverlist[i].players, serverlist[i].name, read_string(&rmsg));
-        }
+        msg_t *msg = sock_recv(&serverlist[i].sock);
+        if (!msg)
+            continue;
+        serverlist[i].ping_end = millis();
+        skip_data(msg, strlen("info\n"));
+        read_server(serverlist + i, read_string(msg));
+        if (partial_match(filter, serverlist[i].name))
+            ui_output(-2, "^5%i ^7(%i) %s %s\n", i, serverlist[i].ping_end - serverlist[i].ping_start, serverlist[i].players, serverlist[i].name, read_string(msg));
     }
-    if (sockfd < 0)
-        return;
 
-    msg_clear(&rmsg);
-    if ((rmsg.cursize = recvfrom(sockfd, rmsg.data, rmsg.maxsize, MSG_DONTWAIT, (struct sockaddr*)&serv_addr, &slen)) == -1) {
-        if (errno == EAGAIN)
-            return;
-        die("recvfrom failed");
-    }
-    int seq = read_long(&rmsg);
-    if (seq != -1)
+    msg_t *msg = sock_recv(&sock);
+    if (!msg)
         return;
 
     char address_string[32];
     qbyte address[4];
     unsigned short port;
 
-    skip_data(&rmsg, strlen("getserversResponse"));
-	while (rmsg.readcount + 7 <= rmsg.cursize) {
-        char prefix = read_char(&rmsg);
+    skip_data(msg, strlen("getserversResponse"));
+	while (msg->readcount + 7 <= msg->cursize) {
+        char prefix = read_char(msg);
         port = 0;
 
         if (prefix == '\\') {
-            read_data(&rmsg, address, 4);
-            port = ShortSwap(read_short(&rmsg));
+            read_data(msg, address, 4);
+            port = ShortSwap(read_short(msg));
             sprintf(address_string, "%u.%u.%u.%u", address[0], address[1], address[2], address[3]);
         }
 
@@ -239,6 +169,7 @@ void serverlist_frame() {
             if (server != NULL)
                 continue;
             server = serverlist + server_count++;
+            sock_init(&server->sock);
             strcpy(server->address, address_string);
             server->port = port;
             ping_server(server);

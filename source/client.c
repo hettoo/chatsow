@@ -18,17 +18,11 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 */
 
-#include <arpa/inet.h>
-#include <netinet/in.h>
 #include <stdio.h>
-#include <sys/types.h>
-#include <sys/socket.h>
 #include <unistd.h>
-#include <errno.h>
 #include <stdlib.h>
 #include <stdarg.h>
 #include <string.h>
-#include "zlib.h"
 
 #include "config.h"
 #include "utils.h"
@@ -39,8 +33,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "client.h"
 
 #define TIMEOUT 2000
-
-#define MAX_DROPS 10
 
 #define NOP_TIME 5000
 
@@ -64,26 +56,17 @@ typedef struct client_s {
     parser_t parser;
     cs_t cs;
 
+    sock_t sock;
+
     char host[512];
     char port[512];
     char name[512];
     int port_int;
-    struct sockaddr_in serv_addr;
-    int sockfd;
-    socklen_t slen;
-
-    int drops;
-
-    int outseq;
-    int inseq;
 
     int command_seq;
 
     unsigned int resend;
     unsigned int last_send;
-
-    int fragment_total;
-    qbyte fragment_buffer[MAX_MSGLEN];
 
     int bitflags;
     int protocol;
@@ -96,26 +79,15 @@ typedef struct client_s {
 
 static client_t clients[CLIENT_SCREENS];
 
-static msg_t smsg;
-
 static void reset(client_t *c) {
     c->id = c - clients;
 
     c->parser.client = c->id;
 
-    c->slen = sizeof(c->serv_addr);
-
-    c->drops = 0;
-
-    c->outseq = 1;
-    c->inseq = 0;
-
     c->command_seq = 1;
 
     c->resend = 0;
     c->last_send = 0;
-
-    c->fragment_total = 0;
 
     c->protocol = 0;
     c->bitflags = 0;
@@ -127,6 +99,7 @@ static void reset(client_t *c) {
 
     parser_reset(&c->parser);
     cs_init(&c->cs);
+    sock_init(&c->sock);
 }
 
 void register_configstring_commands(client_t *c) {
@@ -189,7 +162,7 @@ static void force_disconnect(client_t *c) {
     if (c->state == CA_DISCONNECTED)
         return;
 
-    close(c->sockfd);
+    sock_disconnect(&c->sock);
     set_state(c, CA_DISCONNECTED);
     reset(c);
     client_title(c);
@@ -199,30 +172,10 @@ static void socket_connect(client_t *c) {
     if (c->state != CA_DISCONNECTED)
         force_disconnect(c);
 
-    if ((c->sockfd = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) == -1) {
-        ui_output(c->id, "Unable to create socket.\n");
-        return;
-    }
-
-    bzero(&c->serv_addr, sizeof(c->serv_addr));
-
-    c->serv_addr.sin_family = AF_INET;
-    c->serv_addr.sin_port = htons(c->port_int);
-
-    if (inet_aton(c->host, &c->serv_addr.sin_addr) == 0) {
-        ui_output(c->id, "Invalid hostname.\n");
-        return;
-    }
+    sock_connect(&c->sock, c->host, c->port_int);
 
     ui_output(c->id, "Connecting to %s:%s...\n", c->host, c->port);
     set_state(c, CA_SETUP);
-}
-
-static void msg_init(client_t *c, msg_t *msg) {
-    msg_clear(msg);
-    write_long(msg, c->outseq++);
-    write_long(msg, c->inseq);
-    write_short(msg, c->port_int);
 }
 
 static void challenge(client_t *c);
@@ -258,20 +211,8 @@ static void reconnect(client_t *c) {
     client_connect(c);
 }
 
-static void drop(client_t *c, char *msg) {
-    c->drops++;
-    if (c->drops == MAX_DROPS) {
-        ui_output(c->id, "^5too many drops, disconnecting...\n");
-        force_disconnect(c);
-    } else {
-        ui_output(c->id, "^5%s, reconnecting %d...\n", msg, c->drops);
-        force_reconnect(c);
-    }
-}
-
-static void client_send(client_t *c, msg_t *msg) {
-    if (sendto(c->sockfd, msg->data, msg->cursize, 0, (struct sockaddr*)&c->serv_addr, c->slen) == -1)
-        drop(c, "sendto failed");
+static void client_send(client_t *c) {
+    sock_send(&c->sock);
     c->last_send = millis();
 }
 
@@ -299,100 +240,49 @@ void client_command(int id, char *format, ...) {
     vsprintf(string, format, argptr);
 	va_end(argptr);
 
-    msg_init(c, &smsg);
-    write_byte(&smsg, clc_clientcommand);
+    msg_t *msg = sock_init_send(&c->sock, qtrue);
+    write_byte(msg, clc_clientcommand);
     if (!(c->bitflags & SV_BITFLAGS_RELIABLE))
-        write_long(&smsg, c->command_seq++);
-    write_string(&smsg, string);
-    client_send(c, &smsg);
+        write_long(msg, c->command_seq++);
+    write_string(msg, string);
+    client_send(c);
 }
 
 void client_ack(int id, int num) {
     client_t *c = clients + id;
-    msg_init(c, &smsg);
-    write_byte(&smsg, clc_svcack);
-    write_long(&smsg, num);
-    client_send(c, &smsg);
+    msg_t *msg = sock_init_send(&c->sock, qtrue);
+    write_byte(msg, clc_svcack);
+    write_long(msg, num);
+    client_send(c);
 }
 
 static void client_recv(client_t *c) {
-    static msg_t msg;
-    msg_clear(&msg);
-    if ((msg.cursize = recvfrom(c->sockfd, msg.data, msg.maxsize, MSG_DONTWAIT, (struct sockaddr*)&c->serv_addr, &c->slen)) == -1) {
-        if (errno == EAGAIN)
-            return;
-        drop(c, "recvfrom failed");
+    msg_t *msg = sock_recv(&c->sock);
+    if (msg) {
+        if (c->sock.sequenced)
+            parse_message(&c->parser, msg);
+        else
+            cmd_execute_from_server(c->id, read_string(msg));
     }
-    int seq = read_long(&msg);
-    if (seq == -1) {
-        cmd_execute_from_server(c->id, read_string(&msg));
-        return;
-    }
-    qboolean compressed = qfalse;
-    qboolean fragmented = qfalse;
-    if (seq & FRAGMENT_BIT) {
-        seq &= ~FRAGMENT_BIT;
-        fragmented = qtrue;
-    }
-    c->inseq = seq;
-    int ack = read_long(&msg);
-    if (ack & FRAGMENT_BIT) {
-        ack &= ~FRAGMENT_BIT;
-        compressed = qtrue;
-    }
-    if (fragmented) {
-        short fragment_start = read_short(&msg);
-        short fragment_length = read_short(&msg);
-        if (fragment_start != c->fragment_total) {
-            msg.readcount = 0;
-            msg.cursize = 0;
-            return;
-        }
-        qboolean last = qfalse;
-        if (fragment_length & FRAGMENT_LAST) {
-            fragment_length &= ~FRAGMENT_LAST;
-            last = qtrue;
-        }
-        read_data(&msg, c->fragment_buffer + c->fragment_total, fragment_length);
-        c->fragment_total += fragment_length;
-        msg.readcount = 0;
-        if (last) {
-            memcpy(msg.data, c->fragment_buffer, c->fragment_total);
-            msg.cursize = c->fragment_total;
-            c->fragment_total = 0;
-        } else {
-            msg.cursize = 0;
-            return;
-        }
-    }
-    if (compressed && msg.cursize - msg.readcount > 0) {
-        static qbyte temp[MAX_MSGLEN];
-        unsigned long new_size = MAX_MSGLEN;
-        uncompress(temp, &new_size, msg.data + msg.readcount, msg.cursize - msg.readcount);
-        memcpy(msg.data, temp, new_size);
-        msg.readcount = 0;
-        msg.cursize = new_size;
-    }
-    parse_message(&c->parser, &msg);
 }
 
 static void connection_request(client_t *c) {
     ui_output(c->id, "Sending connection request...\n");
-    msg_init_outofband(&smsg);
-    write_string(&smsg, "connect 15 ");
-    smsg.cursize--;
-    write_string(&smsg, c->port);
-    smsg.cursize--;
-    write_string(&smsg, " ");
-    smsg.cursize--;
-    write_string(&smsg, cmd_argv(1));
-    smsg.cursize--;
-    write_string(&smsg, " \"\\name\\");
-    smsg.cursize--;
-    write_string(&smsg, c->name);
-    smsg.cursize--;
-    write_string(&smsg, "\" 0");
-    client_send(c, &smsg);
+    msg_t *msg = sock_init_send(&c->sock, qfalse);
+    write_string(msg, "connect 15 ");
+    msg->cursize--;
+    write_string(msg, c->port);
+    msg->cursize--;
+    write_string(msg, " ");
+    msg->cursize--;
+    write_string(msg, cmd_argv(1));
+    msg->cursize--;
+    write_string(msg, " \"\\name\\");
+    msg->cursize--;
+    write_string(msg, c->name);
+    msg->cursize--;
+    write_string(msg, "\" 0");
+    client_send(c);
 
     set_state(c, CA_CONNECTING);
     c->resend = millis() + TIMEOUT;
@@ -400,9 +290,9 @@ static void connection_request(client_t *c) {
 
 static void challenge(client_t *c) {
     ui_output(c->id, "Requesting challenge...\n");
-    msg_init_outofband(&smsg);
-    write_string(&smsg, "getchallenge");
-    client_send(c, &smsg);
+    msg_t *msg = sock_init_send(&c->sock, qfalse);
+    write_string(msg, "getchallenge");
+    client_send(c);
 
     set_state(c, CA_CHALLENGING);
     c->resend = millis() + TIMEOUT;
@@ -462,9 +352,9 @@ void client_frame(int id) {
             break;
         case CA_ACTIVE:
             if (millis() >= c->last_send + NOP_TIME) {
-                msg_init(c, &smsg);
-                write_byte(&smsg, clc_nop);
-                client_send(c, &smsg);
+                msg_t *msg = sock_init_send(&c->sock, qtrue);
+                write_byte(msg, clc_nop);
+                client_send(c);
             }
             break;
         default:
@@ -532,7 +422,6 @@ void client_activate(int id) {
         return;
 
     set_state(c, CA_ACTIVE);
-    c->drops = 0;
     client_title(c);
     cmd_execute(id, "players");
 }

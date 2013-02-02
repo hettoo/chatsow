@@ -18,6 +18,13 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 */
 
+#include <arpa/inet.h>
+#include <errno.h>
+#include "zlib.h"
+
+#include "global.h"
+#include "utils.h"
+#include "ui.h"
 #include "net.h"
 
 void msg_clear(msg_t *msg) {
@@ -27,7 +34,122 @@ void msg_clear(msg_t *msg) {
     msg->compressed = qfalse;
 }
 
-void msg_init_outofband(msg_t *msg) {
-    msg_clear(msg);
-    write_long(msg, -1);
+void sock_init(sock_t *sock) {
+    sock->connected = qfalse;
+    sock->slen = sizeof(sock->serv_addr);
+}
+
+msg_t *sock_init_send(sock_t *sock, qboolean sequenced) {
+    sock->sequenced = sequenced;
+    msg_clear(&sock->smsg);
+    if (sequenced) {
+        write_long(&sock->smsg, sock->outseq++);
+        write_long(&sock->smsg, sock->inseq);
+        write_short(&sock->smsg, sock->port);
+    } else {
+        write_long(&sock->smsg, -1);
+    }
+    return &sock->smsg;
+}
+
+void sock_send(sock_t *sock) {
+    if (!sock->connected)
+        return;
+
+    if (sendto(sock->sockfd, sock->smsg.data, sock->smsg.cursize, 0, (struct sockaddr*)&sock->serv_addr, sock->slen) == -1)
+        die("sendto failed");
+}
+
+void sock_connect(sock_t *sock, char *host, int port) {
+    sock->outseq = 1;
+    sock->inseq = 0;
+
+    sock->host = host;
+    sock->port = port;
+
+    if ((sock->sockfd = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) == -1) {
+        ui_output(-2, "Unable to create socket.\n");
+        return;
+    }
+
+    bzero(&sock->serv_addr, sock->slen);
+
+    sock->serv_addr.sin_family = AF_INET;
+    sock->serv_addr.sin_port = htons(port);
+
+    if (inet_aton(host, &sock->serv_addr.sin_addr) == 0) {
+        ui_output(-2, "Invalid hostname.\n");
+        sock->sockfd = -1;
+        return;
+    }
+    sock->connected = qtrue;
+}
+
+void sock_disconnect(sock_t *sock) {
+    sock->connected = qfalse;
+    close(sock->sockfd);
+}
+
+msg_t *sock_recv(sock_t *sock) {
+    if (!sock->connected)
+        return NULL;
+
+    msg_clear(&sock->rmsg);
+    if ((sock->rmsg.cursize = recvfrom(sock->sockfd, sock->rmsg.data, sock->rmsg.maxsize, MSG_DONTWAIT, (struct sockaddr*)&sock->serv_addr, &sock->slen)) == -1) {
+        if (errno == EAGAIN)
+            return NULL;
+        die("recvfrom failed");
+    }
+    int seq = read_long(&sock->rmsg);
+    if (seq == -1) {
+        sock->sequenced = qfalse;
+        return &sock->rmsg;
+    }
+    sock->sequenced = qtrue;
+    qboolean compressed = qfalse;
+    qboolean fragmented = qfalse;
+    if (seq & FRAGMENT_BIT) {
+        seq &= ~FRAGMENT_BIT;
+        fragmented = qtrue;
+    }
+    sock->inseq = seq;
+    int ack = read_long(&sock->rmsg);
+    if (ack & FRAGMENT_BIT) {
+        ack &= ~FRAGMENT_BIT;
+        compressed = qtrue;
+    }
+    if (fragmented) {
+        short fragment_start = read_short(&sock->rmsg);
+        short fragment_length = read_short(&sock->rmsg);
+        if (fragment_start != sock->fragment_total) {
+            sock->rmsg.readcount = 0;
+            sock->rmsg.cursize = 0;
+            return NULL;
+        }
+        qboolean last = qfalse;
+        if (fragment_length & FRAGMENT_LAST) {
+            fragment_length &= ~FRAGMENT_LAST;
+            last = qtrue;
+        }
+        read_data(&sock->rmsg, sock->fragment_buffer + sock->fragment_total, fragment_length);
+        sock->fragment_total += fragment_length;
+        sock->rmsg.readcount = 0;
+        if (last) {
+            memcpy(sock->rmsg.data, sock->fragment_buffer, sock->fragment_total);
+            sock->rmsg.cursize = sock->fragment_total;
+            sock->fragment_total = 0;
+        } else {
+            sock->rmsg.cursize = 0;
+            return NULL;
+        }
+    }
+    if (compressed && sock->rmsg.cursize - sock->rmsg.readcount > 0) {
+        static qbyte temp[MAX_MSGLEN];
+        unsigned long new_size = MAX_MSGLEN;
+        uncompress(temp, &new_size, sock->rmsg.data + sock->rmsg.readcount, sock->rmsg.cursize - sock->rmsg.readcount);
+        memcpy(sock->rmsg.data, temp, new_size);
+        sock->rmsg.readcount = 0;
+        sock->rmsg.cursize = new_size;
+    }
+    return &sock->rmsg;
 }

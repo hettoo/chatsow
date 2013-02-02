@@ -21,9 +21,37 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #ifndef WRLC_NET_H
 #define WRLC_NET_H
 
+#include <netinet/in.h>
+
 #include "import.h"
 
+typedef struct sock_s {
+    char *host;
+    int port;
+
+    qboolean connected;
+
+    int sockfd;
+    struct sockaddr_in serv_addr;
+    socklen_t slen;
+
+    int inseq;
+    int outseq;
+    qboolean sequenced;
+    msg_t rmsg;
+    msg_t smsg;
+
+    int fragment_total;
+    qbyte fragment_buffer[MAX_MSGLEN];
+} sock_t;
+
 void msg_clear(msg_t *msg);
-void msg_init_outofband(msg_t *msg);
+
+void sock_init(sock_t *sock);
+msg_t *sock_init_send(sock_t *sock, qboolean sequenced);
+void sock_send(sock_t *sock);
+void sock_connect(sock_t *sock, char *host, int port);
+void sock_disconnect(sock_t *sock);
+msg_t *sock_recv(sock_t *sock);
 
 #endif
