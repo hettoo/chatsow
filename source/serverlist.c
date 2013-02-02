@@ -32,13 +32,19 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #define MAX_TOKEN_SIZE 512
 
+#define MAX_PING_RETRIES 4
+#define PING_TIMEOUT 1500
+
 typedef struct server_s {
     char address[32];
     int port;
 
     sock_t sock;
-    int ping_start;
-    int ping_end;
+    qboolean received;
+
+    int ping_retries;
+    unsigned int ping_start;
+    unsigned int ping_end;
 
     char name[MAX_TOKEN_SIZE];
     char players[MAX_TOKEN_SIZE];
@@ -67,15 +73,17 @@ void serverlist_connect() {
 
 void serverlist_init() {
     sock_init(&sock);
+    sock_connect(&sock, MASTER, PORT_MASTER);
     cmd_add_global("list", serverlist_query);
     cmd_add_global("c", serverlist_connect);
 }
 
 void serverlist_query() {
     strcpy(filter, cmd_argv(1));
+    int i;
+    for (i = 0; i < server_count; i++)
+        sock_disconnect(&serverlist[i].sock);
     server_count = 0;
-
-    sock_connect(&sock, MASTER, PORT_MASTER);
 
     msg_t *msg = sock_init_send(&sock, qfalse);
     write_string(msg, "getservers Warsow 15 full empty");
@@ -89,6 +97,7 @@ static void ping_server(server_t *server) {
     write_string(msg, "info 15 full empty");
     sock_send(&server->sock);
     server->ping_start = millis();
+    server->ping_retries--;
 }
 
 static server_t *find_server(char *address, int port) {
@@ -136,13 +145,17 @@ void serverlist_frame() {
     int i;
     for (i = 0; i < server_count; i++) {
         msg_t *msg = sock_recv(&serverlist[i].sock);
-        if (!msg)
-            continue;
-        serverlist[i].ping_end = millis();
-        skip_data(msg, strlen("info\n"));
-        read_server(serverlist + i, read_string(msg));
-        if (partial_match(filter, serverlist[i].name))
-            ui_output(-2, "^5%i ^7(%i) %s %s\n", i, serverlist[i].ping_end - serverlist[i].ping_start, serverlist[i].players, serverlist[i].name, read_string(msg));
+        if (msg) {
+            serverlist[i].ping_end = millis();
+            skip_data(msg, strlen("info\n"));
+            read_server(serverlist + i, read_string(msg));
+            if (partial_match(filter, serverlist[i].name))
+                ui_output(-2, "^5%i ^7(%i) %s %s\n", i, serverlist[i].ping_end - serverlist[i].ping_start, serverlist[i].players, serverlist[i].name, read_string(msg));
+            serverlist[i].received = qtrue;
+        }
+        if (serverlist[i].ping_retries > 0
+                && !serverlist[i].received && millis() >= serverlist[i].ping_start + PING_TIMEOUT)
+            ping_server(serverlist + i);
     }
 
     msg_t *msg = sock_recv(&sock);
@@ -172,6 +185,8 @@ void serverlist_frame() {
             sock_init(&server->sock);
             strcpy(server->address, address_string);
             server->port = port;
+            serverlist[i].received = qfalse;
+            server->ping_retries = MAX_PING_RETRIES + 1;
             ping_server(server);
         }
     }

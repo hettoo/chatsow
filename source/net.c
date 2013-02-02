@@ -86,8 +86,10 @@ void sock_connect(sock_t *sock, char *host, int port) {
 }
 
 void sock_disconnect(sock_t *sock) {
-    sock->connected = qfalse;
-    close(sock->sockfd);
+    if (sock->connected) {
+        sock->connected = qfalse;
+        close(sock->sockfd);
+    }
 }
 
 msg_t *sock_recv(sock_t *sock) {
