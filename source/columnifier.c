@@ -23,30 +23,35 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "utils.h"
 #include "columnifier.h"
 
-void columnifier_init(columnifier_t *c, int max_width) {
+void columnifier_init(columnifier_t *c, int max_visual_width, int max_width) {
     c->max_width = max_width;
+    c->max_visual_width = max_visual_width;
     c->actual_max_width = -1;
+    c->actual_max_visual_width = -1;
     c->index = 0;
     c->real_index = 0;
 }
 
 void columnifier_preprocess(columnifier_t *c, char *s) {
     int len = uncolored_length(s) + 2;
+    if (c->actual_max_visual_width == -1 || len > c->actual_max_visual_width)
+        c->actual_max_visual_width = len;
+    len = strlen(s);
     if (c->actual_max_width == -1 || len > c->actual_max_width)
-        c->actual_max_width = len;
+        c->actual_max_width = len + 4;
 }
 
 void columnifier_process(columnifier_t *c, char *r, char *s) {
-    int columns = c->max_width / c->actual_max_width;
+    int columns = max(c->max_visual_width / c->actual_max_visual_width, c->max_width / c->actual_max_width);
     if (c->index == 0 && c->real_index != 0)
         *(r++) = '\n';
-    *(r++) = '^';
-    *(r++) = '7';
     strcpy(r, s);
     int len = strlen(r);
     int actual_len = uncolored_length(r);
-    for (; actual_len < c->actual_max_width; actual_len++, len++)
+    for (; actual_len < c->actual_max_visual_width; actual_len++, len++)
         r[len] = ' ';
+    r[len++] = '^';
+    r[len++] = '7';
     r[len] = '\0';
     c->index = (c->index + 1) % columns;
     c->real_index++;

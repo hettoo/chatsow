@@ -23,12 +23,14 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 typedef struct columnifier_s {
     int max_width;
+    int max_visual_width;
     int actual_max_width;
+    int actual_max_visual_width;
     int index;
     int real_index;
 } columnifier_t;
 
-void columnifier_init(columnifier_t *c, int max_width);
+void columnifier_init(columnifier_t *c, int max_visual_width, int max_width);
 void columnifier_preprocess(columnifier_t *c, char *s);
 void columnifier_process(columnifier_t *c, char *r, char *s);
 void columnifier_finish(columnifier_t *c, char *r);
