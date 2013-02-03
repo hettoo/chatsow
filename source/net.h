@@ -22,6 +22,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define WRLC_NET_H
 
 #include <netinet/in.h>
+#include <stdarg.h>
 
 #include "import.h"
 
@@ -46,6 +47,8 @@ typedef struct sock_s {
 } sock_t;
 
 void msg_clear(msg_t *msg);
+void write_string(msg_t *msg, const char *format, ...);
+void vwrite_string(msg_t *msg, const char *format, va_list argptr);
 
 void sock_init(sock_t *sock);
 msg_t *sock_init_send(sock_t *sock, qboolean sequenced);

@@ -234,17 +234,14 @@ void client_command(int id, char *format, ...) {
         return;
     }
 
-    static char string[MAX_MSGLEN];
-	va_list	argptr;
-	va_start(argptr, format);
-    vsprintf(string, format, argptr);
-	va_end(argptr);
-
     msg_t *msg = sock_init_send(&c->sock, qtrue);
     write_byte(msg, clc_clientcommand);
     if (!(c->bitflags & SV_BITFLAGS_RELIABLE))
         write_long(msg, c->command_seq++);
-    write_string(msg, string);
+	va_list	argptr;
+	va_start(argptr, format);
+    vwrite_string(msg, format, argptr);
+	va_end(argptr);
     client_send(c);
 }
 
@@ -269,19 +266,7 @@ static void client_recv(client_t *c) {
 static void connection_request(client_t *c) {
     ui_output(c->id, "Sending connection request...\n");
     msg_t *msg = sock_init_send(&c->sock, qfalse);
-    write_string(msg, "connect 15 ");
-    msg->cursize--;
-    write_string(msg, c->port);
-    msg->cursize--;
-    write_string(msg, " ");
-    msg->cursize--;
-    write_string(msg, cmd_argv(1));
-    msg->cursize--;
-    write_string(msg, " \"\\name\\");
-    msg->cursize--;
-    write_string(msg, c->name);
-    msg->cursize--;
-    write_string(msg, "\" 0");
+    write_string(msg, "connect %d %s %s \"\\name\\%s\" 0", PROTOCOL, c->port, cmd_argv(1), c->name);
     client_send(c);
 
     set_state(c, CA_CONNECTING);

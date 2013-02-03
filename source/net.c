@@ -20,6 +20,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include <arpa/inet.h>
 #include <errno.h>
+#include <stdio.h>
 #include "zlib.h"
 
 #include "global.h"
@@ -32,6 +33,23 @@ void msg_clear(msg_t *msg) {
     msg->cursize = 0;
     msg->maxsize = sizeof(msg->data);
     msg->compressed = qfalse;
+}
+
+void vwrite_string(msg_t *msg, const char *format, va_list argptr) {
+    static char string[MAX_MSGLEN];
+    int len = vsprintf(string, format, argptr);
+    write_data(msg, string, len + 1);
+}
+
+void write_string(msg_t *msg, const char *format, ...) {
+	if (!format) {
+		write_char(msg, '\0');
+        return;
+    }
+	va_list	argptr;
+	va_start(argptr, format);
+    vwrite_string(msg, format, argptr);
+	va_end(argptr);
 }
 
 void sock_init(sock_t *sock) {

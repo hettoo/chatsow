@@ -359,10 +359,3 @@ void write_float( msg_t *msg, float f ) {
 	dat.f = f;
 	write_long( msg, dat.l );
 }
-
-void write_string( msg_t *msg, const char *s ) {
-	if( !s )
-		write_data( msg, "", 1 );
-	else
-		write_data( msg, s, strlen(s) + 1 );
-}

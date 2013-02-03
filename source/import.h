@@ -420,6 +420,5 @@ void write_short( msg_t *msg, int c );
 void write_int3( msg_t *msg, int c );
 void write_long( msg_t *msg, int c );
 void write_float( msg_t *msg, float f );
-void write_string( msg_t *msg, const char *s );
 
 #endif

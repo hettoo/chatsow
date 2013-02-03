@@ -101,7 +101,7 @@ void serverlist_query() {
     master_t *master;
     for (master = masters; master->address[0]; master++) {
         msg_t *msg = sock_init_send(&master->sock, qfalse);
-        write_string(msg, "getservers Warsow 15 full empty");
+        write_string(msg, "getservers %s %d full empty", GAME, PROTOCOL);
         sock_send(&master->sock);
     }
 }
@@ -110,7 +110,7 @@ static void ping_server(server_t *server) {
     sock_connect(&server->sock, server->address, server->port);
 
     msg_t *msg = sock_init_send(&server->sock, qfalse);
-    write_string(msg, "info 15 full empty");
+    write_string(msg, "info %d full empty", PROTOCOL);
     sock_send(&server->sock);
     server->ping_start = millis();
     server->ping_retries--;
