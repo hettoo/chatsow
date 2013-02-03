@@ -18,7 +18,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 */
 
-#include "import.h"
 #include "global.h"
 #include "utils.h"
 #include "cs.h"
@@ -200,8 +199,8 @@ static int normal_type(int c) {
     return c >= 0 ? CT_NORMAL : CT_GLOBAL;
 }
 
-int cmd_suggest(int c, char *name, char suggestions[][MAX_SUGGESTION_SIZE]) {
-    int type = normal_type(c);
+int cmd_suggest(int c, char *name, char suggestions[][MAX_SUGGESTION_SIZE], qboolean public) {
+    int type = public ? CT_PUBLIC : normal_type(c);
     int count = 0;
     cmd_stack_push();
     parse_cmd(name);

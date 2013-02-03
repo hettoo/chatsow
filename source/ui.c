@@ -716,9 +716,10 @@ static qboolean apply_suggestions(qboolean complete_partial) {
 
 static void complete_command() {
     suggesting_offset = command_mode_actual_prefix_length();
-    char backup = screens[screen].commandline[screens[screen].commandline_cursor];
+    int c = real_index(screens[screen].commandline, screens[screen].commandline_cursor);
+    char backup = screens[screen].commandline[c];
     screens[screen].commandline[screens[screen].commandline_cursor] = '\0';
-    suggestion_count = cmd_suggest(screen - 1, screens[screen].commandline + suggesting_offset, suggestions);
+    suggestion_count = cmd_suggest(screen - 1, screens[screen].commandline + suggesting_offset, suggestions, qfalse);
     screens[screen].commandline[screens[screen].commandline_cursor] = backup;
     if (apply_suggestions(qtrue))
         insert(' ');
@@ -734,14 +735,23 @@ static void complete_chat() {
             break;
     }
     suggesting_offset++;
-
     char backup = screens[screen].commandline[c];
-    screens[screen].commandline[c] = '\0';
-    suggestion_count = player_suggest(screen - 1, screens[screen].commandline + suggesting_offset, suggestions);
-    screens[screen].commandline[c] = backup;
-    if (apply_suggestions(qfalse)) {
-        insert('^');
-        insert('2');
+    if (suggesting_offset == 0 && screens[screen].commandline[suggesting_offset] == '!') {
+        suggesting_offset++;
+        screens[screen].commandline[screens[screen].commandline_cursor] = '\0';
+        suggestion_count = cmd_suggest(screen - 1, screens[screen].commandline + suggesting_offset, suggestions, qtrue);
+        screens[screen].commandline[screens[screen].commandline_cursor] = backup;
+        if (apply_suggestions(qtrue))
+            insert(' ');
+    } else {
+        char backup = screens[screen].commandline[c];
+        screens[screen].commandline[c] = '\0';
+        suggestion_count = player_suggest(screen - 1, screens[screen].commandline + suggesting_offset, suggestions);
+        screens[screen].commandline[c] = backup;
+        if (apply_suggestions(qfalse)) {
+            insert('^');
+            insert('2');
+        }
     }
 }
 

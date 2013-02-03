@@ -477,6 +477,39 @@ static void cmd_name() {
         client_command(c->id, "usri \"\\name\\%s\"", c->name);
 }
 
+static char suggestions[MAX_CMDS][MAX_SUGGESTION_SIZE];
+
+static qboolean suggestion_remove_test(void *x) {
+    char *suggestion = (char *)x;
+    int i;
+    for (i = 0; suggestions[i] != suggestion; i++) {
+        if (!strcmp(suggestion, suggestions[i]))
+            return qtrue;
+    }
+    return qfalse;
+}
+
+static void cmd_help_public() {
+    static char message[MAX_CMDS * MAX_SUGGESTION_SIZE];
+    int suggestion_count = cmd_suggest(cmd_client(), "", suggestions, qtrue);
+    qsort(suggestions, suggestion_count, MAX_SUGGESTION_SIZE, insensitive_cmp);
+    rm(suggestions, sizeof(suggestions[0]), &suggestion_count, suggestion_remove_test);
+    message[0] = '\0';
+    int line = 0;
+    int i;
+    for (i = 0; i < suggestion_count; i++) {
+        int len = strlen(suggestions[i]);
+        if (line + len > 80) {
+            strcat(message, "\n");
+            line = 0;
+        }
+        strcat(message, suggestions[i]);
+        strcat(message, " ");
+        line += len + 1;
+    }
+    client_say(cmd_client(), "%s", message);
+}
+
 void client_register_commands() {
     cmd_add_from_server("challenge", cmd_challenge);
     cmd_add_from_server("client_connect", cmd_client_connect);
@@ -508,6 +541,7 @@ void client_register_commands() {
 
     cmd_add_find_free("connect", cmd_connect);
     cmd_add_broadcast("name", cmd_name);
+    cmd_add_public_generic("help", cmd_help_public);
 }
 
 int player_suggest(int id, char *partial, char suggestions[][MAX_SUGGESTION_SIZE]) {

@@ -26,13 +26,14 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define MAX_ARG_SIZE 2048
 #define MAX_ARGS_SIZE (MAX_ARGC * MAX_ARG_SIZE)
 
+#include "import.h"
 #include "ui.h"
 
 void cmd_execute(int c, char *cmd);
 void cmd_execute_public(int c, char *cmd);
 void cmd_execute_event(int c, char *cmd);
 void cmd_execute_from_server(int c, char *cmd);
-int cmd_suggest(int c, char *cmd, char suggestions[][MAX_SUGGESTION_SIZE]);
+int cmd_suggest(int c, char *name, char suggestions[][MAX_SUGGESTION_SIZE], qboolean public);
 
 int cmd_client();
 int cmd_argc();
