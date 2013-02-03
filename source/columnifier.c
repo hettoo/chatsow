@@ -35,23 +35,23 @@ void columnifier_init(columnifier_t *c, int max_visual_width, int max_width) {
 void columnifier_preprocess(columnifier_t *c, char *s) {
     int len = uncolored_length(s) + 2;
     if (c->actual_max_visual_width == -1 || len > c->actual_max_visual_width)
-        c->actual_max_visual_width = len;
+        c->actual_max_visual_width = len + 2;
     len = strlen(s);
     if (c->actual_max_width == -1 || len > c->actual_max_width)
-        c->actual_max_width = len + 4;
+        c->actual_max_width = len + 6;
 }
 
 void columnifier_process(columnifier_t *c, char *r, char *s) {
-    int columns = max(c->max_visual_width / c->actual_max_visual_width, c->max_width / c->actual_max_width);
+    int columns = min(c->max_visual_width / c->actual_max_visual_width, c->max_width / c->actual_max_width);
     if (c->index == 0 && c->real_index != 0)
         *(r++) = '\n';
     strcpy(r, s);
     int len = strlen(r);
+    r[len++] = '^';
+    r[len++] = '7';
     int actual_len = uncolored_length(r);
     for (; actual_len < c->actual_max_visual_width; actual_len++, len++)
         r[len] = ' ';
-    r[len++] = '^';
-    r[len++] = '7';
     r[len] = '\0';
     c->index = (c->index + 1) % columns;
     c->real_index++;

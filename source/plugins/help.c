@@ -28,17 +28,18 @@ static int cmd_index;
 static void cmd_help() {
     char *text = trap->cmd_argv(2);
     if (partial_match("?", text)) {
-        if (partial_match("how", text) && (partial_match("start", text) || partial_match("join", text)))
+        if (partial_match("how", text) && (partial_match("start", text)
+                    || partial_match("join", text) || partial_match("begin", text)))
             trap->client_say(trap->cmd_client(), "Press escape and choose join to start");
-        if ((partial_match("how", text) || partial_match("help", text))
+        if ((partial_match("how", text) || partial_match("help", text) || partial_match("why", text))
                 && (partial_match("run", text) || partial_match("jump", text)
-                    || partial_match("move", text) || partial_match("fast", text) || partial_match("speed", text))) {
-            trap->client_say(trap->cmd_client(),
-                    "Open the console (below escape) and type cg_oldmovement 1\n"
-                    "^2Go to mgxrace.com to download a strafehud");
-            trap->client_say(trap->cmd_client(),
-                    "To learn racing: spectate someone, Google strafe jumping or find a Warsow movement tutorial video");
-        }
+                    || partial_match("move", text) || partial_match("fast", text)
+                    || partial_match("speed", text) || partial_match("race", text)
+                    || partial_match("strafe", text)))
+            trap->client_say(trap->cmd_client(), "Please have a look at this: tinyurl.com/warsowrace");
+    } else if (!partial_match("can", text) && !partial_match("shall", text) && !partial_match("want", text)) {
+        if (partial_match("next", text) && partial_match("map", text))
+            trap->client_say(trap->cmd_client(), "Fuck off");
     }
 }
 
