@@ -30,8 +30,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 typedef enum cmd_type_e {
     CT_NORMAL,
     CT_PERSISTENT,
-    CT_SPECIAL,
-    CT_SPECIAL_PERSISTENT,
+    CT_PUBLIC,
+    CT_PUBLIC_PERSISTENT,
     CT_EVENT,
     CT_FROM_SERVER,
     CT_SERVER,
@@ -156,7 +156,7 @@ static qboolean cmd_type_extends(int type, int parent) {
     if (parent == CT_NORMAL && (type == CT_PERSISTENT || type == CT_SERVER))
         return qtrue;
 
-    if (parent == CT_SPECIAL && type == CT_SPECIAL_PERSISTENT)
+    if (parent == CT_PUBLIC && type == CT_PUBLIC_PERSISTENT)
         return qtrue;
 
     if (parent == CT_GLOBAL && (type == CT_FIND_FREE || type == CT_BROADCAST || type == CT_BROADCAST_ALL))
@@ -180,7 +180,7 @@ static qboolean cmd_valid(cmd_t *cmd, int c, qboolean partial) {
     return (partial ? !strncmp(cmd->name, cmd_argv(0), len)
             : !strcmp(cmd->name, cmd_argv(0)))
         && (c < 0 || cmd->clients[c])
-        && (cmd->type != CT_NORMAL || cmd->type != CT_SPECIAL || client_active(c));
+        && (cmd->type != CT_NORMAL || cmd->type != CT_PUBLIC || client_active(c));
 }
 
 static cmd_t *cmd_find(cmd_t *cmd, int c, int type, qboolean partial) {
@@ -266,7 +266,7 @@ static void cmd_execute_real(int c, char *name, int type) {
         type = old_type;
     }
     if (cmds == 0) {
-        if (cmd_type_compatible(type, CT_SPECIAL)) {
+        if (cmd_type_compatible(type, CT_PUBLIC)) {
             if (cmd_argv(0)[0])
                 client_say(c, "Unknown command: \"%s\"", cmd_argv(0));
         } else if (!cmd_type_compatible(type, CT_EVENT)) {
@@ -282,8 +282,8 @@ void cmd_execute(int c, char *cmd) {
     cmd_execute_real(c, cmd, normal_type(c));
 }
 
-void cmd_execute_special(int c, char *cmd) {
-    cmd_execute_real(c, cmd, CT_SPECIAL);
+void cmd_execute_public(int c, char *cmd) {
+    cmd_execute_real(c, cmd, CT_PUBLIC);
 }
 
 void cmd_execute_event(int c, char *cmd) {
@@ -372,20 +372,20 @@ int cmd_add_generic(char *name, void (*f)()) {
     return cmd_index(cmd);
 }
 
-int cmd_add_special(int client, char *name, void (*f)()) {
-    cmd_t *cmd = cmd_reserve(name, f, CT_SPECIAL);
+int cmd_add_public(int client, char *name, void (*f)()) {
+    cmd_t *cmd = cmd_reserve(name, f, CT_PUBLIC);
     cmd->clients[client] = qtrue;
     return cmd_index(cmd);
 }
 
-int cmd_add_special_persistent(int client, char *name, void (*f)()) {
-    cmd_t *cmd = cmd_reserve(name, f, CT_SPECIAL_PERSISTENT);
+int cmd_add_public_persistent(int client, char *name, void (*f)()) {
+    cmd_t *cmd = cmd_reserve(name, f, CT_PUBLIC_PERSISTENT);
     cmd->clients[client] = qtrue;
     return cmd_index(cmd);
 }
 
-int cmd_add_special_generic(char *name, void (*f)()) {
-    cmd_t *cmd = cmd_reserve(name, f, CT_SPECIAL);
+int cmd_add_public_generic(char *name, void (*f)()) {
+    cmd_t *cmd = cmd_reserve(name, f, CT_PUBLIC);
     cmd_allow_all(cmd);
     return cmd_index(cmd);
 }

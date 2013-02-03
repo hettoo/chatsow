@@ -441,7 +441,7 @@ static void cmd_nop() {
 
 static void chat_command(client_t *c, char *command) {
     if (command[0] == '!')
-        cmd_execute_special(c->id, command + 1);
+        cmd_execute_public(c->id, command + 1);
 }
 
 static void cmd_pr() {

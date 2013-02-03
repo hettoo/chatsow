@@ -30,7 +30,7 @@ static void cmd_vote() {
 
 void init(plugin_interface_t *new_trap) {
     trap = new_trap;
-    cmd_index = trap->cmd_add_special_generic("vote", cmd_vote);
+    cmd_index = trap->cmd_add_public_generic("vote", cmd_vote);
 }
 
 void frame() {

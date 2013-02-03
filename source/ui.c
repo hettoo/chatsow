@@ -697,7 +697,7 @@ static qboolean apply_suggestions(qboolean complete_partial) {
         }
     }
     if (suggestion_count > 1) {
-        ui_output(screen - 1, "\n^5Possibilities:\n");
+        ui_output(screen - 1, "^5Possibilities:\n");
         columnifier_t c;
         columnifier_init(&c, COLS, MAX_OUTPUT_LENGTH);
         for (i = 0; i < suggestion_count; i++)

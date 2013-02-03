@@ -74,7 +74,7 @@ void init(char *location) {
     trap.client_cs = client_cs;
 
     trap.cmd_execute = cmd_execute;
-    trap.cmd_execute_special = cmd_execute_special;
+    trap.cmd_execute_public = cmd_execute_public;
     trap.cmd_execute_from_server = cmd_execute_from_server;
 
     trap.cmd_client = cmd_client;
@@ -85,9 +85,9 @@ void init(char *location) {
     trap.cmd_add = cmd_add;
     trap.cmd_add_persistent = cmd_add_persistent;
     trap.cmd_add_generic = cmd_add_generic;
-    trap.cmd_add_special = cmd_add_special;
-    trap.cmd_add_special_persistent = cmd_add_special_persistent;
-    trap.cmd_add_special_generic = cmd_add_special_generic;
+    trap.cmd_add_public = cmd_add_public;
+    trap.cmd_add_public_persistent = cmd_add_public_persistent;
+    trap.cmd_add_public_generic = cmd_add_public_generic;
     trap.cmd_add_event = cmd_add_event;
     trap.cmd_add_from_server = cmd_add_from_server;
     trap.cmd_add_server = cmd_add_server;

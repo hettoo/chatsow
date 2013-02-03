@@ -33,7 +33,7 @@ typedef struct plugin_interface_s {
     cs_t *(*client_cs)(int id);
 
     void (*cmd_execute)(int c, char *cmd);
-    void (*cmd_execute_special)(int c, char *cmd);
+    void (*cmd_execute_public)(int c, char *cmd);
     void (*cmd_execute_event)(int c, char *cmd);
     void (*cmd_execute_from_server)(int c, char *cmd);
 
@@ -45,9 +45,9 @@ typedef struct plugin_interface_s {
     int (*cmd_add)(int client, char *name, void (*f)());
     int (*cmd_add_persistent)(int client, char *name, void (*f)());
     int (*cmd_add_generic)(char *name, void (*f)());
-    int (*cmd_add_special)(int client, char *name, void (*f)());
-    int (*cmd_add_special_persistent)(int client, char *name, void (*f)());
-    int (*cmd_add_special_generic)(char *name, void (*f)());
+    int (*cmd_add_public)(int client, char *name, void (*f)());
+    int (*cmd_add_public_persistent)(int client, char *name, void (*f)());
+    int (*cmd_add_public_generic)(char *name, void (*f)());
     int (*cmd_add_event)(char *name, void (*f)());
     int (*cmd_add_from_server)(char *name, void (*f)());
     int (*cmd_add_server)(int client, char *name);

@@ -53,7 +53,7 @@ static void cmd_racenet() {
 
 void init(plugin_interface_t *new_trap) {
     trap = new_trap;
-    cmd_index = trap->cmd_add_special_generic("racenet", cmd_racenet);
+    cmd_index = trap->cmd_add_public_generic("racenet", cmd_racenet);
 }
 
 void frame() {
