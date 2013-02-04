@@ -46,8 +46,7 @@ static void cmd_racenet() {
     fp = popen(trap->path("plugins/racenet.pl %s", cs_get(trap->client_cs(trap->ui_client()), CS_MAPNAME)), "r");
     fn = fileno(fp);
     fcntl(fn, F_SETFL, O_NONBLOCK);
-    strcpy(msg, "\"");
-    msg_len = strlen(msg);
+    msg_len = 0;
     cmd_client = trap->cmd_client();
 }
 
@@ -68,7 +67,7 @@ void frame() {
     } else {
         if (msg[msg_len - 1] == '\n')
             msg_len--;
-        msg[msg_len++] = '\0';
+        msg[msg_len] = '\0';
         trap->client_say(cmd_client, msg);
         pclose(fp);
         fp = NULL;
