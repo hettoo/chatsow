@@ -68,6 +68,6 @@ static char *playerinfo_token(char *playerinfo, char *name, qboolean clear_color
 
 char *player_name(cs_t *cs, int num) {
     if (num == 0)
-        return "console";
+        return "^2console";
     return playerinfo_token(cs_get(cs, CS_PLAYERINFOS + num - 1), "name", qtrue);
 }
