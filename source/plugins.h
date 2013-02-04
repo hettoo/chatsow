@@ -31,6 +31,10 @@ typedef struct plugin_interface_s {
 
     void (*client_say)(int id, char *format, ...);
     cs_t *(*client_cs)(int id);
+    qboolean (*client_active)(int id);
+    qboolean (*client_ready)(int id);
+    int (*get_playernum)(int id);
+    char *(*get_host)(int id);
 
     void (*cmd_execute)(int c, char *cmd);
     void (*cmd_execute_public)(int c, char *cmd);

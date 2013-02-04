@@ -125,6 +125,10 @@ int get_bitflags(int id) {
     return clients[id].bitflags;
 }
 
+int get_playernum(int id) {
+    return clients[id].playernum;
+}
+
 void set_spawn_count(int id, int new_spawn_count) {
     clients[id].spawn_count = new_spawn_count;
 }
@@ -147,6 +151,10 @@ void set_level(int id, char *new_level) {
 
 void set_bitflags(int id, int new_bitflags) {
     clients[id].bitflags = new_bitflags;
+}
+
+char *get_host(int id) {
+    return clients[id].host;
 }
 
 static void client_title(client_t *c) {

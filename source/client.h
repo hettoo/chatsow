@@ -47,7 +47,9 @@ void set_spawn_count(int id, int new_spawn_count);
 int get_bitflags(int id);
 void set_bitflags(int id, int new_bitflags);
 void set_game(int id, char *new_game);
+int get_playernum(int id);
 void set_playernum(int id, int new_playernum);
 void set_level(int id, char *new_level);
+char *get_host(int id);
 
 #endif
