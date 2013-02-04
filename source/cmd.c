@@ -51,6 +51,7 @@ typedef struct cmd_s {
 
 typedef struct cmd_stack_s {
     int client;
+    int caller;
     int argc;
     char argv[MAX_ARGC][MAX_ARG_SIZE];
     char args[MAX_ARGS_SIZE];
@@ -215,8 +216,9 @@ int cmd_suggest(int c, char *name, char suggestions[][MAX_SUGGESTION_SIZE], qboo
     return count;
 }
 
-static void cmd_execute_real(int c, char *name, int type) {
+static void cmd_execute_real(int c, int caller, char *name, int type) {
     cmd_stack_push();
+    s->caller = caller;
     parse_cmd(name);
 
     cmd_t *cmd = NULL;
@@ -278,23 +280,27 @@ static void cmd_execute_real(int c, char *name, int type) {
 }
 
 void cmd_execute(int c, char *cmd) {
-    cmd_execute_real(c, cmd, normal_type(c));
+    cmd_execute_real(c, -1, cmd, normal_type(c));
 }
 
-void cmd_execute_public(int c, char *cmd) {
-    cmd_execute_real(c, cmd, CT_PUBLIC);
+void cmd_execute_public(int c, int caller, char *cmd) {
+    cmd_execute_real(c, caller, cmd, CT_PUBLIC);
 }
 
 void cmd_execute_event(int c, char *cmd) {
-    cmd_execute_real(c, cmd, CT_EVENT);
+    cmd_execute_real(c, -1, cmd, CT_EVENT);
 }
 
 void cmd_execute_from_server(int c, char *cmd) {
-    cmd_execute_real(c, cmd, CT_FROM_SERVER);
+    cmd_execute_real(c, -1, cmd, CT_FROM_SERVER);
 }
 
 int cmd_client() {
     return s->client;
+}
+
+int cmd_caller() {
+    return s->caller;
 }
 
 int cmd_argc() {

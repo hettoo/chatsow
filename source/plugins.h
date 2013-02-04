@@ -34,14 +34,17 @@ typedef struct plugin_interface_s {
     qboolean (*client_active)(int id);
     qboolean (*client_ready)(int id);
     int (*get_playernum)(int id);
+    char *(*get_level)(int id);
     char *(*get_host)(int id);
+    int (*get_port)(int id);
 
     void (*cmd_execute)(int c, char *cmd);
-    void (*cmd_execute_public)(int c, char *cmd);
+    void (*cmd_execute_public)(int c, int caller, char *cmd);
     void (*cmd_execute_event)(int c, char *cmd);
     void (*cmd_execute_from_server)(int c, char *cmd);
 
     int (*cmd_client)();
+    int (*cmd_caller)();
     int (*cmd_argc)();
     char *(*cmd_argv)(int index);
     char *(*cmd_args)(int start);

@@ -49,7 +49,9 @@ void set_bitflags(int id, int new_bitflags);
 void set_game(int id, char *new_game);
 int get_playernum(int id);
 void set_playernum(int id, int new_playernum);
+char *get_level(int id);
 void set_level(int id, char *new_level);
 char *get_host(int id);
+int get_port(int id);
 
 #endif

@@ -75,13 +75,16 @@ void init(char *location) {
     trap.client_active = client_active;
     trap.client_ready = client_ready;
     trap.get_playernum = get_playernum;
+    trap.get_level = get_level;
     trap.get_host = get_host;
+    trap.get_port = get_port;
 
     trap.cmd_execute = cmd_execute;
     trap.cmd_execute_public = cmd_execute_public;
     trap.cmd_execute_from_server = cmd_execute_from_server;
 
     trap.cmd_client = cmd_client;
+    trap.cmd_caller = cmd_caller;
     trap.cmd_argc = cmd_argc;
     trap.cmd_argv = cmd_argv;
     trap.cmd_args = cmd_args;

@@ -145,6 +145,10 @@ void set_playernum(int id, int new_playernum) {
     clients[id].playernum = new_playernum;
 }
 
+char *get_level(int id) {
+    return clients[id].level;
+}
+
 void set_level(int id, char *new_level) {
     strcpy(clients[id].level, new_level);
 }
@@ -174,6 +178,10 @@ static void force_disconnect(client_t *c) {
     set_state(c, CA_DISCONNECTED);
     reset(c);
     client_title(c);
+}
+
+int get_port(int id) {
+    return clients[id].port_int;
 }
 
 static void socket_connect(client_t *c) {
@@ -432,9 +440,9 @@ static void cmd_reconnect() {
 static void cmd_nop() {
 }
 
-static void chat_command(client_t *c, char *command) {
+static void chat_command(client_t *c, int caller, char *command) {
     if (command[0] == '!')
-        cmd_execute_public(c->id, command + 1);
+        cmd_execute_public(c->id, caller, command + 1);
 }
 
 static void cmd_pr() {
@@ -446,21 +454,21 @@ static void cmd_ch() {
     client_t *c = clients + cmd_client();
     char *name = player_name(&c->cs, atoi(cmd_argv(1)));
     ui_output_important(c->id, "%s^7: ^2%s^7\n", name, cmd_argv(2));
-    chat_command(c, cmd_argv(2));
+    chat_command(c, atoi(cmd_argv(1)), cmd_argv(2));
 }
 
 static void cmd_tch() {
     client_t *c = clients + cmd_client();
     char *name = player_name(&c->cs, atoi(cmd_argv(1)));
     ui_output_important(c->id, "%s^7: ^3%s^7\n", name, cmd_argv(2));
-    chat_command(c, cmd_argv(2));
+    chat_command(c, atoi(cmd_argv(1)), cmd_argv(2));
 }
 
 static void cmd_tvch() {
     client_t *c = clients + cmd_client();
     char *name = player_name(&c->cs, atoi(cmd_argv(1)));
     ui_output_important(c->id, "[TV]%s^7: ^2%s^7\n", name, cmd_argv(2));
-    chat_command(c, cmd_argv(2));
+    chat_command(c, atoi(cmd_argv(1)), cmd_argv(2));
 }
 
 static void cmd_motd() {
