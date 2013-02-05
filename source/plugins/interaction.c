@@ -29,6 +29,7 @@ plugin_interface_t *trap;
 static int cmd_list_index;
 static int cmd_find_index;
 static int cmd_call_index;
+static int cmd_server_index;
 
 static void cmd_list() {
     static char message[MAX_MSGLEN];
@@ -102,11 +103,33 @@ static void cmd_call() {
     trap->client_say(trap->cmd_client(), "Not found");
 }
 
+static void cmd_server() {
+    static char message[MAX_MSGLEN];
+    message[0] = '\0';
+    int this = trap->cmd_client();
+    int i;
+    qboolean first = qtrue;
+    for (i = 0; i < CLIENTS; i++) {
+        if (i != this && trap->client_ready(i)) {
+            char *name = cs_get(trap->client_cs(i), 0);
+            if (name && *name) {
+                if (!first)
+                    strcat(message, "^7 || ");
+                else
+                    first = qfalse;
+                strcat(message, name);
+            }
+        }
+    }
+    trap->client_say(this, "%s", message);
+}
+
 void init(plugin_interface_t *new_trap) {
     trap = new_trap;
     cmd_list_index = trap->cmd_add_public_generic("list", cmd_list);
     cmd_find_index = trap->cmd_add_public_generic("find", cmd_find);
     cmd_call_index = trap->cmd_add_public_generic("call", cmd_call);
+    cmd_server_index = trap->cmd_add_public_generic("server", cmd_server);
 }
 
 void frame() {
@@ -116,4 +139,5 @@ void shutdown() {
     trap->cmd_remove(cmd_list_index);
     trap->cmd_remove(cmd_find_index);
     trap->cmd_remove(cmd_call_index);
+    trap->cmd_remove(cmd_server_index);
 }
