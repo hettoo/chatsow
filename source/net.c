@@ -133,12 +133,17 @@ msg_t *sock_recv(sock_t *sock) {
         seq &= ~FRAGMENT_BIT;
         fragmented = qtrue;
     }
+    // TODO: prefer order above quick messages and especially dropping like we
+    // do now, so buffer out of order future messages
+    if (seq <= sock->inseq)
+        return NULL;
     sock->inseq = seq;
     int ack = read_long(&sock->rmsg);
     if (ack & FRAGMENT_BIT) {
         ack &= ~FRAGMENT_BIT;
         compressed = qtrue;
     }
+    // TODO: buffer sent messages and timeout acks
     if (fragmented) {
         short fragment_start = read_short(&sock->rmsg);
         short fragment_length = read_short(&sock->rmsg);
