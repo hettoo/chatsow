@@ -21,6 +21,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #ifndef WRLC_MAIN_H
 #define WRLC_MAIN_H
 
-void quit();
+void quit(int sig);
 
 #endif

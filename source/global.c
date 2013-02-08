@@ -210,7 +210,7 @@ void plugin_shutdown() {
 }
 
 static void cmd_quit() {
-    quit();
+    quit(0);
 }
 
 void register_general_commands() {
@@ -232,11 +232,12 @@ char *path(char *format, ...) {
 }
 
 int die(char *format, ...) {
-    quit();
+    ui_stop();
 	va_list	argptr;
 	va_start(argptr, format);
     vprintf(format, argptr);
 	va_end(argptr);
     printf("\n");
-    exit(1);
+    quit(1);
+    return 1;
 }

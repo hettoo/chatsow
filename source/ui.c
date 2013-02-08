@@ -19,11 +19,11 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
 #include <libnotify/notify.h>
+#include <curses.h>
 
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
-#include <curses.h>
 #include <signal.h>
 #include <time.h>
 
@@ -124,14 +124,14 @@ void ui_stop() {
     int i;
     for (i = 0; i < CLIENT_SCREENS; i++)
         disconnect(i);
-    if (mainwin != NULL)
+    if (mainwin)
         endwin();
+    mainwin = NULL;
     stopped = TRUE;
 }
 
 static void interrupt(int sig) {
-    quit();
-    exit(sig);
+    quit(sig);
 }
 
 static void init_colors() {
@@ -767,6 +767,9 @@ static void remove_subwindows() {
 }
 
 static void redesign() {
+    if (!mainwin)
+        return;
+
     remove_subwindows();
 
     titlewin = subwin(mainwin, 1, COLS, 0, 0);
@@ -940,6 +943,4 @@ void ui_run() {
         }
         draw_inwin();
     }
-
-    quit();
 }
