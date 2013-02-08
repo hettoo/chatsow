@@ -82,7 +82,8 @@ static void cmd_find() {
 }
 
 static void cmd_call() {
-    char *caller = player_name(trap->client_cs(trap->cmd_client()), trap->cmd_caller());
+    static char caller[MAX_CONFIGSTRING_CHARS];
+    strcpy(caller, player_name(trap->client_cs(trap->cmd_client()), trap->cmd_caller()));
     int i;
     for (i = 0; i < CLIENTS; i++) {
         if (trap->client_ready(i)) {
