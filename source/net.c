@@ -135,7 +135,7 @@ msg_t *sock_recv(sock_t *sock) {
     }
     // TODO: prefer order above quick messages and especially dropping like we
     // do now, so buffer out of order future messages
-    if (seq <= sock->inseq)
+    if (seq < sock->inseq || (!fragmented && seq == sock->inseq))
         return NULL;
     sock->inseq = seq;
     int ack = read_long(&sock->rmsg);
