@@ -28,7 +28,9 @@ static int cmd_index;
 static void cmd_help() {
     char *text = trap->cmd_argv(2);
     if (partial_match("?", text)) {
-        if (partial_match("how", text) && (partial_match("start", text)
+        if (partial_match("how", text) && (partial_match("restart", text) || partial_match("respawn", text)))
+            trap->client_say(trap->cmd_client(), "Use F3 to restart or bind kill or racerestart to a key");
+        else if (partial_match("how", text) && (partial_match("start", text)
                     || partial_match("join", text) || partial_match("begin", text)))
             trap->client_say(trap->cmd_client(), "Press escape and choose join to start");
         if ((partial_match("how", text) || partial_match("help", text) || partial_match("why", text))
