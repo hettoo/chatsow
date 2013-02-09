@@ -35,6 +35,10 @@ void msg_clear(msg_t *msg) {
     msg->compressed = qfalse;
 }
 
+void msg_copy(msg_t *msg, msg_t *source) {
+    write_data(msg, source->data, source->cursize);
+}
+
 void vwrite_string(msg_t *msg, const char *format, va_list argptr) {
     static char string[MAX_MSGLEN];
     int len = vsprintf(string, format, argptr);
@@ -133,8 +137,6 @@ msg_t *sock_recv(sock_t *sock) {
         seq &= ~FRAGMENT_BIT;
         fragmented = qtrue;
     }
-    // TODO: prefer order above quick messages and especially dropping like we
-    // do now, so buffer out of order future messages
     if (seq < sock->inseq || (!fragmented && seq == sock->inseq))
         return NULL;
     sock->inseq = seq;
@@ -143,7 +145,6 @@ msg_t *sock_recv(sock_t *sock) {
         ack &= ~FRAGMENT_BIT;
         compressed = qtrue;
     }
-    // TODO: buffer sent messages and timeout acks
     if (fragmented) {
         short fragment_start = read_short(&sock->rmsg);
         short fragment_length = read_short(&sock->rmsg);

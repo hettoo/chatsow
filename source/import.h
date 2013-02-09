@@ -78,6 +78,16 @@ enum clc_ops_e
 	clc_extension
 };
 
+enum
+{
+	DROP_TYPE_GENERAL,
+	DROP_TYPE_PASSWORD,
+	DROP_TYPE_NORECONNECT,
+	DROP_TYPE_TOTAL
+};
+
+#define DROP_FLAG_AUTORECONNECT 1		// it's okay try reconnectting automatically
+
 #define	MAX_QPATH					64			// max length of a quake game pathname
 
 #define   MAX_STRING_CHARS                        1024

@@ -47,6 +47,7 @@ typedef struct sock_s {
 } sock_t;
 
 void msg_clear(msg_t *msg);
+void msg_copy(msg_t *msg, msg_t *source);
 void write_string(msg_t *msg, const char *format, ...);
 void vwrite_string(msg_t *msg, const char *format, va_list argptr);
 

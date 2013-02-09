@@ -28,6 +28,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 void parser_reset(parser_t *parser) {
     parser->last_frame = -1;
     parser->last_cmd_num = 0;
+    parser->last_cmd_ack = -1;
 }
 
 static void parse_frame(parser_t *parser, msg_t *msg) {
@@ -59,6 +60,7 @@ static void parse_frame(parser_t *parser, msg_t *msg) {
 
 void parse_message(parser_t *parser, msg_t *msg) {
     int cmd;
+    int ack;
     while (1) {
         cmd = read_byte(msg);
         switch (cmd) {
@@ -76,7 +78,11 @@ void parse_message(parser_t *parser, msg_t *msg) {
                 skip_data(msg, meta_data_maxsize - meta_data_realsize);
                 break;
             case svc_clcack:
-                read_long(msg); // reliable acknownledge
+                ack = read_long(msg); // reliable ack
+                if (ack > parser->last_cmd_ack) {
+                    client_get_ack(parser->client, ack);
+                    parser->last_cmd_ack = ack;
+                }
                 read_long(msg); // ucmd acknowledged
                 client_activate(parser->client);
                 break;

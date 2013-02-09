@@ -29,6 +29,7 @@ typedef struct parser_s {
     int client;
     int last_frame;
     int last_cmd_num;
+    int last_cmd_ack;
 } parser_t;
 
 void parser_reset(parser_t *parser);

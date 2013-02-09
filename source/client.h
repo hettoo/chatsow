@@ -32,6 +32,7 @@ void client_activate(int id);
 qboolean client_active(int id);
 qboolean client_ready(int id);
 void client_ack(int id, int num);
+void client_get_ack(int id, int ack);
 void client_command(int id, char *format, ...);
 void client_say(int id, char *format, ...);
 cs_t *client_cs(int id);
