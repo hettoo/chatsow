@@ -184,14 +184,14 @@ static qboolean plugin_remove_test(void *x) {
 static void cmd_unload() {
     remove_plugin = cmd_argv(1);
     if (!rm(plugins, sizeof(plugins[0]), &plugin_count, plugin_remove_test))
-        ui_output(-2, "Plugin %s not loaded\n", remove_plugin);
+        ui_output(cmd_client(), "Plugin %s not loaded\n", remove_plugin);
 }
 
 static void cmd_plugins() {
-    ui_output(-2, "^5Loaded plugins:\n");
+    ui_output(cmd_client(), "^5Loaded plugins:\n");
     int i;
     for (i = 0; i < plugin_count; i++) {
-        ui_output(-2, "%s\n", plugins[i].name);
+        ui_output(cmd_client(), "%s\n", plugins[i].name);
     }
 }
 

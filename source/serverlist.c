@@ -57,6 +57,7 @@ static char filter[MAX_TOKEN_SIZE];
 
 static server_t serverlist[MAX_SERVERS];
 static int server_count = 0;
+static int output_client;
 
 typedef struct master_s {
     char *address;
@@ -78,9 +79,9 @@ void serverlist_connect() {
     int id = atoi(cmd_argv(1));
     if (id >= 0 && id < server_count) {
         sprintf(cmd, "connect %s %d", serverlist[id].address, serverlist[id].port);
-        cmd_execute(-2, cmd);
+        cmd_execute(cmd_client(), cmd);
     } else {
-        ui_output(-2, "Invalid id.\n");
+        ui_output(cmd_client(), "Invalid id.\n");
     }
 }
 
@@ -105,6 +106,7 @@ static void ping_server(server_t *server) {
 }
 
 void serverlist_query() {
+    output_client = cmd_client();
     strcpy(filter, cmd_argv(1));
     int i;
     for (i = 0; i < server_count; i++) {
@@ -181,7 +183,7 @@ void serverlist_frame() {
             read_server(serverlist + i, read_string(msg));
             if (partial_match(filter, serverlist[i].name) || partial_match(filter, serverlist[i].map)
                     || partial_match(filter, serverlist[i].mod) || partial_match(filter, serverlist[i].gametype))
-                ui_output(-2, "^5%i ^7(%i) %s %s ^5[^7%s^5] [^7%s:%s^5]\n", i, serverlist[i].ping_end - serverlist[i].ping_start,
+                ui_output(output_client, "^5%i ^7(%i) %s %s ^5[^7%s^5] [^7%s:%s^5]\n", i, serverlist[i].ping_end - serverlist[i].ping_start,
                         serverlist[i].players, serverlist[i].name, serverlist[i].map, serverlist[i].mod, serverlist[i].gametype);
             serverlist[i].received = qtrue;
         }

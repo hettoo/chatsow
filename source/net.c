@@ -90,7 +90,7 @@ void sock_connect(sock_t *sock, char *host, int port) {
     sock->port = port;
 
     if ((sock->sockfd = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) == -1) {
-        ui_output(-2, "Unable to create socket.\n");
+        ui_output(-2, "Unable to create socket for %s:%d\n", sock->host, sock->port);
         return;
     }
 
@@ -100,7 +100,7 @@ void sock_connect(sock_t *sock, char *host, int port) {
     sock->serv_addr.sin_port = htons(port);
 
     if (inet_aton(host, &sock->serv_addr.sin_addr) == 0) {
-        ui_output(-2, "Invalid hostname.\n");
+        ui_output(-2, "Invalid hostname %s\n", sock->host);
         sock->sockfd = -1;
         return;
     }
