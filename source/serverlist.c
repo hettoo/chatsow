@@ -49,6 +49,8 @@ typedef struct server_s {
     char name[MAX_TOKEN_SIZE];
     char players[MAX_TOKEN_SIZE];
     char map[MAX_TOKEN_SIZE];
+    char mod[MAX_TOKEN_SIZE];
+    char gametype[MAX_TOKEN_SIZE];
 } server_t;
 
 static char filter[512];
@@ -133,6 +135,8 @@ static void read_server(server_t *server, char *info) {
     server->name[0] = '\0';
     server->players[0] = '\0';
     server->map[0] = '\0';
+    server->mod[0] = '\0';
+    server->gametype[0] = '\0';
     qboolean is_key = qtrue;
     key[0] = '\0';
     int len = strlen(info);
@@ -150,6 +154,10 @@ static void read_server(server_t *server, char *info) {
                     strcpy(server->players, value);
                 else if (!strcmp(key, "m"))
                     strcpy(server->map, value);
+                else if (!strcmp(key, "mo"))
+                    strcpy(server->mod, value);
+                else if (!strcmp(key, "g"))
+                    strcpy(server->gametype, value);
                 key[0] = '\0';
             }
             i++;
@@ -170,8 +178,8 @@ void serverlist_frame() {
             skip_data(msg, strlen("info\n"));
             read_server(serverlist + i, read_string(msg));
             if (partial_match(filter, serverlist[i].name))
-                ui_output(-2, "^5%i ^7(%i) %s %s ^5[^7%s^5]\n", i, serverlist[i].ping_end - serverlist[i].ping_start,
-                        serverlist[i].players, serverlist[i].name, serverlist[i].map);
+                ui_output(-2, "^5%i ^7(%i) %s %s ^5[^7%s^5] [^7%s:%s^5]\n", i, serverlist[i].ping_end - serverlist[i].ping_start,
+                        serverlist[i].players, serverlist[i].name, serverlist[i].map, serverlist[i].mod, serverlist[i].gametype);
             serverlist[i].received = qtrue;
         }
         if (serverlist[i].ping_retries > 0
