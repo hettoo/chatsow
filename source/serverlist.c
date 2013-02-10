@@ -135,7 +135,7 @@ static void read_server(server_t *server, char *info) {
     server->name[0] = '\0';
     server->players[0] = '\0';
     server->map[0] = '\0';
-    server->mod[0] = '\0';
+    strcpy(server->mod, BASEMOD);
     server->gametype[0] = '\0';
     qboolean is_key = qtrue;
     key[0] = '\0';
@@ -177,7 +177,8 @@ void serverlist_frame() {
             serverlist[i].ping_end = millis();
             skip_data(msg, strlen("info\n"));
             read_server(serverlist + i, read_string(msg));
-            if (partial_match(filter, serverlist[i].name))
+            if (partial_match(filter, serverlist[i].name) || partial_match(filter, serverlist[i].map)
+                    || partial_match(filter, serverlist[i].mod) || partial_match(filter, serverlist[i].gametype))
                 ui_output(-2, "^5%i ^7(%i) %s %s ^5[^7%s^5] [^7%s:%s^5]\n", i, serverlist[i].ping_end - serverlist[i].ping_start,
                         serverlist[i].players, serverlist[i].name, serverlist[i].map, serverlist[i].mod, serverlist[i].gametype);
             serverlist[i].received = qtrue;

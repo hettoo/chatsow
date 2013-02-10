@@ -24,6 +24,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "import.h"
 
 #define GAME "Warsow"
+#define BASEMOD "basewsw"
 #define PROTOCOL 15
 
 typedef struct parse_state_s {
