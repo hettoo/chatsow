@@ -53,7 +53,7 @@ typedef struct server_s {
     char gametype[MAX_TOKEN_SIZE];
 } server_t;
 
-static char filter[512];
+static char filter[MAX_TOKEN_SIZE];
 
 static server_t serverlist[MAX_SERVERS];
 static int server_count = 0;
@@ -94,21 +94,6 @@ void serverlist_init() {
     cmd_add_global("c", serverlist_connect);
 }
 
-void serverlist_query() {
-    strcpy(filter, cmd_argv(1));
-    int i;
-    for (i = 0; i < server_count; i++)
-        sock_disconnect(&serverlist[i].sock);
-    server_count = 0;
-
-    master_t *master;
-    for (master = masters; master->address; master++) {
-        msg_t *msg = sock_init_send(&master->sock, qfalse);
-        write_string(msg, "getservers %s %d full empty", GAME, PROTOCOL);
-        sock_send(&master->sock);
-    }
-}
-
 static void ping_server(server_t *server) {
     sock_connect(&server->sock, server->address, server->port);
 
@@ -117,6 +102,23 @@ static void ping_server(server_t *server) {
     sock_send(&server->sock);
     server->ping_start = millis();
     server->ping_retries--;
+}
+
+void serverlist_query() {
+    strcpy(filter, cmd_argv(1));
+    int i;
+    for (i = 0; i < server_count; i++) {
+        serverlist[i].received = qfalse;
+        serverlist[i].ping_retries = MAX_PING_RETRIES + 1;
+        ping_server(serverlist + i);
+    }
+
+    master_t *master;
+    for (master = masters; master->address; master++) {
+        msg_t *msg = sock_init_send(&master->sock, qfalse);
+        write_string(msg, "getservers %s %d full empty", GAME, PROTOCOL);
+        sock_send(&master->sock);
+    }
 }
 
 static server_t *find_server(char *address, int port) {
@@ -217,7 +219,7 @@ void serverlist_frame() {
                 sock_init(&server->sock);
                 strcpy(server->address, address_string);
                 server->port = port;
-                serverlist[i].received = qfalse;
+                server->received = qfalse;
                 server->ping_retries = MAX_PING_RETRIES + 1;
                 ping_server(server);
             }
