@@ -48,6 +48,7 @@ typedef struct server_s {
 
     char name[MAX_TOKEN_SIZE];
     char players[MAX_TOKEN_SIZE];
+    char map[MAX_TOKEN_SIZE];
 } server_t;
 
 static char filter[512];
@@ -65,7 +66,7 @@ static master_t masters[] = {
     {"65.59.212.88"},
     {"92.62.40.73"},
     {"78.46.47.231"},
-    {""}
+    {NULL}
 };
 
 #define PORT_MASTER 27950
@@ -83,7 +84,7 @@ void serverlist_connect() {
 
 void serverlist_init() {
     master_t *master;
-    for (master = masters; master->address[0]; master++) {
+    for (master = masters; master->address; master++) {
         sock_init(&master->sock);
         sock_connect(&master->sock, master->address, PORT_MASTER);
     }
@@ -99,7 +100,7 @@ void serverlist_query() {
     server_count = 0;
 
     master_t *master;
-    for (master = masters; master->address[0]; master++) {
+    for (master = masters; master->address; master++) {
         msg_t *msg = sock_init_send(&master->sock, qfalse);
         write_string(msg, "getservers %s %d full empty", GAME, PROTOCOL);
         sock_send(&master->sock);
@@ -131,6 +132,7 @@ static void read_server(server_t *server, char *info) {
     static char value[MAX_TOKEN_SIZE];
     server->name[0] = '\0';
     server->players[0] = '\0';
+    server->map[0] = '\0';
     qboolean is_key = qtrue;
     key[0] = '\0';
     int len = strlen(info);
@@ -146,6 +148,8 @@ static void read_server(server_t *server, char *info) {
                     strcpy(server->name, value);
                 else if (!strcmp(key, "u"))
                     strcpy(server->players, value);
+                else if (!strcmp(key, "m"))
+                    strcpy(server->map, value);
                 key[0] = '\0';
             }
             i++;
@@ -166,7 +170,8 @@ void serverlist_frame() {
             skip_data(msg, strlen("info\n"));
             read_server(serverlist + i, read_string(msg));
             if (partial_match(filter, serverlist[i].name))
-                ui_output(-2, "^5%i ^7(%i) %s %s\n", i, serverlist[i].ping_end - serverlist[i].ping_start, serverlist[i].players, serverlist[i].name, read_string(msg));
+                ui_output(-2, "^5%i ^7(%i) %s %s ^5[^7%s^5]\n", i, serverlist[i].ping_end - serverlist[i].ping_start,
+                        serverlist[i].players, serverlist[i].name, serverlist[i].map);
             serverlist[i].received = qtrue;
         }
         if (serverlist[i].ping_retries > 0
@@ -175,7 +180,7 @@ void serverlist_frame() {
     }
 
     master_t *master;
-    for (master = masters; master->address[0]; master++) {
+    for (master = masters; master->address; master++) {
         msg_t *msg = sock_recv(&master->sock);
         if (!msg)
             continue;
