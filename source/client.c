@@ -480,6 +480,11 @@ static void cmd_reconnect() {
     reconnect(c);
 }
 
+static void cmd_force_reconnect() {
+    client_t *c = clients + cmd_client();
+    force_reconnect(c);
+}
+
 static void cmd_nop() {
 }
 
@@ -587,7 +592,7 @@ void client_register_commands() {
     cmd_add_from_server("precache", cmd_precache);
     cmd_add_from_server("disconnect", cmd_disconnect);
     cmd_add_from_server("reject", cmd_reject);
-    cmd_add_from_server("forcereconnect", cmd_reconnect);
+    cmd_add_from_server("forcereconnect", cmd_force_reconnect);
     cmd_add_from_server("reconnect", cmd_reconnect);
 
     cmd_add_from_server("mm", cmd_nop);
