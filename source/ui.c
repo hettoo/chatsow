@@ -37,6 +37,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #define MAX_BUFFER_SIZE 1024
 #define MAX_OUTPUT_LENGTH 256
+#define OUTPUT_PREFIX_LENGTH 6
 #define MAX_INPUT_LENGTH 256
 #define MAX_HISTORY 128
 
@@ -423,7 +424,7 @@ static void check_next_line() {
         ui_output_screen->ghost_line = qtrue;
         if (!ui_output_screen->allow_time) {
             int i;
-            for (i = 0; i < 6; i++)
+            for (i = 0; i < OUTPUT_PREFIX_LENGTH; i++)
                 ui_output_char(' ');
         }
     }
@@ -699,7 +700,7 @@ static qboolean apply_suggestions(qboolean complete_partial) {
     if (suggestion_count > 1) {
         ui_output(screen - 1, "^5Possibilities:\n");
         columnifier_t c;
-        columnifier_init(&c, COLS, MAX_OUTPUT_LENGTH);
+        columnifier_init(&c, COLS - OUTPUT_PREFIX_LENGTH, MAX_OUTPUT_LENGTH - OUTPUT_PREFIX_LENGTH);
         for (i = 0; i < suggestion_count; i++)
             columnifier_preprocess(&c, suggestions[i]);
         static char temp[MAX_SUGGESTION_SIZE + 1];
