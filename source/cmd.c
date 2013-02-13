@@ -57,6 +57,7 @@ typedef struct cmd_stack_s {
     char argv[MAX_ARGC][MAX_ARG_SIZE];
     char args[MAX_ARGS_SIZE];
     int args_index[MAX_ARGC];
+    int cursor;
 } cmd_stack_t;
 
 cmd_t cmds[MAX_CMDS];
@@ -84,8 +85,9 @@ static void cmd_stack_pop() {
         s = cmd_stack + cmd_stack_count - 1;
 }
 
-void parse_cmd(char *cmd) {
+void parse_cmd(char *cmd, int cursor) {
     s->argc = 0;
+    s->cursor = -1;
     strcpy(s->args, cmd);
     int i;
     qboolean escaped = qfalse;
@@ -131,6 +133,8 @@ void parse_cmd(char *cmd) {
                     break;
             }
         }
+        if (i == cursor)
+            s->cursor = s->argc;
         if (skip) {
             s->args_index[s->argc] = start;
             s->argv[s->argc][o] = '\0';
@@ -143,6 +147,8 @@ void parse_cmd(char *cmd) {
         if (normal && o < MAX_ARG_SIZE - 1)
             s->argv[s->argc][o++] = s->args[i];
     }
+    if (cursor >= 0 && s->cursor == -1)
+        s->cursor = s->argc;
     if (o > 0 || (i >= 1 && (s->args[i - 1] == ' ' || s->args[i - 1] == '\t' || s->args[i - 1] == '\n'))) {
         s->args_index[s->argc] = start;
         s->argv[s->argc][o] = '\0';
@@ -201,12 +207,11 @@ static int normal_type(int c) {
     return c >= 0 ? CT_NORMAL : CT_GLOBAL;
 }
 
-int cmd_suggest(int c, char *name, char suggestions[][MAX_SUGGESTION_SIZE], qboolean public) {
+int cmd_suggest(int c, char *name, int cursor, char suggestions[][MAX_SUGGESTION_SIZE], qboolean public) {
     int type = public ? CT_PUBLIC : normal_type(c);
     int count = 0;
     cmd_stack_push();
-    parse_cmd(name);
-    int arg = cmd_argc() - 1;
+    parse_cmd(name, cursor);
     if (cmd_argc() <= 1) {
         cmd_t *cmd = NULL;
         while ((cmd = cmd_find(cmd, c, type, qtrue)) != NULL) {
@@ -217,7 +222,7 @@ int cmd_suggest(int c, char *name, char suggestions[][MAX_SUGGESTION_SIZE], qboo
         cmd_t *cmd = NULL;
         while ((cmd = cmd_find(cmd, c, type, qfalse)) != NULL) {
             if (cmd->complete)
-                count += cmd->complete(arg, suggestions + count);
+                count += cmd->complete(s->cursor, suggestions + count);
         }
         if (count == 1) {
             char *temp = suggestions[1];
@@ -225,7 +230,7 @@ int cmd_suggest(int c, char *name, char suggestions[][MAX_SUGGESTION_SIZE], qboo
             suggestions[0][0] = '\0';
             int j;
             for (j = 0; j < cmd_argc(); j++) {
-                if (j == arg)
+                if (j == s->cursor)
                     strcat(suggestions[0], temp);
                 else
                     strcat(suggestions[0], cmd_argv(j));
@@ -241,7 +246,7 @@ int cmd_suggest(int c, char *name, char suggestions[][MAX_SUGGESTION_SIZE], qboo
 static void cmd_execute_real(int c, int caller, char *name, int type) {
     cmd_stack_push();
     s->caller = caller;
-    parse_cmd(name);
+    parse_cmd(name, -1);
 
     cmd_t *cmd = NULL;
     int cmds = 0;

@@ -33,7 +33,7 @@ void cmd_execute(int c, char *cmd);
 void cmd_execute_public(int c, int caller, char *cmd);
 void cmd_execute_event(int c, char *cmd);
 void cmd_execute_from_server(int c, char *cmd);
-int cmd_suggest(int c, char *name, char suggestions[][MAX_SUGGESTION_SIZE], qboolean public);
+int cmd_suggest(int c, char *name, int cursor, char suggestions[][MAX_SUGGESTION_SIZE], qboolean public);
 
 int cmd_client();
 int cmd_caller();

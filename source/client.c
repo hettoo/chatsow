@@ -555,7 +555,7 @@ static qboolean suggestion_remove_test(void *x) {
 
 static void cmd_help_public() {
     static char message[MAX_CMDS * MAX_SUGGESTION_SIZE];
-    int suggestion_count = cmd_suggest(cmd_client(), "", suggestions, qtrue);
+    int suggestion_count = cmd_suggest(cmd_client(), "", -1, suggestions, qtrue);
     qsort(suggestions, suggestion_count, MAX_SUGGESTION_SIZE, insensitive_cmp);
     rm(suggestions, sizeof(suggestions[0]), &suggestion_count, suggestion_remove_test);
     message[0] = '\0';

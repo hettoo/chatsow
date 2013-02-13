@@ -719,9 +719,9 @@ static void complete_command() {
     int c = real_index(screens[screen].commandline, screens[screen].commandline_cursor);
     char backup = screens[screen].commandline[c];
     screens[screen].commandline[screens[screen].commandline_cursor] = '\0';
-    suggestion_count = cmd_suggest(screen - 1, screens[screen].commandline + suggesting_offset, suggestions, qfalse);
+    suggestion_count = cmd_suggest(screen - 1, screens[screen].commandline + suggesting_offset, c, suggestions, qfalse);
     screens[screen].commandline[screens[screen].commandline_cursor] = backup;
-    if (apply_suggestions(qtrue))
+    if (apply_suggestions(qtrue) && screens[screen].commandline[real_index(screens[screen].commandline, screens[screen].commandline_cursor)] != ' ')
         insert(' ');
 }
 
@@ -739,7 +739,7 @@ static void complete_chat() {
     if (suggesting_offset == 0 && screens[screen].commandline[suggesting_offset] == '!') {
         suggesting_offset++;
         screens[screen].commandline[screens[screen].commandline_cursor] = '\0';
-        suggestion_count = cmd_suggest(screen - 1, screens[screen].commandline + suggesting_offset, suggestions, qtrue);
+        suggestion_count = cmd_suggest(screen - 1, screens[screen].commandline + suggesting_offset, c, suggestions, qtrue);
         screens[screen].commandline[screens[screen].commandline_cursor] = backup;
         if (apply_suggestions(qtrue))
             insert(' ');
