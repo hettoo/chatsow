@@ -220,6 +220,20 @@ int insensitive_cmp(const void *a_raw, const void *b_raw) {
     return strcasecmp(uncolored_a, uncolored_b);
 }
 
+qboolean starts_with(const void *a_raw, const void *b_raw) {
+    char *a = (char *)a_raw;
+    char *b = (char *)b_raw;
+    strcpy(uncolored_a, uncolor(a));
+    strcpy(uncolored_b, uncolor(b));
+    while (*b) {
+        if (!*a || *a != *b)
+            return qfalse;
+        a++;
+        b++;
+    }
+    return qtrue;
+}
+
 qboolean rm(void *array, int element_size, int *size, qboolean (*f_test)(void *x)) {
     int i;
     int skip = 0;

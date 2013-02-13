@@ -54,6 +54,7 @@ int cmd_add_global(char *name, void (*f)());
 int cmd_add_find_free(char *name, void (*f)());
 int cmd_add_broadcast(char *name, void (*f)());
 int cmd_add_broadcast_all(char *name, void (*f)());
+void cmd_complete(int index, int (*complete)(int arg, char suggestions[][MAX_SUGGESTION_SIZE]));
 void cmd_remove(int index);
 
 #endif

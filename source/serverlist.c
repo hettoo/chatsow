@@ -85,6 +85,19 @@ void serverlist_connect() {
     }
 }
 
+int serverlist_connect_complete(int arg, char suggestions[][MAX_SUGGESTION_SIZE]) {
+    int count = 0;
+    if (arg == 1) {
+        int i;
+        for (i = 0; i < server_count; i++) {
+            sprintf(suggestions[count], "%d", i);
+            if (starts_with(suggestions[count], cmd_argv(1)))
+                count++;
+        }
+    }
+    return count;
+}
+
 void serverlist_init() {
     master_t *master;
     for (master = masters; master->address; master++) {
@@ -92,7 +105,8 @@ void serverlist_init() {
         sock_connect(&master->sock, master->address, PORT_MASTER);
     }
     cmd_add_global("list", serverlist_query);
-    cmd_add_global("c", serverlist_connect);
+    int c = cmd_add_global("c", serverlist_connect);
+    cmd_complete(c, serverlist_connect_complete);
 }
 
 static void ping_server(server_t *server) {

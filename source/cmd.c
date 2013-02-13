@@ -44,6 +44,7 @@ typedef enum cmd_type_e {
 typedef struct cmd_s {
     char *name;
     void (*f)();
+    int (*complete)(int arg, char suggestions[][MAX_SUGGESTION_SIZE]);
     cmd_type_t type;
     qboolean clients[CLIENTS];
     int index;
@@ -205,11 +206,32 @@ int cmd_suggest(int c, char *name, char suggestions[][MAX_SUGGESTION_SIZE], qboo
     int count = 0;
     cmd_stack_push();
     parse_cmd(name);
+    int arg = cmd_argc() - 1;
     if (cmd_argc() <= 1) {
         cmd_t *cmd = NULL;
         while ((cmd = cmd_find(cmd, c, type, qtrue)) != NULL) {
             if (cmd->name[0])
                 strcpy(suggestions[count++], cmd->name);
+        }
+    } else {
+        cmd_t *cmd = NULL;
+        while ((cmd = cmd_find(cmd, c, type, qfalse)) != NULL) {
+            if (cmd->complete)
+                count += cmd->complete(arg, suggestions + count);
+        }
+        if (count == 1) {
+            char *temp = suggestions[1];
+            strcpy(temp, suggestions[0]);
+            suggestions[0][0] = '\0';
+            int j;
+            for (j = 0; j < cmd_argc(); j++) {
+                if (j == arg)
+                    strcat(suggestions[0], temp);
+                else
+                    strcat(suggestions[0], cmd_argv(j));
+                if (j != cmd_argc() - 1)
+                    strcat(suggestions[0], " ");
+            }
         }
     }
     cmd_stack_pop();
@@ -343,6 +365,7 @@ static cmd_t *cmd_reserve(char *name, void (*f)(), int type) {
     cmd->name = name;
     cmd->f = f;
     cmd->type = type;
+    cmd->complete = NULL;
 
     return cmd;
 }
@@ -435,6 +458,14 @@ int cmd_add_broadcast_all(char *name, void (*f)()) {
     cmd_t *cmd = cmd_reserve(name, f, CT_BROADCAST_ALL);
     cmd_allow_all(cmd);
     return cmd_index(cmd);
+}
+
+void cmd_complete(int index, int (*complete)(int arg, char suggestions[][MAX_SUGGESTION_SIZE])) {
+    int i;
+    for (i = 0; i < cmd_count; i++) {
+        if (cmds[i].index == index)
+            cmds[i].complete = complete;
+    }
 }
 
 static int cmd_remove_index;
