@@ -95,6 +95,7 @@ char *parse_interleaved(char *string, parse_state_t *state) {
 char *parse_peek(char *string, parse_state_t *state) {
     parse_state_t backup = *state;
     state->f_char = NULL;
+    state->f_ghost = NULL;
     state->f_color = NULL;
     char *result = parse_interleaved(string, state);
     *state = backup;
@@ -120,6 +121,7 @@ qboolean parse_empty_last(char *string) {
 void parse_finish(parse_state_t *state) {
     if (state->set_color && state->f_char)
         state->f_char('^');
+    state->set_color = qfalse;
 }
 
 static char uncolor_result[2048];
@@ -246,4 +248,11 @@ qboolean rm(void *array, int element_size, int *size, qboolean (*f_test)(void *x
     }
     *size -= skip / element_size;
     return skip > 0;
+}
+
+qboolean ghosted(char *string_end) {
+    int c = 0;
+    while (*(string_end--) == '^')
+        c++;
+    return c % 2 == 1;
 }

@@ -58,4 +58,6 @@ qboolean starts_with(const void *a_raw, const void *b_raw);
 
 qboolean rm(void *array, int element_size, int *size, qboolean (*f_test)(void *x));
 
+qboolean ghosted(char *string_end);
+
 #endif

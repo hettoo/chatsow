@@ -466,11 +466,14 @@ static void ui_output_real(int client, char *string) {
     if (ui_output_screen->buffer_count == 0)
         ui_output_screen->next_line = qtrue;
     parse_state_t state;
-    parse_init(&state, ui_output_char, NULL, ui_output_color, '\n');
+    parse_init(&state, ui_output_char, ui_output_char, ui_output_color, '\n');
     char *s = string;
     do {
         s = parse_interleaved(s, &state);
+        parse_finish(&state);
         if (s[-1] != '\0') {
+            if (s - 1 != string && ghosted(s - 2))
+                add_char('^');
             ui_output_color(7);
             schedule_next_line();
             ui_output_screen->allow_time = parse_empty_last(s);

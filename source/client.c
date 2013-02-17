@@ -501,21 +501,21 @@ static void cmd_pr() {
 static void cmd_ch() {
     client_t *c = clients + cmd_client();
     char *name = player_name(&c->cs, atoi(cmd_argv(1)));
-    ui_output_important(c->id, "%s^7: ^2%s^7\n", name, cmd_argv(2));
+    ui_output_important(c->id, "%s^7: ^2%s\n", name, cmd_argv(2));
     chat_command(c, atoi(cmd_argv(1)), cmd_argv(2));
 }
 
 static void cmd_tch() {
     client_t *c = clients + cmd_client();
     char *name = player_name(&c->cs, atoi(cmd_argv(1)));
-    ui_output_important(c->id, "%s^7: ^3%s^7\n", name, cmd_argv(2));
+    ui_output_important(c->id, "%s^7: ^3%s\n", name, cmd_argv(2));
     chat_command(c, atoi(cmd_argv(1)), cmd_argv(2));
 }
 
 static void cmd_tvch() {
     client_t *c = clients + cmd_client();
     char *name = player_name(&c->cs, atoi(cmd_argv(1)));
-    ui_output_important(c->id, "[TV]%s^7: ^2%s^7\n", name, cmd_argv(2));
+    ui_output_important(c->id, "[TV]%s^7: ^2%s\n", name, cmd_argv(2));
     chat_command(c, atoi(cmd_argv(1)), cmd_argv(2));
 }
 
