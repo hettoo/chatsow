@@ -76,18 +76,21 @@ static master_t masters[] = {
 
 void serverlist_connect() {
     static char cmd[100];
-    int id = atoi(cmd_argv(1));
-    if (id >= 0 && id < server_count) {
-        sprintf(cmd, "connect %s %d", serverlist[id].address, serverlist[id].port);
-        cmd_execute(cmd_client(), cmd);
-    } else {
-        ui_output(cmd_client(), "Invalid id.\n");
+    int i;
+    for (i = 1; i < cmd_argc(); i++) {
+        int id = atoi(cmd_argv(i));
+        if (id >= 0 && id < server_count) {
+            sprintf(cmd, "connect %s %d", serverlist[id].address, serverlist[id].port);
+            cmd_execute(cmd_client(), cmd);
+        } else {
+            ui_output(cmd_client(), "Invalid id: %d.\n", id);
+        }
     }
 }
 
 int serverlist_connect_complete(int arg, char suggestions[][MAX_SUGGESTION_SIZE]) {
     int count = 0;
-    if (arg == 1) {
+    if (arg >= 1) {
         int i;
         for (i = 0; i < server_count; i++) {
             sprintf(suggestions[count], "%d", i);
