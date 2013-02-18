@@ -530,6 +530,13 @@ static void cmd_connect() {
     char *new_port = "44400";
     if (cmd_argc() > 2)
         new_port = cmd_argv(2);
+    int i;
+    for (i = 0; i < CLIENTS; i++) {
+        if (i != cmd_client() && !strcmp(new_host, clients[i].host) && !strcmp(new_port, clients[i].port)) {
+            ui_output(cmd_client(), "Already connected to this server (%d)\n", i + 1);
+            return;
+        }
+    }
     set_server(c, new_host, new_port);
 }
 
