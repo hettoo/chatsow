@@ -463,6 +463,13 @@ void cmd_cmd() {
     c->resend = millis() + TIMEOUT;
 }
 
+void cmd_clc() {
+    client_t *c = clients + cmd_client();
+    msg_t *msg = sock_init_send(&c->sock, qfalse);
+    write_string(msg, cmd_args(1));
+    client_send(c);
+}
+
 void cmd_precache() {
     client_t *c = clients + cmd_client();
     if (c->state != CA_CONFIGURING || cs_get(&c->cs, 0)[0] == '\0')
@@ -655,6 +662,7 @@ void client_start(int id) {
     cmd_add_persistent(id, "reconnect", cmd_reconnect);
     cmd_add(id, "disconnect", cmd_disconnect);
     cmd_add(id, "cmd", cmd_cmd);
+    cmd_add(id, "clc", cmd_clc);
 
     strcpy(c->name, "chatter");
     set_state(c, CA_DISCONNECTED);
