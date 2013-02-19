@@ -38,7 +38,7 @@ static void cmd_help() {
                     || partial_match("move", text) || partial_match("fast", text)
                     || partial_match("speed", text) || partial_match("race", text)
                     || partial_match("strafe", text)))
-            trap->client_say(trap->cmd_client(), "Please have a look at this: tinyurl.com/warsowrace");
+            trap->client_say(trap->cmd_client(), "Please have a look at this: http://warsowrace.webs.com/");
     } else if (!partial_match("can", text) && !partial_match("shall", text) && !partial_match("want", text)) {
         if (partial_match("go", text) && partial_match("next", text) && partial_match("map", text))
             trap->client_say(trap->cmd_client(), "Fuck off");
