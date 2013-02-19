@@ -52,7 +52,6 @@ typedef enum cmd_mode_e {
     CM_EXECUTE,
     CM_SAY,
     CM_SAY_TEAM,
-    CM_RCON,
     CM_CUSTOM
 } cmd_mode_t;
 
@@ -410,9 +409,6 @@ static void draw_inwin() {
             break;
         case CM_SAY_TEAM:
             draw_colored(inwin, "T");
-            break;
-        case CM_RCON:
-            draw_colored(inwin, "R");
             break;
         case CM_CUSTOM:
             draw_colored(inwin, "C");
@@ -906,8 +902,6 @@ void ui_run() {
                 screens[screen].command_mode = CM_SAY;
             } else if (c == 116) {
                 screens[screen].command_mode = CM_SAY_TEAM;
-            } else if (c == 114) {
-                screens[screen].command_mode = CM_RCON;
             } else if (c == 99) {
                 screens[screen].command_mode = CM_CUSTOM;
                 if (screens[screen].commandline_length > 0)
@@ -1018,8 +1012,6 @@ void ui_run() {
                             break;
                         case CM_SAY_TEAM:
                             client_say_team(screen - 1, "%s", screens[screen].commandline);
-                            break;
-                        case CM_RCON:
                             break;
                         case CM_CUSTOM:
                             ui_execute(screen - 1, false, "%s %s", screens[screen].custom_command_mode, screens[screen].commandline);
