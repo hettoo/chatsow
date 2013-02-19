@@ -48,6 +48,14 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define BRIGHT_WHITE_PAIR 0
 #define COLOR_DEFAULT (BRIGHT_WHITE_PAIR - color_base)
 
+typedef enum cmd_mode_e {
+    CM_EXECUTE,
+    CM_SAY,
+    CM_SAY_TEAM,
+    CM_RCON,
+    CM_CUSTOM
+} cmd_mode_t;
+
 typedef enum color_e {
     NORMAL_BASE,
     NORMAL_BLACK,
@@ -100,6 +108,9 @@ typedef struct screen_s {
     int scroll_up;
     qboolean next_line;
     qboolean allow_time;
+
+    cmd_mode_t command_mode;
+    char custom_command_mode[MAX_INPUT_LENGTH];
 
     char commandline[MAX_INPUT_LENGTH];
     char backup[MAX_INPUT_LENGTH];
@@ -352,8 +363,8 @@ static qboolean explicit_command_mode() {
     return screens[screen].commandline_length >= command_mode_prefix_length() && screens[screen].commandline[0] == '/';
 }
 
-static qboolean command_mode() {
-    return screen == 0 || explicit_command_mode();
+static cmd_mode_t get_command_mode() {
+    return explicit_command_mode() ? CM_EXECUTE : screens[screen].command_mode;
 }
 
 static int command_mode_actual_prefix_length() {
@@ -367,12 +378,20 @@ int ui_client() {
 static void draw_inwin() {
     color_base = NORMAL_BASE + 1;
     werase(inwin);
-    wmove(inwin, 0, 3);
-    if (command_mode())
-        set_color(inwin, 7);
-    else
-        wattrset(inwin, COLOR_PAIR(color_base + 2));
-    draw_colored_cursored_scroll(inwin, screens[screen].commandline, screens[screen].commandline_cursor, COLS - 3);
+    static int prefix_length = 4;
+    wmove(inwin, 0, prefix_length);
+    switch (get_command_mode()) {
+        case CM_SAY:
+            set_color(inwin, 2);
+            break;
+        case CM_SAY_TEAM:
+            set_color(inwin, 3);
+            break;
+        default:
+            set_color(inwin, 7);
+            break;
+    }
+    draw_colored_cursored_scroll(inwin, screens[screen].commandline, screens[screen].commandline_cursor, COLS - prefix_length);
     qboolean skipped = draw_skip > 0;
     qboolean hidden = draw_skip + draw_max < draw_total_len;
     wmove(inwin, 0, 0);
@@ -382,6 +401,23 @@ static void draw_inwin() {
         draw_colored(inwin, "<");
     else
         draw_colored(inwin, "[");
+    switch (screens[screen].command_mode) {
+        case CM_EXECUTE:
+            draw_colored(inwin, "X");
+            break;
+        case CM_SAY:
+            draw_colored(inwin, "S");
+            break;
+        case CM_SAY_TEAM:
+            draw_colored(inwin, "T");
+            break;
+        case CM_RCON:
+            draw_colored(inwin, "R");
+            break;
+        case CM_CUSTOM:
+            draw_colored(inwin, "C");
+            break;
+    }
     if (hidden)
         draw_colored(inwin, ">");
     else
@@ -552,6 +588,8 @@ static void screen_init(screen_t *s) {
     s->scroll_up = 0;
     s->next_line = qfalse;
     s->allow_time = qtrue;
+
+    s->command_mode = s == screens ? CM_EXECUTE : CM_SAY;
 
     s->commandline_length = 0;
     s->commandline_cursor = 0;
@@ -790,6 +828,18 @@ static void redesign() {
     redraw();
 }
 
+static void ui_execute(int client, qboolean output, char *format, ...) {
+    static char string[MAX_STRING_CHARS];
+	va_list	argptr;
+	va_start(argptr, format);
+    vsprintf(string, format, argptr);
+	va_end(argptr);
+
+    if (output)
+        ui_output(client, "%s\n", string);
+    cmd_execute(client, string);
+}
+
 void ui_run() {
     signal(SIGINT, interrupt);
     signal(SIGSEGV, interrupt);
@@ -848,6 +898,27 @@ void ui_run() {
         if (alt) {
             if (c >= '0' && c <= '9')
                 set_screen(c - '0');
+            qboolean refresh_input = qtrue;
+            if (c == 120) {
+                screens[screen].command_mode = CM_EXECUTE;
+            } else if (c == 115) {
+                screens[screen].command_mode = CM_SAY;
+            } else if (c == 116) {
+                screens[screen].command_mode = CM_SAY_TEAM;
+            } else if (c == 114) {
+                screens[screen].command_mode = CM_RCON;
+            } else if (c == 99) {
+                screens[screen].command_mode = CM_CUSTOM;
+                strcpy(screens[screen].custom_command_mode, screens[screen].commandline + (screens[screen].commandline_length > 0 && screens[screen].commandline[0] == '/' ? 1 : 0));
+            } else {
+                refresh_input = qfalse;
+            }
+            if (refresh_input) {
+                screens[screen].commandline_length = 0;
+                screens[screen].commandline[screens[screen].commandline_length] = '\0';
+                screens[screen].commandline_cursor = uncolored_length(screens[screen].commandline);
+                draw_inwin();
+            }
             alt = qfalse;
             continue;
         }
@@ -917,22 +988,40 @@ void ui_run() {
                 screens[screen].commandline_cursor = uncolored_length(screens[screen].commandline);
                 break;
             case 9:
-                if (command_mode() && screens[screen].commandline_cursor >= command_mode_prefix_length())
-                    complete_command();
-                else
-                    complete_chat();
+                switch (get_command_mode()) {
+                    case CM_EXECUTE:
+                        if (screens[screen].commandline_cursor >= command_mode_prefix_length())
+                            complete_command();
+                        break;
+                    case CM_SAY:
+                    case CM_SAY_TEAM:
+                        complete_chat();
+                        break;
+                    default:
+                        break;
+                }
                 break;
             case 13:
                 screens[screen].commandline[screens[screen].commandline_length] = '\0';
                 screens[screen].scroll_up = 0;
                 int old_screen = screen;
-                if (screens[screen].commandline_length > (command_mode() ? command_mode_prefix_length() : 0)) {
+                if (screens[screen].commandline_length > (get_command_mode() == CM_EXECUTE ? command_mode_prefix_length() : 0)) {
                     add_history();
-                    if (command_mode()) {
-                        ui_output(screen - 1, "%s\n", screens[screen].commandline);
-                        cmd_execute(screen - 1, screens[screen].commandline + command_mode_actual_prefix_length());
-                    } else {
-                        client_say(screen - 1, "%s", screens[screen].commandline);
+                    switch (get_command_mode()) {
+                        case CM_EXECUTE:
+                            ui_execute(screen - 1, true, "%s", screens[screen].commandline + command_mode_actual_prefix_length());
+                            break;
+                        case CM_SAY:
+                            client_say(screen - 1, "%s", screens[screen].commandline);
+                            break;
+                        case CM_SAY_TEAM:
+                            client_say_team(screen - 1, "%s", screens[screen].commandline);
+                            break;
+                        case CM_RCON:
+                            break;
+                        case CM_CUSTOM:
+                            ui_execute(screen - 1, false, "%s %s", screens[screen].custom_command_mode, screens[screen].commandline);
+                            break;
                     }
                 }
                 screens[old_screen].commandline_length = 0;

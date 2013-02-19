@@ -78,8 +78,9 @@ void serverlist_connect() {
     static char cmd[100];
     int i;
     for (i = 1; i < cmd_argc(); i++) {
-        int id = atoi(cmd_argv(i));
-        if (id >= 0 && id < server_count) {
+        char *string = cmd_argv(i);
+        int id = atoi(string);
+        if (string[0] && id >= 0 && id < server_count) {
             sprintf(cmd, "connect %s %d", serverlist[id].address, serverlist[id].port);
             cmd_execute(cmd_client(), cmd);
         } else {

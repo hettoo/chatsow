@@ -247,9 +247,20 @@ static void client_send(client_t *c) {
     c->last_send = millis();
 }
 
+static char string[MAX_MSGLEN];
+
 void client_say(int id, char *format, ...) {
-    static char string[MAX_MSGLEN];
     strcpy(string, "say \"");
+	va_list	argptr;
+	va_start(argptr, format);
+    vsprintf(string + strlen(string), format, argptr);
+	va_end(argptr);
+    strcat(string, "\"");
+    cmd_execute(id, string);
+}
+
+void client_say_team(int id, char *format, ...) {
+    strcpy(string, "say_team \"");
 	va_list	argptr;
 	va_start(argptr, format);
     vsprintf(string + strlen(string), format, argptr);
