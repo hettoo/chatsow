@@ -590,6 +590,7 @@ static void screen_init(screen_t *s) {
     s->allow_time = qtrue;
 
     s->command_mode = s == screens ? CM_EXECUTE : CM_SAY;
+    s->custom_command_mode[0] = '\0';
 
     s->commandline_length = 0;
     s->commandline_cursor = 0;
@@ -836,7 +837,7 @@ static void ui_execute(int client, qboolean output, char *format, ...) {
 	va_end(argptr);
 
     if (output)
-        ui_output(client, "%s\n", string);
+        ui_output(client, "/%s\n", string);
     cmd_execute(client, string);
 }
 
@@ -909,7 +910,8 @@ void ui_run() {
                 screens[screen].command_mode = CM_RCON;
             } else if (c == 99) {
                 screens[screen].command_mode = CM_CUSTOM;
-                strcpy(screens[screen].custom_command_mode, screens[screen].commandline + (screens[screen].commandline_length > 0 && screens[screen].commandline[0] == '/' ? 1 : 0));
+                if (screens[screen].commandline_length > 0)
+                    strcpy(screens[screen].custom_command_mode, screens[screen].commandline + command_mode_actual_prefix_length());
             } else {
                 refresh_input = qfalse;
             }

@@ -516,6 +516,11 @@ static void cmd_pr() {
     ui_output(c->id, "%s", cmd_argv(1));
 }
 
+static void cmd_print() {
+    client_t *c = clients + cmd_client();
+    ui_output(c->id, "%s", cmd_args(1));
+}
+
 static void cmd_ch() {
     client_t *c = clients + cmd_client();
     char *name = player_name(&c->cs, atoi(cmd_argv(1)));
@@ -634,6 +639,7 @@ void client_register_commands() {
     cmd_add_from_server("dcancel", cmd_nop);
 
     cmd_add_from_server("pr", cmd_pr);
+    cmd_add_from_server("print", cmd_print);
     cmd_add_from_server("ch", cmd_ch);
     cmd_add_from_server("tch", cmd_tch);
     cmd_add_from_server("tvch", cmd_tvch);
