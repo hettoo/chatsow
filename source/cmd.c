@@ -28,6 +28,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 typedef enum cmd_type_e {
     CT_NORMAL,
+    CT_CVAR,
     CT_PERSISTENT,
     CT_PUBLIC,
     CT_PUBLIC_PERSISTENT,
@@ -44,6 +45,7 @@ typedef enum cmd_type_e {
 typedef struct cmd_s {
     char *name;
     void (*f)();
+    void *(*cvar_get)();
     int (*complete)(int arg, char suggestions[][MAX_SUGGESTION_SIZE]);
     cmd_type_t type;
     qboolean clients[CLIENTS];
@@ -160,7 +162,7 @@ static qboolean cmd_type_extends(int type, int parent) {
     if (type == parent)
         return qtrue;
 
-    if (parent == CT_NORMAL && (type == CT_PERSISTENT || type == CT_SERVER))
+    if (parent == CT_NORMAL && (type == CT_PERSISTENT || type == CT_SERVER || type == CT_CVAR))
         return qtrue;
 
     if (parent == CT_PUBLIC && type == CT_PUBLIC_PERSISTENT)
@@ -322,6 +324,16 @@ void cmd_execute_from_server(int c, char *cmd) {
     cmd_execute_real(c, -1, cmd, CT_FROM_SERVER);
 }
 
+void *cvar_get(int c, char *name) {
+    cmd_stack_push();
+    parse_cmd(name, -1);
+    cmd_t *cmd = cmd_find(NULL, c, CT_CVAR, qfalse);
+    cmd_stack_pop();
+    if (cmd == NULL)
+        return NULL;
+    return cmd->cvar_get();
+}
+
 int cmd_client() {
     return s->client;
 }
@@ -444,6 +456,13 @@ int cmd_add_server(int client, char *name) {
 int cmd_add_global(char *name, void (*f)()) {
     cmd_t *cmd = cmd_reserve(name, f, CT_GLOBAL);
     cmd_allow_all(cmd);
+    return cmd_index(cmd);
+}
+
+int cmd_add_cvar(char *name, void (*f)(), void *(*cvar_get)()) {
+    cmd_t *cmd = cmd_reserve(name, f, CT_CVAR);
+    cmd_allow_all(cmd);
+    cmd->cvar_get = cvar_get;
     return cmd_index(cmd);
 }
 

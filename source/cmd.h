@@ -51,6 +51,7 @@ int cmd_add_event(char *name, void (*f)());
 int cmd_add_from_server(char *name, void (*f)());
 int cmd_add_server(int client, char *name);
 int cmd_add_global(char *name, void (*f)());
+int cmd_add_cvar(char *name, void (*f)(), void *(*cvar_get)());
 int cmd_add_find_free(char *name, void (*f)());
 int cmd_add_broadcast(char *name, void (*f)());
 int cmd_add_broadcast_all(char *name, void (*f)());
