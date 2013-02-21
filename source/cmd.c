@@ -28,7 +28,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 typedef enum cmd_type_e {
     CT_NORMAL,
-    CT_CVAR,
     CT_PERSISTENT,
     CT_PUBLIC,
     CT_PUBLIC_PERSISTENT,
@@ -39,6 +38,7 @@ typedef enum cmd_type_e {
     CT_FIND_FREE,
     CT_BROADCAST,
     CT_BROADCAST_ALL,
+    CT_CVAR,
     CT_TOTAL
 } cmd_type_t;
 
@@ -162,7 +162,7 @@ static qboolean cmd_type_extends(int type, int parent) {
     if (type == parent)
         return qtrue;
 
-    if (parent == CT_NORMAL && (type == CT_PERSISTENT || type == CT_SERVER || type == CT_CVAR))
+    if (parent == CT_NORMAL && (type == CT_PERSISTENT || type == CT_SERVER))
         return qtrue;
 
     if (parent == CT_PUBLIC && type == CT_PUBLIC_PERSISTENT)
@@ -179,6 +179,9 @@ static qboolean cmd_type_compatible(int type, int parent) {
         return qtrue;
 
     if (parent == CT_NORMAL && cmd_type_extends(type, CT_GLOBAL))
+        return qtrue;
+
+    if (parent == CT_CVAR && type == CT_BROADCAST)
         return qtrue;
 
     return qfalse;
@@ -329,7 +332,7 @@ void *cvar_get(int c, char *name) {
     parse_cmd(name, -1);
     cmd_t *cmd = cmd_find(NULL, c, CT_CVAR, qfalse);
     cmd_stack_pop();
-    if (cmd == NULL)
+    if (cmd == NULL || cmd->cvar_get == NULL)
         return NULL;
     return cmd->cvar_get();
 }
@@ -459,13 +462,6 @@ int cmd_add_global(char *name, void (*f)()) {
     return cmd_index(cmd);
 }
 
-int cmd_add_cvar(char *name, void (*f)(), void *(*cvar_get)()) {
-    cmd_t *cmd = cmd_reserve(name, f, CT_CVAR);
-    cmd_allow_all(cmd);
-    cmd->cvar_get = cvar_get;
-    return cmd_index(cmd);
-}
-
 int cmd_add_find_free(char *name, void (*f)()) {
     cmd_t *cmd = cmd_reserve(name, f, CT_FIND_FREE);
     cmd_allow_all(cmd);
@@ -481,6 +477,13 @@ int cmd_add_broadcast(char *name, void (*f)()) {
 int cmd_add_broadcast_all(char *name, void (*f)()) {
     cmd_t *cmd = cmd_reserve(name, f, CT_BROADCAST_ALL);
     cmd_allow_all(cmd);
+    return cmd_index(cmd);
+}
+
+int cmd_add_cvar(char *name, void (*f)(), void *(*cvar_get)()) {
+    cmd_t *cmd = cmd_reserve(name, f, CT_CVAR);
+    cmd_allow_all(cmd);
+    cmd->cvar_get = cvar_get;
     return cmd_index(cmd);
 }
 
