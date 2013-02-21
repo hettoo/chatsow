@@ -563,12 +563,17 @@ static void cmd_connect() {
     set_server(c, new_host, new_port);
 }
 
-static void cmd_name() {
+static void cvar_name() {
     client_t *c = clients + cmd_client();
     strcpy(c->name, cmd_argv(1));
     set_status(c->id, c->name, cs_get(&c->cs, 0));
     if (c->state >= CA_SETUP)
         client_command(c->id, "usri \"\\name\\%s\"", c->name);
+}
+
+static void *cvar_name_get() {
+    client_t *c = clients + cmd_client();
+    return c->name;
 }
 
 static char suggestions[MAX_CMDS][MAX_SUGGESTION_SIZE];
@@ -646,7 +651,7 @@ void client_register_commands() {
     cmd_add_from_server("motd", cmd_motd);
 
     cmd_add_find_free("connect", cmd_connect);
-    cmd_add_broadcast("name", cmd_name);
+    cmd_add_cvar("name", cvar_name, cvar_name_get);
     cmd_add_public_generic("help", cmd_help_public);
 }
 

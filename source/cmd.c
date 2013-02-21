@@ -168,7 +168,7 @@ static qboolean cmd_type_extends(int type, int parent) {
     if (parent == CT_PUBLIC && type == CT_PUBLIC_PERSISTENT)
         return qtrue;
 
-    if (parent == CT_GLOBAL && (type == CT_FIND_FREE || type == CT_BROADCAST || type == CT_BROADCAST_ALL))
+    if (parent == CT_GLOBAL && (type == CT_FIND_FREE || type == CT_BROADCAST || type == CT_BROADCAST_ALL || type == CT_CVAR))
         return qtrue;
 
     return qfalse;
@@ -179,9 +179,6 @@ static qboolean cmd_type_compatible(int type, int parent) {
         return qtrue;
 
     if (parent == CT_NORMAL && cmd_type_extends(type, CT_GLOBAL))
-        return qtrue;
-
-    if (parent == CT_CVAR && type == CT_BROADCAST)
         return qtrue;
 
     return qfalse;
@@ -264,7 +261,7 @@ static void cmd_execute_real(int c, int caller, char *name, int type) {
         int old_type = type;
         if (cmd_type_compatible(cmd->type, type))
             type = cmd->type;
-        if (type == CT_BROADCAST && c < 0) {
+        if ((type == CT_BROADCAST || type == CT_CVAR) && c < 0) {
             start = 0;
             end = CLIENTS - 1;
         } else if (type == CT_BROADCAST_ALL) {
@@ -331,10 +328,13 @@ void *cvar_get(int c, char *name) {
     cmd_stack_push();
     parse_cmd(name, -1);
     cmd_t *cmd = cmd_find(NULL, c, CT_CVAR, qfalse);
-    cmd_stack_pop();
-    if (cmd == NULL || cmd->cvar_get == NULL)
+    if (cmd == NULL || cmd->cvar_get == NULL) {
+        cmd_stack_pop();
         return NULL;
-    return cmd->cvar_get();
+    }
+    void *result = cmd->cvar_get();
+    cmd_stack_pop();
+    return result;
 }
 
 int cmd_client() {
