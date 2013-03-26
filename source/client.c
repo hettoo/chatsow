@@ -454,9 +454,10 @@ void cmd_cs() {
         if (i % 2 == 1)
             cs_set(&c->cs, atoi(cmd_argv(i)), cmd_argv(i + 1));
     }
-    if (c->state > CA_DISCONNECTED)
+    if (c->state > CA_DISCONNECTED) {
         strcpy(c->name, player_name(&c->cs, c->playernum));
-    set_status(c->id, c->name, cs_get(&c->cs, 0));
+        set_status(c->id, c->name, cs_get(&c->cs, 0));
+    }
 }
 
 void cmd_cmd() {
@@ -579,8 +580,11 @@ static void cmd_replay() {
     set_server(c, NULL, NULL);
     FILE* fp = fopen(path("demos/%s.wd%d", cmd_argv(1), PROTOCOL), "r");
     if (fp) {
+        force_disconnect(c);
+        c->playernum = atoi(cmd_argv(2));
         parse_demo(&c->parser, fp);
         fclose(fp);
+        reset(c);
     } else {
         ui_output(c->id, "Demo not found\n");
     }
