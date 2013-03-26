@@ -351,7 +351,7 @@ static void client_recv(client_t *c) {
 static void connection_request(client_t *c) {
     ui_output(c->id, "Sending connection request...\n");
     msg_t *msg = sock_init_send(&c->sock, qfalse);
-    write_string(msg, "connect %d %s %s \"\\name\\%s\" 0", PROTOCOL, c->port, c->challenge, c->name);
+    write_string(msg, "connect %d %s %s \"\\name\\%s\" 1", PROTOCOL, c->port, c->challenge, c->name);
     client_send(c);
 
     set_state(c, CA_CONNECTING);
