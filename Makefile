@@ -35,9 +35,6 @@ $(shell mkdir -p $(BUILD_PLUGINS))
 
 default: program plugins
 
-local: program plugins
-	rsync -av $(RELEASE) $(LOCAL)
-
 program: $(RELEASE)$(PROGRAM)
 
 plugins: $(LIBS_PLUGINS)
@@ -45,7 +42,7 @@ plugins: $(LIBS_PLUGINS)
 clean:
 	rm -rf $(BUILD)
 
-test: local
+test: program plugins
 	./$(RELEASE)$(PROGRAM)
 
 $(RELEASE)$(PROGRAM): $(OBJS)
