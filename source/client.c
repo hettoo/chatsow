@@ -475,6 +475,25 @@ void cmd_clc() {
     client_send(c);
 }
 
+static int r = -1;
+
+void cmd_record() {
+    client_t *c = clients + cmd_client();
+    if (r == -1) {
+        char *name = path("demos/%s.wd%d", cmd_argv(1), PROTOCOL);
+        ui_output(c->id, "Recording to %s\n", name);
+        FILE *fp = fopen(name, "w");
+        r = parser_record(&c->parser, fp, cmd_argc() > 2 ? atoi(cmd_argv(1)) : -1);
+    }
+}
+
+void cmd_stop() {
+    client_t *c = clients + cmd_client();
+    if (r != -1)
+        parser_stop_record(&c->parser, r);
+    r = -1;
+}
+
 void cmd_precache() {
     client_t *c = clients + cmd_client();
     if (c->state != CA_CONFIGURING || cs_get(&c->cs, 0)[0] == '\0')
@@ -707,6 +726,8 @@ void client_start(int id) {
     cmd_add(id, "disconnect", cmd_disconnect);
     cmd_add(id, "cmd", cmd_cmd);
     cmd_add(id, "clc", cmd_clc);
+    cmd_add(id, "record", cmd_record);
+    cmd_add(id, "stop", cmd_stop);
 
     strcpy(c->name, "chatter");
     set_state(c, CA_DISCONNECTED);

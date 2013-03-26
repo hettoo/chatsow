@@ -66,6 +66,10 @@ int parser_record(parser_t *parser, FILE *fp, int target) {
 
 FILE *parser_stop_record(parser_t *parser, int id) {
     FILE *result = parser->demos[id].fp;
+    int length = ftell(result);
+    fseek(result, 0, SEEK_SET);
+    fwrite(&length, 1, 4, result);
+    fseek(result, length, SEEK_SET);
     parser->demos[id].fp = NULL;
     return result;
 }
@@ -110,7 +114,7 @@ static void record_string(parser_t *parser, msg_t *msg, qbyte *targets) {
     record(parser, msg, i - msg->readcount + 1, targets);
 }
 
-static int parse_frame(parser_t *parser, msg_t *msg) {
+static void parse_frame(parser_t *parser, msg_t *msg) {
     record(parser, msg, 22, NULL);
     int length = read_short(msg); // length
     int pos = msg->readcount;
@@ -162,7 +166,6 @@ static int parse_frame(parser_t *parser, msg_t *msg) {
     record(parser, msg, length - (msg->readcount - pos), NULL);
     skip_data(msg, length - (msg->readcount - pos));
     parser->last_frame = frame;
-    return 4 + length;
 }
 
 void parse_message(parser_t *parser, msg_t *msg) {
@@ -245,10 +248,7 @@ void parse_message(parser_t *parser, msg_t *msg) {
                 break;
             case svc_frame:
                 record_last(parser, msg, NULL);
-                size = parse_frame(parser, msg);
-                msg->readcount -= size;
-                record(parser, msg, size, NULL);
-                msg->readcount += size;
+                parse_frame(parser, msg);
                 break;
             case -1:
                 return;
