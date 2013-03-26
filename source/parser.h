@@ -30,6 +30,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 typedef struct demo_s {
     FILE *fp;
     int target;
+    long int start;
 } demo_t;
 
 typedef struct parser_s {

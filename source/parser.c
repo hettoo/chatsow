@@ -34,23 +34,57 @@ void parser_reset(parser_t *parser) {
         parser->demos[i].fp = NULL;
 }
 
+static void start_new_demo(demo_t *demo) {
+    demo->start = ftell(demo->fp);
+    int length = 0;
+    fwrite(&length, 4, 1, demo->fp);
+}
+
+static void start_new(parser_t *parser) {
+    int i;
+    for (i = 0; i < MAX_DEMOS; i++) {
+        demo_t *demo = parser->demos + i;
+        if (demo->fp)
+            start_new_demo(demo);
+    }
+}
+
+static void end_previous_demo(demo_t *demo) {
+    long int backup = ftell(demo->fp);
+    fseek(demo->fp, demo->start, SEEK_SET);
+    int length = LittleLong(backup - demo->start - 4);
+    fwrite(&length, 4, 1, demo->fp);
+    fseek(demo->fp, backup, SEEK_SET);
+}
+
+static void end_previous(parser_t *parser) {
+    int i;
+    for (i = 0; i < MAX_DEMOS; i++) {
+        demo_t *demo = parser->demos + i;
+        if (demo->fp)
+            end_previous_demo(demo);
+    }
+}
+
 int parser_record(parser_t *parser, FILE *fp, int target) {
     int i;
     for (i = 0; i < MAX_DEMOS; i++) {
-        if (parser->demos[i].fp == NULL) {
-            parser->demos[i].fp = fp;
-            parser->demos[i].target = target;
+        demo_t *demo = parser->demos + i;
+        if (demo->fp == NULL) {
+            demo->fp = fp;
+            demo->target = target;
             int x = 0;
+            start_new_demo(demo);
             qbyte c = svc_demoinfo;
             char *key = "multipov";
-            fwrite(&x, 4, 1, fp); // length
             fwrite(&c, 1, 1, fp);
-            x = 4 + strlen(key) + 1 + 2;
+            x = LittleLong(20 + strlen(key) + 1 + 2);
             fwrite(&x, 4, 1, fp); // demoinfo length
-            x = 0;
+            x = 4;
             fwrite(&x, 4, 1, fp); // metadata offset
+            x = 0;
             fwrite(&x, 4, 1, fp); // time
-            x = strlen(key) + 1 + 2;
+            x = LittleLong(strlen(key) + 1 + 2);
             fwrite(&x, 4, 1, fp); // size
             fwrite(&x, 4, 1, fp); // max size
             fwrite(key, 1, strlen(key) + 1, fp);
@@ -65,12 +99,10 @@ int parser_record(parser_t *parser, FILE *fp, int target) {
 }
 
 FILE *parser_stop_record(parser_t *parser, int id) {
-    FILE *result = parser->demos[id].fp;
-    int length = ftell(result);
-    fseek(result, 0, SEEK_SET);
-    fwrite(&length, 1, 4, result);
-    fseek(result, length, SEEK_SET);
-    parser->demos[id].fp = NULL;
+    demo_t *demo = parser->demos + id;
+    FILE *result = demo->fp;
+    end_previous_demo(demo);
+    demo->fp = NULL;
     return result;
 }
 
@@ -105,6 +137,12 @@ static void record_last(parser_t *parser, msg_t *msg, qbyte *targets) {
     msg->readcount--;
     record(parser, msg, 1, targets);
     msg->readcount++;
+}
+
+static void prepare_fragment(parser_t *parser, msg_t *msg) {
+    end_previous(parser);
+    start_new(parser);
+    record_last(parser, msg, NULL);
 }
 
 static void record_string(parser_t *parser, msg_t *msg, qbyte *targets) {
@@ -198,7 +236,7 @@ void parse_message(parser_t *parser, msg_t *msg) {
                 client_activate(parser->client);
                 break;
             case svc_servercmd:
-                record_last(parser, msg, NULL);
+                prepare_fragment(parser, msg);
                 if (!(get_bitflags(parser->client) & SV_BITFLAGS_RELIABLE)) {
                     int cmd_num = read_long(msg);
                     if (cmd_num != parser->last_cmd_num + 1) {
@@ -210,12 +248,12 @@ void parse_message(parser_t *parser, msg_t *msg) {
                 }
             case svc_servercs:
                 if (cmd == svc_servercs)
-                    record_last(parser, msg, NULL);
+                    prepare_fragment(parser, msg);
                 record_string(parser, msg, NULL);
                 execute(parser->client, read_string(msg), NULL, 0);
                 break;
             case svc_serverdata:
-                record_last(parser, msg, NULL);
+                prepare_fragment(parser, msg);
                 record(parser, msg, 10, NULL);
                 set_protocol(parser->client, read_long(msg));
                 set_spawn_count(parser->client, read_long(msg));
@@ -240,14 +278,14 @@ void parse_message(parser_t *parser, msg_t *msg) {
                 }
                 break;
             case svc_spawnbaseline:
-                record_last(parser, msg, NULL);
+                prepare_fragment(parser, msg);
                 size = read_delta_entity(msg, read_entity_bits(msg));
                 msg->readcount -= size;
                 record(parser, msg, size, NULL);
                 msg->readcount += size;
                 break;
             case svc_frame:
-                record_last(parser, msg, NULL);
+                prepare_fragment(parser, msg);
                 parse_frame(parser, msg);
                 break;
             case -1:
