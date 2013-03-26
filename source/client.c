@@ -115,6 +115,8 @@ static void reset(client_t *c) {
     parser_reset(&c->parser);
     cs_init(&c->cs);
     sock_init(&c->sock);
+
+    set_status(c->id, c->name, cs_get(&c->cs, 0));
 }
 
 void register_configstring_commands(client_t *c) {

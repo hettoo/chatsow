@@ -52,6 +52,38 @@ FILE *parser_stop_record(parser_t *parser, int id) {
     return result;
 }
 
+static qboolean target_match(int target, qbyte *targets) {
+    if (target == -1 || targets == NULL)
+        return qtrue;
+    int i;
+    for (i = 0; i < MAX_CLIENTS / 8; i++) {
+        if (targets[i] == target)
+            return qtrue;
+    }
+    return qfalse;
+}
+
+static void record(parser_t *parser, msg_t *msg, int size, qbyte *targets) {
+    int i;
+    for (i = 0; i < MAX_DEMOS; i++) {
+        if (parser->demos[i].fp && target_match(parser->demos[i].target, targets))
+            fwrite(msg->data + msg->cursize, 1, size, parser->demos[i].fp);
+    }
+}
+
+static void record_last(parser_t *parser, msg_t *msg, qbyte *targets) {
+    msg->cursize--;
+    record(parser, msg, 1, targets);
+    msg->cursize++;
+}
+
+static void record_string(parser_t *parser, msg_t *msg, qbyte *targets) {
+    int i;
+    for (i = msg->cursize; msg->data[i]; i++)
+        ;
+    record(parser, msg, i - msg->cursize + 1, targets);
+}
+
 static void parse_frame(parser_t *parser, msg_t *msg) {
     int length = read_short(msg); // length
     int pos = msg->readcount;
@@ -118,20 +150,30 @@ void parse_message(parser_t *parser, msg_t *msg) {
                     client_ack(parser->client, cmd_num);
                 }
             case svc_servercs:
+                record_string(parser, msg, NULL);
                 execute(parser->client, read_string(msg), NULL, 0);
                 break;
             case svc_serverdata:
+                record_last(parser, msg, NULL);
+                record(parser, msg, 10, NULL);
                 set_protocol(parser->client, read_long(msg));
                 set_spawn_count(parser->client, read_long(msg));
                 read_short(msg); // snap frametime
+                record_string(parser, msg, NULL);
                 read_string(msg); // base game
+                record_string(parser, msg, NULL);
                 set_game(parser->client, read_string(msg));
+                record(parser, msg, 2, NULL);
                 set_playernum(parser->client, read_short(msg) + 1);
+                record_string(parser, msg, NULL);
                 set_level(parser->client, read_string(msg)); // level name
+                record(parser, msg, 3, NULL);
                 set_bitflags(parser->client, read_byte(msg));
                 int pure = read_short(msg);
                 while (pure > 0) {
+                    record_string(parser, msg, NULL);
                     read_string(msg); // pure pk3 name
+                    record(parser, msg, 4, NULL);
                     read_long(msg); // checksum
                     pure--;
                 }
