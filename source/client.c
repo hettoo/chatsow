@@ -453,7 +453,8 @@ void cmd_cs() {
         if (i % 2 == 1)
             cs_set(&c->cs, atoi(cmd_argv(i)), cmd_argv(i + 1));
     }
-    strcpy(c->name, player_name(&c->cs, c->playernum));
+    if (c->state > CA_DISCONNECTED)
+        strcpy(c->name, player_name(&c->cs, c->playernum));
     set_status(c->id, c->name, cs_get(&c->cs, 0));
 }
 
@@ -563,6 +564,14 @@ static void cmd_connect() {
     set_server(c, new_host, new_port);
 }
 
+static void cmd_replay() {
+    client_t *c = clients + cmd_client();
+    set_server(c, NULL, NULL);
+    FILE* fp = fopen(path("demos/%s.wd%d", cmd_argv(1), PROTOCOL), "r");
+    parse_demo(&c->parser, fp);
+    fclose(fp);
+}
+
 static void cvar_name() {
     client_t *c = clients + cmd_client();
     strcpy(c->name, cmd_argv(1));
@@ -638,10 +647,13 @@ void client_register_commands() {
     cmd_add_from_server("ti", cmd_nop);
     cmd_add_from_server("changing", cmd_nop);
     cmd_add_from_server("cp", cmd_nop);
+    cmd_add_from_server("aw", cmd_nop);
 
     cmd_add_from_server("dstart", cmd_nop);
     cmd_add_from_server("dstop", cmd_nop);
     cmd_add_from_server("dcancel", cmd_nop);
+    cmd_add_from_server("cpc", cmd_nop);
+    cmd_add_from_server("cpa", cmd_nop);
 
     cmd_add_from_server("pr", cmd_pr);
     cmd_add_from_server("print", cmd_print);
@@ -651,6 +663,7 @@ void client_register_commands() {
     cmd_add_from_server("motd", cmd_motd);
 
     cmd_add_find_free("connect", cmd_connect);
+    cmd_add_find_free("replay", cmd_replay);
     cmd_add_cvar("name", cvar_name, cvar_name_get);
     cmd_add_public_generic("help", cmd_help_public);
 }

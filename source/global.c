@@ -136,10 +136,8 @@ static void cmd_load() {
 
     plugin_t *plugin = plugins + plugin_count++;
     strcpy(plugin->name, cmd_argv(1));
-    static char plugin_path[MAX_STRING_CHARS];
-    strcpy(plugin_path, path("plugins/%s.so", plugin->name));
 
-    plugin->handle = dlopen(plugin_path, RTLD_NOW);
+    plugin->handle = dlopen(path("plugins/%s.so", plugin->name), RTLD_NOW);
     if (plugin->handle == NULL) {
         ui_output(cmd_client(), "Error loading %s: %s\n", plugin->name, dlerror());
         plugin_count--;
