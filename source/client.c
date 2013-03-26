@@ -137,7 +137,8 @@ qboolean client_ready(int id) {
 }
 
 int get_bitflags(int id) {
-    return clients[id].bitflags;
+    client_t *c = clients + id;
+    return c->bitflags;
 }
 
 int get_playernum(int id) {
@@ -525,21 +526,30 @@ static void cmd_print() {
 static void cmd_ch() {
     client_t *c = clients + cmd_client();
     char *name = player_name(&c->cs, atoi(cmd_argv(1)));
-    ui_output_important(c->id, "%s^7: ^2%s\n", name, cmd_argv(2));
+    if (c->state > CA_DISCONNECTED)
+        ui_output_important(c->id, "%s^7: ^2%s\n", name, cmd_argv(2));
+    else
+        ui_output(c->id, "%s^7: ^2%s\n", name, cmd_argv(2));
     chat_command(c, atoi(cmd_argv(1)), cmd_argv(2));
 }
 
 static void cmd_tch() {
     client_t *c = clients + cmd_client();
     char *name = player_name(&c->cs, atoi(cmd_argv(1)));
-    ui_output_important(c->id, "%s^7: ^3%s\n", name, cmd_argv(2));
+    if (c->state > CA_DISCONNECTED)
+        ui_output_important(c->id, "%s^7: ^3%s\n", name, cmd_argv(2));
+    else
+        ui_output(c->id, "%s^7: ^3%s\n", name, cmd_argv(2));
     chat_command(c, atoi(cmd_argv(1)), cmd_argv(2));
 }
 
 static void cmd_tvch() {
     client_t *c = clients + cmd_client();
     char *name = player_name(&c->cs, atoi(cmd_argv(1)));
-    ui_output_important(c->id, "[TV]%s^7: ^2%s\n", name, cmd_argv(2));
+    if (c->state > CA_DISCONNECTED)
+        ui_output_important(c->id, "[TV]%s^7: ^2%s\n", name, cmd_argv(2));
+    else
+        ui_output(c->id, "[TV]%s^7: ^2%s\n", name, cmd_argv(2));
     chat_command(c, atoi(cmd_argv(1)), cmd_argv(2));
 }
 
@@ -568,8 +578,12 @@ static void cmd_replay() {
     client_t *c = clients + cmd_client();
     set_server(c, NULL, NULL);
     FILE* fp = fopen(path("demos/%s.wd%d", cmd_argv(1), PROTOCOL), "r");
-    parse_demo(&c->parser, fp);
-    fclose(fp);
+    if (fp) {
+        parse_demo(&c->parser, fp);
+        fclose(fp);
+    } else {
+        ui_output(c->id, "Demo not found\n");
+    }
 }
 
 static void cvar_name() {
