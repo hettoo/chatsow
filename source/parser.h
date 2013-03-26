@@ -25,15 +25,25 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include "import.h"
 
+#define MAX_DEMOS 512
+
+typedef struct demo_s {
+    FILE *fp;
+    int target;
+} demo_t;
+
 typedef struct parser_s {
     int client;
     int last_frame;
     int last_cmd_num;
     int last_cmd_ack;
+    demo_t demos[MAX_DEMOS];
 } parser_t;
 
 void parser_reset(parser_t *parser);
 void parse_message(parser_t *parser, msg_t *msg);
 void parse_demo(parser_t *parser, FILE *fp);
+int parser_record(parser_t *parser, FILE *fp, int target);
+FILE *parser_stop_record(parser_t *parser, int id);
 
 #endif

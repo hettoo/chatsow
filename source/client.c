@@ -578,7 +578,7 @@ static void cmd_connect() {
 static void cmd_replay() {
     client_t *c = clients + cmd_client();
     set_server(c, NULL, NULL);
-    FILE* fp = fopen(path("demos/%s.wd%d", cmd_argv(1), PROTOCOL), "r");
+    FILE *fp = fopen(path("demos/%s.wd%d", cmd_argv(1), PROTOCOL), "r");
     if (fp) {
         force_disconnect(c);
         c->playernum = atoi(cmd_argv(2));

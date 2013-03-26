@@ -29,6 +29,27 @@ void parser_reset(parser_t *parser) {
     parser->last_frame = -1;
     parser->last_cmd_num = 0;
     parser->last_cmd_ack = -1;
+    int i;
+    for (i = 0; i < MAX_DEMOS; i++)
+        parser->demos[i].fp = NULL;
+}
+
+int parser_record(parser_t *parser, FILE *fp, int target) {
+    int i;
+    for (i = 0; i < MAX_DEMOS; i++) {
+        if (parser->demos[i].fp == NULL) {
+            parser->demos[i].fp = fp;
+            parser->demos[i].target = target;
+            return i;
+        }
+    }
+    return -1;
+}
+
+FILE *parser_stop_record(parser_t *parser, int id) {
+    FILE *result = parser->demos[id].fp;
+    parser->demos[id].fp = NULL;
+    return result;
 }
 
 static void parse_frame(parser_t *parser, msg_t *msg) {
