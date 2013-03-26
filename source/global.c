@@ -223,9 +223,28 @@ char *path(char *format, ...) {
     static char result[MAX_STRING_CHARS];
     strcpy(result, home_base);
     va_list argptr;
+    va_list argptr2;
+    va_list argptr3;
     va_start(argptr, format);
+    va_copy(argptr2, argptr);
+    va_copy(argptr3, argptr);
     vsprintf(result + strlen(home_base), format, argptr);
     va_end(argptr);
+    if (access(result, F_OK) != -1) {
+        va_end(argptr2);
+        va_end(argptr3);
+        return result;
+    }
+    strcpy(result, base);
+    vsprintf(result + strlen(base), format, argptr2);
+    va_end(argptr2);
+    if (access(result, F_OK) != -1) {
+        va_end(argptr3);
+        return result;
+    }
+    strcpy(result, home_base);
+    vsprintf(result + strlen(home_base), format, argptr3);
+    va_end(argptr3);
     return result;
 }
 

@@ -40,6 +40,24 @@ int parser_record(parser_t *parser, FILE *fp, int target) {
         if (parser->demos[i].fp == NULL) {
             parser->demos[i].fp = fp;
             parser->demos[i].target = target;
+            int x = 0;
+            qbyte c = svc_demoinfo;
+            char *key = "multipov";
+            fwrite(&x, 4, 1, fp); // length
+            fwrite(&c, 1, 1, fp);
+            x = 4 + strlen(key) + 1 + 2;
+            fwrite(&x, 4, 1, fp); // demoinfo length
+            x = 0;
+            fwrite(&x, 4, 1, fp); // metadata offset
+            fwrite(&x, 4, 1, fp); // time
+            x = strlen(key) + 1 + 2;
+            fwrite(&x, 4, 1, fp); // size
+            fwrite(&x, 4, 1, fp); // max size
+            fwrite(key, 1, strlen(key) + 1, fp);
+            c = '0' + (target < 0);
+            fwrite(&c, 1, 1, fp);
+            c = 0;
+            fwrite(&c, 1, 1, fp);
             return i;
         }
     }
@@ -67,24 +85,33 @@ static void record(parser_t *parser, msg_t *msg, int size, qbyte *targets) {
     int i;
     for (i = 0; i < MAX_DEMOS; i++) {
         if (parser->demos[i].fp && target_match(parser->demos[i].target, targets))
-            fwrite(msg->data + msg->cursize, 1, size, parser->demos[i].fp);
+            fwrite(msg->data + msg->readcount, 1, size, parser->demos[i].fp);
+    }
+}
+
+static void record_multipov(parser_t *parser, msg_t *msg, int size) {
+    int i;
+    for (i = 0; i < MAX_DEMOS; i++) {
+        if (parser->demos[i].fp && parser->demos[i].target == -1)
+            fwrite(msg->data + msg->readcount, 1, size, parser->demos[i].fp);
     }
 }
 
 static void record_last(parser_t *parser, msg_t *msg, qbyte *targets) {
-    msg->cursize--;
+    msg->readcount--;
     record(parser, msg, 1, targets);
-    msg->cursize++;
+    msg->readcount++;
 }
 
 static void record_string(parser_t *parser, msg_t *msg, qbyte *targets) {
     int i;
-    for (i = msg->cursize; msg->data[i]; i++)
+    for (i = msg->readcount; msg->data[i]; i++)
         ;
-    record(parser, msg, i - msg->cursize + 1, targets);
+    record(parser, msg, i - msg->readcount + 1, targets);
 }
 
-static void parse_frame(parser_t *parser, msg_t *msg) {
+static int parse_frame(parser_t *parser, msg_t *msg) {
+    record(parser, msg, 22, NULL);
     int length = read_short(msg); // length
     int pos = msg->readcount;
     read_long(msg); // serverTime
@@ -97,23 +124,51 @@ static void parse_frame(parser_t *parser, msg_t *msg) {
     read_byte(msg); // svc_gamecommands
     int framediff;
     while ((framediff = read_short(msg)) != -1) {
+        qboolean valid = frame > parser->last_frame + framediff;
+        int pos = msg->readcount;
         char *cmd = read_string(msg);
         int numtargets = 0;
         static qbyte targets[MAX_CLIENTS / 8];
+        int i;
+        for (i = 0; i < MAX_CLIENTS / 8; i++)
+            targets[i] = -1;
         if (flags & FRAMESNAP_FLAG_MULTIPOV) {
+            int a = msg->readcount;
             numtargets = read_byte(msg);
+            int b = msg->readcount;
             read_data(msg, targets, numtargets);
+            if (valid) {
+                int real = msg->readcount;
+                msg->readcount = pos;
+                record_string(parser, msg, targets);
+                msg->readcount = a;
+                record_multipov(parser, msg, 1);
+                msg->readcount = b;
+                record_multipov(parser, msg, numtargets);
+                msg->readcount = real;
+            }
+        } else {
+            int real = msg->readcount;
+            msg->readcount = pos;
+            if (valid)
+                record_string(parser, msg, targets);
+            msg->readcount = real;
         }
-        if (frame > parser->last_frame + framediff)
+        if (valid) {
             execute(parser->client, cmd, targets, numtargets);
+            record(parser, msg, 1, NULL);
+        }
     }
+    record(parser, msg, length - (msg->readcount - pos), NULL);
     skip_data(msg, length - (msg->readcount - pos));
     parser->last_frame = frame;
+    return 4 + length;
 }
 
 void parse_message(parser_t *parser, msg_t *msg) {
     int cmd;
     int ack;
+    int size;
     while (1) {
         cmd = read_byte(msg);
         switch (cmd) {
@@ -140,6 +195,7 @@ void parse_message(parser_t *parser, msg_t *msg) {
                 client_activate(parser->client);
                 break;
             case svc_servercmd:
+                record_last(parser, msg, NULL);
                 if (!(get_bitflags(parser->client) & SV_BITFLAGS_RELIABLE)) {
                     int cmd_num = read_long(msg);
                     if (cmd_num != parser->last_cmd_num + 1) {
@@ -150,6 +206,8 @@ void parse_message(parser_t *parser, msg_t *msg) {
                     client_ack(parser->client, cmd_num);
                 }
             case svc_servercs:
+                if (cmd == svc_servercs)
+                    record_last(parser, msg, NULL);
                 record_string(parser, msg, NULL);
                 execute(parser->client, read_string(msg), NULL, 0);
                 break;
@@ -179,10 +237,18 @@ void parse_message(parser_t *parser, msg_t *msg) {
                 }
                 break;
             case svc_spawnbaseline:
-                read_delta_entity(msg, read_entity_bits(msg));
+                record_last(parser, msg, NULL);
+                size = read_delta_entity(msg, read_entity_bits(msg));
+                msg->readcount -= size;
+                record(parser, msg, size, NULL);
+                msg->readcount += size;
                 break;
             case svc_frame:
-                parse_frame(parser, msg);
+                record_last(parser, msg, NULL);
+                size = parse_frame(parser, msg);
+                msg->readcount -= size;
+                record(parser, msg, size, NULL);
+                msg->readcount += size;
                 break;
             case -1:
                 return;
@@ -200,7 +266,7 @@ static qboolean read_demo_message(parser_t *parser, FILE *fp) {
     length = LittleLong(length);
     if (length < 0)
         return qfalse;
-    msg_t msg;
+    static msg_t msg;
     if (!fread(msg.data, length, 1, fp))
         return qfalse;
     msg.readcount = 0;

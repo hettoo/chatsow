@@ -420,7 +420,7 @@ int read_int3(msg_t *msg);
 char *read_string(msg_t *msg);
 void read_data(msg_t *msg, void *data, size_t length);
 unsigned read_entity_bits(msg_t *msg);
-void read_delta_entity(msg_t *msg, unsigned bits);
+int read_delta_entity(msg_t *msg, unsigned bits);
 int skip_data(msg_t *msg, size_t length);
 
 void write_data( msg_t *msg, const void *data, size_t length );
