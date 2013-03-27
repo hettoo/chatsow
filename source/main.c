@@ -18,16 +18,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 */
 
-#include <stdlib.h>
-
 #include "global.h"
 #include "ui.h"
-
-void quit(int sig) {
-    plugin_shutdown();
-    ui_stop();
-    exit(sig);
-}
 
 int main(int argc, char *argv[]) {
     init(argv[0]);

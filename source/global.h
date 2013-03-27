@@ -28,6 +28,7 @@ void plugin_frame();
 void plugin_shutdown();
 
 char *path(char *format, ...);
+void quit(int sig);
 int die(char *format, ...);
 
 #endif

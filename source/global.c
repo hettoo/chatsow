@@ -26,7 +26,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <sys/types.h>
 #include <pwd.h>
 
-#include "main.h"
 #include "import.h"
 #include "utils.h"
 #include "plugins.h"
@@ -246,6 +245,12 @@ char *path(char *format, ...) {
     vsprintf(result + strlen(home_base), format, argptr3);
     va_end(argptr3);
     return result;
+}
+
+void quit(int sig) {
+    plugin_shutdown();
+    ui_stop();
+    exit(sig);
 }
 
 int die(char *format, ...) {
