@@ -270,8 +270,13 @@ static void parse_frame(parser_t *parser, msg_t *msg) {
         } else {
             int real = msg->readcount;
             msg->readcount = pos;
-            if (valid)
+            if (valid) {
                 record_string(parser, msg, NULL);
+                qbyte temp = msg->data[msg->readcount];
+                msg->data[msg->readcount] = 0;
+                record_multipov(parser, msg, 1);
+                msg->data[msg->readcount] = temp;
+            }
             msg->readcount = real;
         }
         if (valid)
