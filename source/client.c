@@ -329,6 +329,16 @@ void client_ack(int id, int num) {
     client_send(c);
 }
 
+void client_ack_frame(int id, int lastframe) {
+    client_t *c = clients + id;
+    msg_t *msg = sock_init_send(&c->sock, qtrue);
+    write_byte(msg, clc_move);
+    write_long(msg, lastframe);
+    write_long(msg, 0);
+    write_byte(msg, 0);
+    client_send(c);
+}
+
 void client_get_ack(int id, int ack) {
     client_t *c = clients + id;
     if (c->buffer_count > 0 && c->buffers[0].last_seq == ack) {

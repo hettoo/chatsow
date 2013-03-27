@@ -464,6 +464,10 @@ static void parse_frame(parser_t *parser, msg_t *msg) {
     msg->readcount += 1;
     record(parser, msg, length - (msg->readcount - pos), NULL);
     skip_data(msg, length - (msg->readcount - pos));
+
+    if (frame > parser->last_frame)
+        client_ack_frame(parser->client, frame);
+
     parser->last_frame = frame;
 }
 
