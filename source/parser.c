@@ -96,6 +96,18 @@ int parser_record(parser_t *parser, FILE *fp, int target) {
             end_previous_demo(demo);
             start_new_demo(demo);
             fwrite(parser->initial.data, 1, parser->initial.cursize, fp);
+            int j;
+            cs_t *cs = client_cs(parser->client);
+            for (j = 0; j < MAX_CONFIGSTRINGS; j++) {
+                char *string = cs_get(cs, j);
+                if (string && string[0]) {
+                    c = svc_servercs;
+                    fwrite(&c, 1, 1, fp);
+                    fprintf(fp, "cs %i \"%s\"", j, string);
+                    c = 0;
+                    fwrite(&c, 1, 1, fp);
+                }
+            }
             c = svc_servercs;
             fwrite(&c, 1, 1, fp);
             key = "precache";
