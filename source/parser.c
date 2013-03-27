@@ -285,6 +285,10 @@ static void parse_frame(parser_t *parser, msg_t *msg) {
     msg->readcount -= 2;
     record(parser, msg, 2, NULL);
     msg->readcount += 2;
+    record(parser, msg, 1, NULL);
+    int bytes = read_byte(msg);
+    record(parser, msg, bytes + 1, NULL);
+    skip_data(msg, bytes + 1);
     record(parser, msg, length - (msg->readcount - pos), NULL);
     skip_data(msg, length - (msg->readcount - pos));
     parser->last_frame = frame;
