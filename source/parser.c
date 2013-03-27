@@ -175,7 +175,7 @@ static void record(parser_t *parser, msg_t *msg, int size, qbyte *targets) {
 static void record_multipov(parser_t *parser, msg_t *msg, int size) {
     int i;
     for (i = 0; i < MAX_DEMOS; i++) {
-        if (parser->demos[i].fp && !parser->demos[i].waiting && parser->demos[i].target == -1)
+        if (parser->demos[i].fp && !parser->demos[i].waiting && parser->demos[i].target < 0)
             fwrite(msg->data + msg->readcount, 1, size, parser->demos[i].fp);
     }
 }
@@ -382,11 +382,6 @@ static void parse_frame(parser_t *parser, msg_t *msg) {
     static qbyte targets[MAX_CLIENTS / 8];
     while ((framediff = read_short(msg)) != -1) {
         qboolean valid = frame > parser->last_frame + framediff;
-        if (valid) {
-            msg->readcount -= 2;
-            record(parser, msg, 2, NULL);
-            msg->readcount += 2;
-        }
         int pos = msg->readcount;
         char *cmd = read_string(msg);
         int numtargets = 0;
@@ -400,24 +395,26 @@ static void parse_frame(parser_t *parser, msg_t *msg) {
             read_data(msg, targets, numtargets);
             if (valid) {
                 int real = msg->readcount;
+                msg->readcount = pos - 2;
+                record(parser, msg, 2, numtargets ? targets : NULL);
                 msg->readcount = pos;
-                record_string(parser, msg, targets);
+                record_string(parser, msg, numtargets ? targets : NULL);
                 msg->readcount = a;
                 record_multipov(parser, msg, 1);
                 msg->readcount = b;
                 record_multipov(parser, msg, numtargets);
                 msg->readcount = real;
             }
-        } else {
+        } else if (valid) {
             int real = msg->readcount;
+            msg->readcount = pos - 2;
+            record(parser, msg, 2, NULL);
             msg->readcount = pos;
-            if (valid) {
-                record_string(parser, msg, NULL);
-                qbyte temp = msg->data[msg->readcount];
-                msg->data[msg->readcount] = 0;
-                record_multipov(parser, msg, 1);
-                msg->data[msg->readcount] = temp;
-            }
+            record_string(parser, msg, NULL);
+            qbyte temp = msg->data[msg->readcount];
+            msg->data[msg->readcount] = 0;
+            record_multipov(parser, msg, 1);
+            msg->data[msg->readcount] = temp;
             msg->readcount = real;
         }
         if (valid)
