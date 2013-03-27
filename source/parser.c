@@ -340,6 +340,7 @@ void parse_message(parser_t *parser, msg_t *msg) {
                 set_game(parser->client, read_string(msg));
                 set_playernum(parser->client, read_short(msg) + 1);
                 set_level(parser->client, read_string(msg)); // level name
+                int flag_offset = msg->readcount;
                 set_bitflags(parser->client, read_byte(msg));
                 int pure = read_short(msg);
                 while (pure > 0) {
@@ -349,6 +350,7 @@ void parse_message(parser_t *parser, msg_t *msg) {
                 }
                 size = msg->readcount - size;
                 msg->readcount -= size;
+                msg->data[flag_offset] |= SV_BITFLAGS_RELIABLE;
                 record_initial(parser, msg, size);
                 msg->readcount += size;
                 break;
