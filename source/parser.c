@@ -25,14 +25,46 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "ui.h"
 #include "parser.h"
 
+static void end_previous_demo(demo_t *demo) {
+    long int backup = ftell(demo->fp);
+    fseek(demo->fp, demo->start, SEEK_SET);
+    int length = LittleLong(backup - demo->start - 4);
+    fwrite(&length, 4, 1, demo->fp);
+    fseek(demo->fp, backup, SEEK_SET);
+}
+
+FILE *parser_stop_record(parser_t *parser, int id) {
+    demo_t *demo = parser->demos + id;
+    FILE *result = demo->fp;
+    if (result != NULL) {
+        end_previous_demo(demo);
+        demo->fp = NULL;
+    }
+    return result;
+}
+
+static void terminate_demos(parser_t *parser) {
+    int i;
+    for (i = 0; i < MAX_DEMOS; i++) {
+        if (parser->demos[i].fp) {
+            fclose(parser->demos[i].fp);
+            parser_stop_record(parser, i);
+        }
+    }
+}
+
 void parser_reset(parser_t *parser) {
+    static qboolean first = qtrue;
     parser->last_frame = -1;
     parser->last_cmd_num = 0;
     parser->last_cmd_ack = -1;
+    if (!first)
+        terminate_demos(parser);
     int i;
     for (i = 0; i < MAX_DEMOS; i++)
         parser->demos[i].fp = NULL;
     parser->initial.cursize = 0;
+    first = qfalse;
 }
 
 static void start_new_demo(demo_t *demo) {
@@ -48,14 +80,6 @@ static void start_new(parser_t *parser) {
         if (demo->fp)
             start_new_demo(demo);
     }
-}
-
-static void end_previous_demo(demo_t *demo) {
-    long int backup = ftell(demo->fp);
-    fseek(demo->fp, demo->start, SEEK_SET);
-    int length = LittleLong(backup - demo->start - 4);
-    fwrite(&length, 4, 1, demo->fp);
-    fseek(demo->fp, backup, SEEK_SET);
 }
 
 static void end_previous(parser_t *parser) {
@@ -125,14 +149,6 @@ static void start_demos(parser_t *parser) {
         if (parser->demos[i].fp)
             parser->demos[i].waiting = qfalse;
     }
-}
-
-FILE *parser_stop_record(parser_t *parser, int id) {
-    demo_t *demo = parser->demos + id;
-    FILE *result = demo->fp;
-    end_previous_demo(demo);
-    demo->fp = NULL;
-    return result;
 }
 
 static void record_initial(parser_t *parser, msg_t *source, int size) {
