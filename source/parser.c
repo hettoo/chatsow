@@ -32,6 +32,7 @@ void parser_reset(parser_t *parser) {
     int i;
     for (i = 0; i < MAX_DEMOS; i++)
         parser->demos[i].fp = NULL;
+    parser->initial.cursize = 0;
 }
 
 static void start_new_demo(demo_t *demo) {
@@ -92,6 +93,9 @@ int parser_record(parser_t *parser, FILE *fp, int target) {
             fwrite(&c, 1, 1, fp);
             c = 0;
             fwrite(&c, 1, 1, fp);
+            end_previous_demo(demo);
+            start_new_demo(demo);
+            fwrite(parser->initial.data, 1, parser->initial.cursize, fp);
             return i;
         }
     }
@@ -104,6 +108,11 @@ FILE *parser_stop_record(parser_t *parser, int id) {
     end_previous_demo(demo);
     demo->fp = NULL;
     return result;
+}
+
+static void record_initial(parser_t *parser, msg_t *source, int size) {
+    read_data(&parser->initial, source->data + source->readcount, size);
+    parser->initial.cursize += size;
 }
 
 static qboolean target_match(int target, qbyte *targets) {
@@ -300,10 +309,11 @@ void parse_message(parser_t *parser, msg_t *msg) {
                 }
                 break;
             case svc_spawnbaseline:
-                prepare_fragment(parser, msg);
-                size = read_delta_entity(msg, read_entity_bits(msg));
+                size = msg->readcount - 1;
+                read_delta_entity(msg, read_entity_bits(msg));
+                size = msg->readcount - size;
                 msg->readcount -= size;
-                record(parser, msg, size, NULL);
+                record_initial(parser, msg, size);
                 msg->readcount += size;
                 break;
             case svc_frame:

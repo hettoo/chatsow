@@ -216,8 +216,7 @@ unsigned read_entity_bits(msg_t *msg) {
     return total;
 }
 
-int read_delta_entity(msg_t *msg, unsigned bits) {
-    int start = msg->readcount;
+void read_delta_entity(msg_t *msg, unsigned bits) {
     qboolean linear_projectile = qfalse;
     short solid = 0;
 
@@ -311,7 +310,6 @@ int read_delta_entity(msg_t *msg, unsigned bits) {
 
 	if( bits & U_TEAM )
 		read_byte( msg );
-    return msg->readcount - start;
 }
 
 int skip_data(msg_t *msg, size_t length) {
