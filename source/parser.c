@@ -64,6 +64,8 @@ void parser_reset(parser_t *parser) {
     for (i = 0; i < MAX_DEMOS; i++)
         parser->demos[i].fp = NULL;
     parser->initial.cursize = 0;
+    for (i = 0; i < MAX_CLIENTS; i++)
+        parser->playernums[i] = i;
     first = qfalse;
 }
 
@@ -215,6 +217,149 @@ static void record_string(parser_t *parser, msg_t *msg, qbyte *targets) {
     record(parser, msg, i - msg->readcount + 1, targets);
 }
 
+static int parse_player_state(msg_t *msg, int old) {
+	int i, b;
+    int result = old;
+
+	int flags = read_byte(msg);
+	if(flags & PS_MOREBITS1) {
+		b = read_byte(msg);
+		flags |= b<<8;
+	}
+	if( flags & PS_MOREBITS2 ) {
+		b = read_byte( msg );
+		flags |= b<<16;
+	}
+	if (flags & PS_MOREBITS3) {
+		b = read_byte( msg );
+		flags |= b<<24;
+	}
+
+	if( flags & PS_M_TYPE )
+		read_byte(msg);
+
+	if( flags & PS_M_ORIGIN0 )
+        read_int3(msg);
+	if( flags & PS_M_ORIGIN1 )
+        read_int3(msg);
+	if( flags & PS_M_ORIGIN2 )
+        read_int3(msg);
+
+	if( flags & PS_M_VELOCITY0 )
+        read_int3(msg);
+	if( flags & PS_M_VELOCITY1 )
+        read_int3(msg);
+	if( flags & PS_M_VELOCITY2 )
+        read_int3(msg);
+
+	if( flags & PS_M_TIME )
+        read_byte(msg);
+
+	if( flags & PS_M_FLAGS )
+        read_short(msg);
+
+	if( flags & PS_M_DELTA_ANGLES0 )
+        read_short(msg);
+	if( flags & PS_M_DELTA_ANGLES1 )
+        read_short(msg);
+	if( flags & PS_M_DELTA_ANGLES2 )
+        read_short(msg);
+
+	if( flags & PS_EVENT ) {
+		int x = read_byte( msg );
+		if( x & EV_INVERSE )
+			read_byte( msg );
+	}
+
+	if( flags & PS_EVENT2 ) {
+		int x = read_byte( msg );
+		if( x & EV_INVERSE )
+			read_byte( msg );
+	}
+
+	if( flags & PS_VIEWANGLES ) {
+        read_short(msg);
+        read_short(msg);
+        read_short(msg);
+	}
+
+	if( flags & PS_M_GRAVITY )
+        read_short(msg);
+
+	if( flags & PS_WEAPONSTATE )
+        read_byte(msg);
+
+	if( flags & PS_FOV )
+        read_byte(msg);
+
+	if( flags & PS_POVNUM )
+        read_byte(msg);
+
+	if( flags & PS_PLAYERNUM )
+		result = read_byte(msg);
+
+	if( flags & PS_VIEWHEIGHT )
+        read_char(msg);
+
+	if( flags & PS_PMOVESTATS ) {
+		int pmstatbits = read_short( msg );
+		for( i = 0; i < PM_STAT_SIZE; i++ ) {
+			if( pmstatbits & ( 1<<i ) )
+				read_short(msg);
+		}
+	}
+
+	if( flags & PS_INVENTORY ) {
+		int invstatbits[SNAP_INVENTORY_LONGS];
+
+		// parse inventory
+		for( i = 0; i < SNAP_INVENTORY_LONGS; i++ )
+			invstatbits[i] = read_long( msg );
+
+		for( i = 0; i < MAX_ITEMS; i++ ) {
+			if( invstatbits[i>>5] & ( 1<<(i&31) ) )
+                read_byte(msg);
+		}
+	}
+
+	if( flags & PS_PLRKEYS )
+        read_byte(msg);
+
+	int statbits[SNAP_STATS_LONGS];
+
+	// parse stats
+	for( i = 0; i < SNAP_STATS_LONGS; i++ )
+		statbits[i] = read_long( msg );
+
+	for( i = 0; i < PS_MAX_STATS; i++ ) {
+		if( statbits[i>>5] & ( 1<<(i&31) ) )
+			read_short( msg );
+	}
+
+    return result;
+}
+
+static void parse_delta_gamestate(msg_t *msg) {
+	qbyte bits = read_byte( msg );
+	short statbits = read_short( msg );
+
+    if( bits ) {
+        int i;
+        for( i = 0; i < MAX_GAME_LONGSTATS; i++ ) {
+            if( bits & ( 1<<i ) )
+                read_long(msg);
+        }
+    }
+
+    if( statbits ) {
+        int i;
+        for( i = 0; i < MAX_GAME_STATS; i++ ) {
+            if( statbits & ( 1<<i ) )
+                read_short(msg);
+        }
+    }
+}
+
 static void parse_frame(parser_t *parser, msg_t *msg) {
     int length = read_short(msg); // length
     int pos = msg->readcount;
@@ -238,6 +383,7 @@ static void parse_frame(parser_t *parser, msg_t *msg) {
 
     read_byte(msg); // svc_gamecommands
     int framediff;
+    static qbyte targets[MAX_CLIENTS / 8];
     while ((framediff = read_short(msg)) != -1) {
         qboolean valid = frame > parser->last_frame + framediff;
         if (valid) {
@@ -248,7 +394,6 @@ static void parse_frame(parser_t *parser, msg_t *msg) {
         int pos = msg->readcount;
         char *cmd = read_string(msg);
         int numtargets = 0;
-        static qbyte targets[MAX_CLIENTS / 8];
         int i;
         for (i = 0; i < MAX_CLIENTS / 8; i++)
             targets[i] = -1;
@@ -285,10 +430,38 @@ static void parse_frame(parser_t *parser, msg_t *msg) {
     msg->readcount -= 2;
     record(parser, msg, 2, NULL);
     msg->readcount += 2;
+
     record(parser, msg, 1, NULL);
     int bytes = read_byte(msg);
-    record(parser, msg, bytes + 1, NULL);
-    skip_data(msg, bytes + 1);
+    record(parser, msg, bytes, NULL);
+    skip_data(msg, bytes);
+
+    int start = msg->readcount;
+    read_byte(msg); // svc_match
+    parse_delta_gamestate(msg);
+    int backup = msg->readcount;
+    msg->readcount = start;
+    record(parser, msg, backup - start, NULL);
+    msg->readcount = backup;
+
+    int cmd;
+    int players = 0;
+    while ((cmd = read_byte(msg)) != 0) { // svc_playerinfo
+        start = msg->readcount - 1;
+        parser->playernums[players] = parse_player_state(msg, parser->playernums[players]);
+        int i;
+        for (i = 0; i < MAX_CLIENTS / 8; i++)
+            targets[i] = -1;
+        targets[0] = parser->playernums[players];
+        backup = msg->readcount;
+        msg->readcount = start;
+        record(parser, msg, backup - start, targets);
+        msg->readcount = backup;
+        players++;
+    }
+    msg->readcount -= 1;
+    record(parser, msg, 1, NULL);
+    msg->readcount += 1;
     record(parser, msg, length - (msg->readcount - pos), NULL);
     skip_data(msg, length - (msg->readcount - pos));
     parser->last_frame = frame;

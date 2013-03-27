@@ -41,6 +41,7 @@ typedef struct parser_s {
     int last_cmd_ack;
     demo_t demos[MAX_DEMOS];
     msg_t initial;
+    int playernums[MAX_CLIENTS];
 } parser_t;
 
 void parser_reset(parser_t *parser);
