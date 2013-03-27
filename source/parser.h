@@ -31,6 +31,7 @@ typedef struct demo_s {
     FILE *fp;
     int target;
     long int start;
+    qboolean waiting;
 } demo_t;
 
 typedef struct parser_s {

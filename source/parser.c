@@ -96,10 +96,23 @@ int parser_record(parser_t *parser, FILE *fp, int target) {
             end_previous_demo(demo);
             start_new_demo(demo);
             fwrite(parser->initial.data, 1, parser->initial.cursize, fp);
+            c = svc_servercs;
+            fwrite(&c, 1, 1, fp);
+            key = "precache";
+            fwrite(key, 1, strlen(key) + 1, fp);
+            demo->waiting = qtrue;
             return i;
         }
     }
     return -1;
+}
+
+static void start_demos(parser_t *parser) {
+    int i;
+    for (i = 0; i < MAX_DEMOS; i++) {
+        if (parser->demos[i].fp)
+            parser->demos[i].waiting = qfalse;
+    }
 }
 
 FILE *parser_stop_record(parser_t *parser, int id) {
@@ -128,7 +141,7 @@ static qboolean target_match(int target, qbyte *targets) {
 static void record(parser_t *parser, msg_t *msg, int size, qbyte *targets) {
     int i;
     for (i = 0; i < MAX_DEMOS; i++) {
-        if (parser->demos[i].fp && target_match(parser->demos[i].target, targets))
+        if (parser->demos[i].fp && !parser->demos[i].waiting && target_match(parser->demos[i].target, targets))
             fwrite(msg->data + msg->readcount, 1, size, parser->demos[i].fp);
     }
 }
@@ -136,7 +149,7 @@ static void record(parser_t *parser, msg_t *msg, int size, qbyte *targets) {
 static void record_multipov(parser_t *parser, msg_t *msg, int size) {
     int i;
     for (i = 0; i < MAX_DEMOS; i++) {
-        if (parser->demos[i].fp && parser->demos[i].target == -1)
+        if (parser->demos[i].fp && !parser->demos[i].waiting && parser->demos[i].target == -1)
             fwrite(msg->data + msg->readcount, 1, size, parser->demos[i].fp);
     }
 }
@@ -145,7 +158,7 @@ static void record_frameflags(parser_t *parser, msg_t *msg) {
     int i;
     qbyte b = msg->data[msg->readcount];
     for (i = 0; i < MAX_DEMOS; i++) {
-        if (parser->demos[i].fp) {
+        if (parser->demos[i].fp && !parser->demos[i].waiting) {
             if (parser->demos[i].target < 0)
                 b |= FRAMESNAP_FLAG_MULTIPOV;
             else
@@ -175,15 +188,23 @@ static void record_string(parser_t *parser, msg_t *msg, qbyte *targets) {
 }
 
 static void parse_frame(parser_t *parser, msg_t *msg) {
-    record(parser, msg, 18, NULL);
     int length = read_short(msg); // length
     int pos = msg->readcount;
     read_long(msg); // serverTime
     int frame = read_long(msg);
     read_long(msg); // delta frame number
     read_long(msg); // ucmd executed
-    record_frameflags(parser, msg);
     int flags = read_byte(msg);
+    if (!(flags & FRAMESNAP_FLAG_DELTA)) {
+        start_demos(parser);
+        msg->readcount -= 1;
+        msg->readcount -= 18;
+        prepare_fragment(parser, msg);
+        record(parser, msg, 18, NULL);
+        msg->readcount += 18;
+        record_frameflags(parser, msg);
+        msg->readcount += 1;
+    }
     record(parser, msg, 2, NULL);
     read_byte(msg); // suppresscount
 
@@ -312,7 +333,6 @@ void parse_message(parser_t *parser, msg_t *msg) {
                 msg->readcount += size;
                 break;
             case svc_frame:
-                prepare_fragment(parser, msg);
                 parse_frame(parser, msg);
                 break;
             case -1:
