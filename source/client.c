@@ -483,7 +483,7 @@ void cmd_record() {
         char *name = path("demos/%s.wd%d", cmd_argv(1), PROTOCOL);
         ui_output(c->id, "Recording to %s\n", name);
         FILE *fp = fopen(name, "w");
-        r = parser_record(&c->parser, fp, cmd_argc() > 2 ? atoi(cmd_argv(1)) : -1);
+        r = parser_record(&c->parser, fp, cmd_argc() > 2 ? atoi(cmd_argv(2)) : -1);
     }
 }
 
