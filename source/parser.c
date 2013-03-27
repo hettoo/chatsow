@@ -133,6 +133,20 @@ static void record_multipov(parser_t *parser, msg_t *msg, int size) {
     }
 }
 
+static void record_frameflags(parser_t *parser, msg_t *msg) {
+    int i;
+    qbyte b = msg->data[msg->readcount];
+    for (i = 0; i < MAX_DEMOS; i++) {
+        if (parser->demos[i].fp) {
+            if (parser->demos[i].target < 0)
+                b |= FRAMESNAP_FLAG_MULTIPOV;
+            else
+                b &= ~FRAMESNAP_FLAG_MULTIPOV;
+            fwrite(&b, 1, 1, parser->demos[i].fp);
+        }
+    }
+}
+
 static void record_last(parser_t *parser, msg_t *msg, qbyte *targets) {
     msg->readcount--;
     record(parser, msg, 1, targets);
@@ -153,14 +167,16 @@ static void record_string(parser_t *parser, msg_t *msg, qbyte *targets) {
 }
 
 static void parse_frame(parser_t *parser, msg_t *msg) {
-    record(parser, msg, 22, NULL);
+    record(parser, msg, 18, NULL);
     int length = read_short(msg); // length
     int pos = msg->readcount;
     read_long(msg); // serverTime
     int frame = read_long(msg);
     read_long(msg); // delta frame number
     read_long(msg); // ucmd executed
+    record_frameflags(parser, msg);
     int flags = read_byte(msg);
+    record(parser, msg, 4, NULL);
     read_byte(msg); // suppresscount
 
     read_byte(msg); // svc_gamecommands
@@ -198,7 +214,7 @@ static void parse_frame(parser_t *parser, msg_t *msg) {
         }
         if (valid) {
             execute(parser->client, cmd, targets, numtargets);
-            record(parser, msg, 1, NULL);
+            record(parser, msg, 2, NULL);
         }
     }
     record(parser, msg, length - (msg->readcount - pos), NULL);
