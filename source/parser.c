@@ -139,6 +139,7 @@ int parser_record(parser_t *parser, FILE *fp, int target) {
             key = "precache";
             fwrite(key, 1, strlen(key) + 1, fp);
             demo->waiting = qtrue;
+            client_command(parser->client, "nodelta");
             return i;
         }
     }
@@ -160,12 +161,7 @@ static void record_initial(parser_t *parser, msg_t *source, int size) {
 static qboolean target_match(int target, qbyte *targets) {
     if (target == -1 || targets == NULL)
         return qtrue;
-    int i;
-    for (i = 0; i < MAX_CLIENTS / 8; i++) {
-        if (targets[i] == target)
-            return qtrue;
-    }
-    return qfalse;
+    return (targets[target >> 3] & (1 << (target & 7))) > 0;
 }
 
 static void record(parser_t *parser, msg_t *msg, int size, qbyte *targets) {
@@ -396,7 +392,7 @@ static void parse_frame(parser_t *parser, msg_t *msg) {
         int numtargets = 0;
         int i;
         for (i = 0; i < MAX_CLIENTS / 8; i++)
-            targets[i] = -1;
+            targets[i] = 0;
         if (flags & FRAMESNAP_FLAG_MULTIPOV) {
             int a = msg->readcount;
             numtargets = read_byte(msg);
@@ -451,8 +447,8 @@ static void parse_frame(parser_t *parser, msg_t *msg) {
         parser->playernums[players] = parse_player_state(msg, parser->playernums[players]);
         int i;
         for (i = 0; i < MAX_CLIENTS / 8; i++)
-            targets[i] = -1;
-        targets[0] = parser->playernums[players];
+            targets[i] = 0;
+        targets[parser->playernums[players] >> 3] |= 1 << (parser->playernums[players] & 7);
         backup = msg->readcount;
         msg->readcount = start;
         record(parser, msg, backup - start, targets);

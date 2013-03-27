@@ -756,13 +756,7 @@ void demoinfo_value(int id, char *value) {
 void execute(int id, char *cmd, qbyte *targets, int target_count) {
     client_t *c = clients + id;
     if (target_count > 0) {
-        int i;
-        qboolean found = qfalse;
-        for (i = 0; i < target_count; i++) {
-            if (targets[i] == c->playernum)
-                found = qtrue;
-        }
-        if (!found)
+        if (!(targets[c->playernum >> 3] & (1 << (c->playernum & 7))))
             return;
     }
     cmd_execute_from_server(id, cmd);
