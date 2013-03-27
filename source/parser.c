@@ -364,17 +364,17 @@ static void parse_frame(parser_t *parser, msg_t *msg) {
     read_long(msg); // delta frame number
     read_long(msg); // ucmd executed
     int flags = read_byte(msg);
-    if (!(flags & FRAMESNAP_FLAG_DELTA)) {
+    if (!(flags & FRAMESNAP_FLAG_DELTA))
         start_demos(parser);
-        msg->readcount -= 1;
-        msg->readcount -= 18;
-        prepare_fragment(parser, msg);
-        record(parser, msg, 18, NULL);
-        msg->readcount += 18;
-        record_frameflags(parser, msg);
-        msg->readcount += 1;
-    }
+    msg->readcount -= 1;
+    msg->readcount -= 18;
+    prepare_fragment(parser, msg);
+    record(parser, msg, 18, NULL);
+    msg->readcount += 18;
+    record_frameflags(parser, msg);
+    msg->readcount += 1;
     record(parser, msg, 2, NULL);
+
     read_byte(msg); // suppresscount
 
     read_byte(msg); // svc_gamecommands
