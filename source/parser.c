@@ -111,8 +111,7 @@ FILE *parser_stop_record(parser_t *parser, int id) {
 }
 
 static void record_initial(parser_t *parser, msg_t *source, int size) {
-    read_data(&parser->initial, source->data + source->readcount, size);
-    parser->initial.cursize += size;
+    write_data(&parser->initial, source->data + source->readcount, size);
 }
 
 static qboolean target_match(int target, qbyte *targets) {
@@ -284,29 +283,25 @@ void parse_message(parser_t *parser, msg_t *msg) {
                 execute(parser->client, read_string(msg), NULL, 0);
                 break;
             case svc_serverdata:
-                prepare_fragment(parser, msg);
-                record(parser, msg, 10, NULL);
+                size = msg->readcount - 1;
                 set_protocol(parser->client, read_long(msg));
                 set_spawn_count(parser->client, read_long(msg));
                 read_short(msg); // snap frametime
-                record_string(parser, msg, NULL);
                 read_string(msg); // base game
-                record_string(parser, msg, NULL);
                 set_game(parser->client, read_string(msg));
-                record(parser, msg, 2, NULL);
                 set_playernum(parser->client, read_short(msg) + 1);
-                record_string(parser, msg, NULL);
                 set_level(parser->client, read_string(msg)); // level name
-                record(parser, msg, 3, NULL);
                 set_bitflags(parser->client, read_byte(msg));
                 int pure = read_short(msg);
                 while (pure > 0) {
-                    record_string(parser, msg, NULL);
                     read_string(msg); // pure pk3 name
-                    record(parser, msg, 4, NULL);
                     read_long(msg); // checksum
                     pure--;
                 }
+                size = msg->readcount - size;
+                msg->readcount -= size;
+                record_initial(parser, msg, size);
+                msg->readcount += size;
                 break;
             case svc_spawnbaseline:
                 size = msg->readcount - 1;
