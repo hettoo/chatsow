@@ -614,7 +614,6 @@ static void cmd_replay() {
         force_disconnect(c);
         c->playernum = atoi(cmd_argv(2));
         parse_demo(&c->parser, fp);
-        fclose(fp);
         reset(c);
     } else {
         ui_output(c->id, "Demo not found\n");

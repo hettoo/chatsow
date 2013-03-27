@@ -48,6 +48,6 @@ void parser_reset(parser_t *parser);
 void parse_message(parser_t *parser, msg_t *msg);
 void parse_demo(parser_t *parser, FILE *fp);
 int parser_record(parser_t *parser, FILE *fp, int target);
-FILE *parser_stop_record(parser_t *parser, int id);
+void parser_stop_record(parser_t *parser, int id);
 
 #endif

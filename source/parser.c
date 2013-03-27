@@ -33,24 +33,19 @@ static void end_previous_demo(demo_t *demo) {
     fseek(demo->fp, backup, SEEK_SET);
 }
 
-FILE *parser_stop_record(parser_t *parser, int id) {
+void parser_stop_record(parser_t *parser, int id) {
     demo_t *demo = parser->demos + id;
-    FILE *result = demo->fp;
-    if (result != NULL) {
+    if (demo->fp != NULL) {
         end_previous_demo(demo);
+        fclose(demo->fp);
         demo->fp = NULL;
     }
-    return result;
 }
 
 static void terminate_demos(parser_t *parser) {
     int i;
-    for (i = 0; i < MAX_DEMOS; i++) {
-        if (parser->demos[i].fp) {
-            fclose(parser->demos[i].fp);
-            parser_stop_record(parser, i);
-        }
-    }
+    for (i = 0; i < MAX_DEMOS; i++)
+        parser_stop_record(parser, i);
 }
 
 void parser_reset(parser_t *parser) {
