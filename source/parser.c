@@ -176,13 +176,18 @@ static void parse_frame(parser_t *parser, msg_t *msg) {
     read_long(msg); // ucmd executed
     record_frameflags(parser, msg);
     int flags = read_byte(msg);
-    record(parser, msg, 4, NULL);
+    record(parser, msg, 2, NULL);
     read_byte(msg); // suppresscount
 
     read_byte(msg); // svc_gamecommands
     int framediff;
     while ((framediff = read_short(msg)) != -1) {
         qboolean valid = frame > parser->last_frame + framediff;
+        if (valid) {
+            msg->readcount -= 2;
+            record(parser, msg, 2, NULL);
+            msg->readcount += 2;
+        }
         int pos = msg->readcount;
         char *cmd = read_string(msg);
         int numtargets = 0;
@@ -209,14 +214,15 @@ static void parse_frame(parser_t *parser, msg_t *msg) {
             int real = msg->readcount;
             msg->readcount = pos;
             if (valid)
-                record_string(parser, msg, targets);
+                record_string(parser, msg, NULL);
             msg->readcount = real;
         }
-        if (valid) {
+        if (valid)
             execute(parser->client, cmd, targets, numtargets);
-            record(parser, msg, 2, NULL);
-        }
     }
+    msg->readcount -= 2;
+    record(parser, msg, 2, NULL);
+    msg->readcount += 2;
     record(parser, msg, length - (msg->readcount - pos), NULL);
     skip_data(msg, length - (msg->readcount - pos));
     parser->last_frame = frame;
