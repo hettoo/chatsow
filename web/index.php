@@ -56,6 +56,11 @@ function import_child_page($child, $header = true) {
 	import_page($page);
 }
 
+function resource_url($target) {
+    global $base;
+    return $base . $target;
+}
+
 function url($target, $level = 0, $rootify = true) {
 	global $base, $args, $hierarchy;
 	$result = $base . $args[0];

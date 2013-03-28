@@ -100,22 +100,8 @@ function format_player($name, $id = 0) {
 	return $id > 0 ? colored($name, 'players/' . $id) : color($name);
 }
 
-function format_gametype($name) {
-	return '<a href="' . url('stats/' . $name) . '">' . $name . '</a>';
-}
-
-function format_server($id) {
-	global $servers;
-	$server = $servers[$id];
-	$result = $servers[$id];
-	if (is_array($result))
-		$result = $result[0];
-	$result = color($result);
-	return $result;
-}
-
-function format_award($name, $id = 0) {
-	return $id > 0 ? colored($name, 'stats/awards/' . $id) : color($name);
+function format_map($name) {
+    return '<a href="' . resource_url("demos/$name.wd15") . '">' . htmlentities($name) . '</a>';
 }
 
 function format_date($time) {
