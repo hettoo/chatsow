@@ -755,7 +755,18 @@ void demoinfo_value(int id, char *value) {
 
 void execute(int id, char *cmd, qbyte *targets, int target_count) {
     client_t *c = clients + id;
-    if (target_count > 0 && !(targets[(c->playernum - 1) >> 3] & (1 << ((c->playernum - 1) & 7))))
+    if (target_count > 0 && !(targets[(c->playernum - 1) >> 3] & (1 << ((c->playernum - 1) & 7)))) {
+        static char final[MAX_ARGS_SIZE];
+        int length = 0;
+        length += sprintf(final + length, "external %d", target_count);
+        int i;
+        for (i = 0; i < MAX_CLIENTS; i++) {
+            if (targets[(c->playernum - 1) >> 3] & (1 << ((c->playernum - 1) & 7)))
+                length += sprintf(final + length, " %d", i);
+        }
+        sprintf(final + length, " %s", cmd);
+        cmd_execute_event(id, final);
         return;
+    }
     cmd_execute_from_server(id, cmd);
 }
