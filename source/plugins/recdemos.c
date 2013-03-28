@@ -32,27 +32,34 @@ static int test = 0;
 
 static int indices[CLIENTS][MAX_CLIENTS];
 
+static void start(int c, int t) {
+    FILE *fp = fopen(trap->path("demos/runs/%d_%d_%d.wd%d", c, t, test, PROTOCOL), "w");
+    trap->ui_output(c, "Start recording for %d\n", t);
+    indices[c][t] = trap->client_record(trap->cmd_client(), fp, t);
+    test++;
+}
+
+static void stop(int c, int t) {
+    trap->ui_output(c, "Stop recording for %d\n", t);
+    trap->client_stop_record(c, indices[c][t]);
+    indices[c][t] = -1;
+}
+
 static void cmd_external() {
     int target_bytes = atoi(trap->cmd_argv(1));
     int target_bits = target_bytes * 8;
     if (!strcmp(trap->cmd_argv(2 + target_bytes), "dstart")) {
         int i;
         for (i = 0; i < target_bits; i++) {
-            if ((atoi(trap->cmd_argv(2 + (i >> 3))) & (1 << (i & 7)))) {
-                FILE *fp = fopen(trap->path("demos/runs/%d_%d_%d.wd%d", trap->cmd_client(), i, test, PROTOCOL), "w");
-                trap->ui_output(cmd_client(), "Start recording for %d\n", i);
-                indices[trap->cmd_client()][i] = trap->client_record(trap->cmd_client(), fp, i);
-                test++;
-            }
+            if ((atoi(trap->cmd_argv(2 + (i >> 3))) & (1 << (i & 7))))
+                start(trap->cmd_client(), i);
         }
     }
     if (!strcmp(trap->cmd_argv(2 + target_bytes), "dcancel") || !strcmp(trap->cmd_argv(2 + target_bytes), "dcancel")) {
         int i;
         for (i = 0; i < target_bits; i++) {
             if ((atoi(trap->cmd_argv(2 + (i >> 3))) & (1 << (i & 7))) && indices[trap->cmd_client()][i] != -1)
-                trap->ui_output(cmd_client(), "Stop recording for %d\n", i);
-                trap->client_stop_record(trap->cmd_client(), indices[trap->cmd_client()][i]);
-                indices[trap->cmd_client()][i] = -1;
+                stop(trap->cmd_client(), i);
         }
     }
 }
@@ -76,11 +83,8 @@ void shutdown() {
     for (i = 0; i < CLIENTS; i++) {
         int j;
         for (j = 0; j < MAX_CLIENTS; j++) {
-            if (indices[i][j] != -1) {
-                trap->ui_output(i, "Stop recording for %d\n", j);
-                trap->client_stop_record(i, indices[i][j]);
-                indices[i][j] = -1;
-            }
+            if (indices[i][j] != -1)
+                stop(i, j);
         }
     }
     trap->cmd_remove(cmd_index);
