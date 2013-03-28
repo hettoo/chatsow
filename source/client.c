@@ -85,6 +85,8 @@ typedef struct client_s {
     char game[MAX_STRING_CHARS];
     char level[MAX_STRING_CHARS];
 
+    int demo;
+
     command_buffer_t buffers[COMMAND_BUFFER];
     int buffer_count;
 } client_t;
@@ -108,6 +110,8 @@ static void reset(client_t *c) {
     c->motd[0] = '\0';
     c->game[0] = '\0';
     c->level[0] = '\0';
+
+    c->demo = -1;
 
     c->buffer_count = 0;
 
@@ -484,23 +488,21 @@ void cmd_clc() {
     client_send(c);
 }
 
-static int r = -1;
-
 void cmd_record() {
     client_t *c = clients + cmd_client();
-    if (r == -1) {
+    if (c->demo < 0) {
         char *name = path("demos/%s.wd%d", cmd_argv(1), PROTOCOL);
         ui_output(c->id, "Recording to %s\n", name);
         FILE *fp = fopen(name, "w");
-        r = parser_record(&c->parser, fp, cmd_argc() > 2 ? atoi(cmd_argv(2)) : -1);
+        c->demo = parser_record(&c->parser, fp, cmd_argc() > 2 ? atoi(cmd_argv(2)) : -1);
     }
 }
 
 void cmd_stop() {
     client_t *c = clients + cmd_client();
-    if (r != -1)
-        parser_stop_record(&c->parser, r);
-    r = -1;
+    if (c->demo >= 0)
+        parser_stop_record(&c->parser, c->demo);
+    c->demo = -1;
 }
 
 void cmd_precache() {
