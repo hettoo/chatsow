@@ -46,9 +46,11 @@ void frame() {
                 fprintf(fp, "%s\n", trap->get_level(i));
                 int j;
                 for (j = 1; j <= MAX_CLIENTS; j++) {
-                    char *name = player_name(cs, j);
-                    if (name && *name)
-                        fprintf(fp, "%s\n", name);
+                    if (trap->get_playernum(i) != j) {
+                        char *name = player_name(cs, j);
+                        if (name && *name)
+                            fprintf(fp, "%s\n", name);
+                    }
                 }
                 fprintf(fp, "\n");
             }
