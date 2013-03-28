@@ -1,0 +1,5 @@
+<?php
+
+$shared['head'] = 'Players';
+
+?>
