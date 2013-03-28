@@ -77,6 +77,8 @@ void init(char *location) {
     trap.get_level = get_level;
     trap.get_host = get_host;
     trap.get_port = get_port;
+    trap.client_record = client_record;
+    trap.client_stop_record = client_stop_record;
 
     trap.cmd_execute = cmd_execute;
     trap.cmd_execute_public = cmd_execute_public;

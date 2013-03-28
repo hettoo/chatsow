@@ -153,16 +153,17 @@ static void record_initial(parser_t *parser, msg_t *source, int size) {
     write_data(&parser->initial, source->data + source->readcount, size);
 }
 
-static qboolean target_match(int target, qbyte *targets) {
+static qboolean target_match(parser_t *parser, int target, qbyte *targets) {
     if (target == -1 || targets == NULL)
         return qtrue;
+    target = parser->playernums[target];
     return (targets[target >> 3] & (1 << (target & 7))) > 0;
 }
 
 static void record(parser_t *parser, msg_t *msg, int size, qbyte *targets) {
     int i;
     for (i = 0; i < MAX_DEMOS; i++) {
-        if (parser->demos[i].fp && !parser->demos[i].waiting && target_match(parser->demos[i].target, targets))
+        if (parser->demos[i].fp && !parser->demos[i].waiting && target_match(parser, parser->demos[i].target, targets))
             fwrite(msg->data + msg->readcount, 1, size, parser->demos[i].fp);
     }
 }

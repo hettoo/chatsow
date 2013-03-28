@@ -133,6 +133,14 @@ cs_t *client_cs(int id) {
     return &clients[id].cs;
 }
 
+int client_record(int id, FILE *fp, int target) {
+    return parser_record(&clients[id].parser, fp, target);
+}
+
+void client_stop_record(int id, int demo_id) {
+    parser_stop_record(&clients[id].parser, demo_id);
+}
+
 qboolean client_active(int id) {
     return clients[id].state > CA_DISCONNECTED;
 }
@@ -759,7 +767,7 @@ void execute(int id, char *cmd, qbyte *targets) {
         static char final[MAX_ARGS_SIZE];
         int length = 0;
         int i;
-        int numtargets;
+        int numtargets = 0;
         for (i = 0; i < MAX_CLIENTS / 8; i++) {
             if (targets[i])
                 numtargets = i + 1;

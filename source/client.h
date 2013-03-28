@@ -21,7 +21,10 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #ifndef WRLC_CLIENT_H
 #define WRLC_CLIENT_H
 
+#include <stdio.h>
+
 #include "import.h"
+#include "parser.h"
 #include "ui.h"
 #include "cs.h"
 
@@ -40,6 +43,9 @@ void client_say_team(int id, char *format, ...);
 cs_t *client_cs(int id);
 int player_suggest(int id, char *cmd, char suggestions[][MAX_SUGGESTION_SIZE]);
 void disconnect(int id);
+
+int client_record(int id, FILE *fp, int target);
+void client_stop_record(int id, int demo_id);
 
 void demoinfo_key(int id, char *key);
 void demoinfo_value(int id, char *value);

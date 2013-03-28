@@ -34,7 +34,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "client.h"
 #include "ui.h"
 
-#define MAX_BUFFER_SIZE 1024
+#define MAX_BUFFER_SIZE 2048
 #define MAX_OUTPUT_LENGTH 256
 #define OUTPUT_PREFIX_LENGTH 6
 #define MAX_INPUT_LENGTH 256

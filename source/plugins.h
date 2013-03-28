@@ -22,6 +22,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define WRLC_PLUGINS_H
 
 #include "cs.h"
+#include "parser.h"
 
 typedef struct plugin_interface_s {
     char *(*path)(char *format, ...);
@@ -37,6 +38,8 @@ typedef struct plugin_interface_s {
     char *(*get_level)(int id);
     char *(*get_host)(int id);
     int (*get_port)(int id);
+    int (*client_record)(int id, FILE *fp, int target);
+    void (*client_stop_record)(int id, int demo_id);
 
     void (*cmd_execute)(int c, char *cmd);
     void (*cmd_execute_public)(int c, int caller, char *cmd);
