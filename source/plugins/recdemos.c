@@ -72,5 +72,16 @@ void frame() {
 }
 
 void shutdown() {
+    int i;
+    for (i = 0; i < CLIENTS; i++) {
+        int j;
+        for (j = 0; j < MAX_CLIENTS; j++) {
+            if (indices[i][j] != -1) {
+                trap->ui_output(i, "Stop recording for %d\n", j);
+                trap->client_stop_record(i, indices[i][j]);
+                indices[i][j] = -1;
+            }
+        }
+    }
     trap->cmd_remove(cmd_index);
 }

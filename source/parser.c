@@ -33,19 +33,39 @@ static void end_previous_demo(demo_t *demo) {
     fseek(demo->fp, backup, SEEK_SET);
 }
 
-void parser_stop_record(parser_t *parser, int id) {
+static void parser_stop_record_real(parser_t *parser, int id, qboolean force) {
     demo_t *demo = parser->demos + id;
     if (demo->fp != NULL) {
-        end_previous_demo(demo);
-        fclose(demo->fp);
-        demo->fp = NULL;
+        if (force) {
+            end_previous_demo(demo);
+            fclose(demo->fp);
+            demo->fp = NULL;
+        } else {
+            demo->finishing = qtrue;
+        }
     }
+}
+
+static void end_finishing_demos(parser_t *parser) {
+    int i;
+    for (i = 0; i < MAX_DEMOS; i++) {
+        demo_t *demo = parser->demos + i;
+        if (demo->fp && demo->finishing) {
+            end_previous_demo(demo);
+            fclose(demo->fp);
+            demo->fp = NULL;
+        }
+    }
+}
+
+void parser_stop_record(parser_t *parser, int id) {
+    parser_stop_record_real(parser, id, qfalse);
 }
 
 static void terminate_demos(parser_t *parser) {
     int i;
     for (i = 0; i < MAX_DEMOS; i++)
-        parser_stop_record(parser, i);
+        parser_stop_record_real(parser, i, qtrue);
 }
 
 void parser_reset(parser_t *parser) {
@@ -134,6 +154,7 @@ int parser_record(parser_t *parser, FILE *fp, int target) {
             key = "precache";
             fwrite(key, 1, strlen(key) + 1, fp);
             demo->waiting = qtrue;
+            demo->finishing = qfalse;
             client_command(parser->client, "nodelta");
             return i;
         }
@@ -465,6 +486,7 @@ void parse_message(parser_t *parser, msg_t *msg) {
     int ack;
     int size;
     while (1) {
+        end_finishing_demos(parser);
         cmd = read_byte(msg);
         switch (cmd) {
             case svc_demoinfo:

@@ -32,6 +32,7 @@ typedef struct demo_s {
     int target;
     long int start;
     qboolean waiting;
+    qboolean finishing;
 } demo_t;
 
 typedef struct parser_s {
