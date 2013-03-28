@@ -413,7 +413,7 @@ static void parse_frame(parser_t *parser, msg_t *msg) {
             msg->readcount = real;
         }
         if (valid)
-            execute(parser->client, cmd, targets, numtargets);
+            execute(parser->client, cmd, numtargets ? targets : NULL);
     }
     msg->readcount -= 2;
     record(parser, msg, 2, NULL);
@@ -503,7 +503,7 @@ void parse_message(parser_t *parser, msg_t *msg) {
                 if (cmd == svc_servercs)
                     prepare_fragment(parser, msg);
                 record_string(parser, msg, NULL);
-                execute(parser->client, read_string(msg), NULL, 0);
+                execute(parser->client, read_string(msg), NULL);
                 break;
             case svc_serverdata:
                 size = msg->readcount - 1;

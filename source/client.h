@@ -43,7 +43,7 @@ void disconnect(int id);
 
 void demoinfo_key(int id, char *key);
 void demoinfo_value(int id, char *value);
-void execute(int id, char *cmd, qbyte *targets, int target_count);
+void execute(int id, char *cmd, qbyte *targets);
 
 void set_protocol(int id, int new_protocol);
 void set_spawn_count(int id, int new_spawn_count);

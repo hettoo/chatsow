@@ -753,17 +753,20 @@ void demoinfo_value(int id, char *value) {
     ui_output(id, "demoinfo value %s\n", value);
 }
 
-void execute(int id, char *cmd, qbyte *targets, int target_count) {
+void execute(int id, char *cmd, qbyte *targets) {
     client_t *c = clients + id;
-    if (target_count > 0 && !(targets[(c->playernum - 1) >> 3] & (1 << ((c->playernum - 1) & 7)))) {
+    if (targets && !(targets[(c->playernum - 1) >> 3] & (1 << ((c->playernum - 1) & 7)))) {
         static char final[MAX_ARGS_SIZE];
         int length = 0;
-        length += sprintf(final + length, "external %d", target_count);
         int i;
-        for (i = 0; i < MAX_CLIENTS; i++) {
-            if (targets[(c->playernum - 1) >> 3] & (1 << ((c->playernum - 1) & 7)))
-                length += sprintf(final + length, " %d", i);
+        int numtargets;
+        for (i = 0; i < MAX_CLIENTS / 8; i++) {
+            if (targets[i])
+                numtargets = i + 1;
         }
+        length += sprintf(final + length, "external %d", numtargets);
+        for (i = 0; i < numtargets; i++)
+            length += sprintf(final + length, " %d", targets[i]);
         sprintf(final + length, " %s", cmd);
         cmd_execute_event(id, final);
         return;
