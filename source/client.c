@@ -759,7 +759,7 @@ void execute(int id, char *cmd, qbyte *targets) {
         static char final[MAX_ARGS_SIZE];
         int length = 0;
         int i;
-        int numtargets;
+        int numtargets = 0;
         for (i = 0; i < MAX_CLIENTS / 8; i++) {
             if (targets[i])
                 numtargets = i + 1;
