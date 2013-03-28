@@ -753,9 +753,7 @@ void demoinfo_value(int id, char *value) {
 
 void execute(int id, char *cmd, qbyte *targets, int target_count) {
     client_t *c = clients + id;
-    if (target_count > 0) {
-        if (!(targets[c->playernum >> 3] & (1 << (c->playernum & 7))))
-            return;
-    }
+    if (target_count > 0 && !(targets[(c->playernum - 1) >> 3] & (1 << ((c->playernum - 1) & 7))))
+        return;
     cmd_execute_from_server(id, cmd);
 }
