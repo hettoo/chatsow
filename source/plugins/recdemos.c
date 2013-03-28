@@ -24,25 +24,79 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "../client.h"
 #include "../utils.h"
 
+#define RECBUFFER 3
+#define POSTRUN_TIME 8000
+
+typedef struct recdemo_s {
+    int id;
+    qboolean stopped;
+    qboolean record;
+    signed int stop_time;
+} recdemo_t;
+
+typedef struct manager_s {
+    recdemo_t demos[RECBUFFER];
+    int current;
+} manager_t;
+
 plugin_interface_t *trap;
 
 static int cmd_index;
 
-static int test = 0;
+static manager_t demos[CLIENTS][MAX_CLIENTS];
 
-static int indices[CLIENTS][MAX_CLIENTS];
-
-static void start(int c, int t) {
-    FILE *fp = fopen(trap->path("demos/runs/%d_%d_%d.wd%d", c, t, test, PROTOCOL), "w");
-    trap->ui_output(c, "Start recording for %d\n", t);
-    indices[c][t] = trap->client_record(trap->cmd_client(), fp, t);
-    test++;
+static void stop(int c, int t, int d) {
+    trap->client_stop_record(c, demos[c][t].demos[d].id);
+    demos[c][t].demos[d].id = -1;
 }
 
-static void stop(int c, int t) {
-    trap->ui_output(c, "Stop recording for %d\n", t);
-    trap->client_stop_record(c, indices[c][t]);
-    indices[c][t] = -1;
+static void schedule_stop(int c, int t) {
+    manager_t *manager = &demos[c][t];
+    if (manager->current == -1)
+        return;
+    recdemo_t *demo = manager->demos + manager->current;
+    if (demo->id == -1 || demo->stopped)
+        return;
+    demo->stopped = qtrue;
+    demo->stop_time = millis();
+}
+
+static void start(int c, int t) {
+    manager_t *manager = &demos[c][t];
+    schedule_stop(c, t);
+    int i;
+    recdemo_t *demo = NULL;
+    for (i = 0; i < RECBUFFER; i++) {
+        if (manager->demos[i].id == -1) {
+            manager->current = i;
+            demo = manager->demos + i;
+            break;
+        }
+    }
+    if (demo == NULL) {
+        manager->current = (manager->current + 1) % RECBUFFER;
+        demo = manager->demos + manager->current;
+    }
+    demo->stopped = qfalse;
+    FILE *fp = fopen(trap->path("demos/runs/%d_%d_%d.wd%d", c, t, manager->current, PROTOCOL), "w");
+    demo->id = trap->client_record(trap->cmd_client(), fp, t);
+}
+
+void frame() {
+    signed int time = millis();
+    int i;
+    for (i = 0; i < CLIENTS; i++) {
+        int j;
+        for (j = 0; j < MAX_CLIENTS; j++) {
+            manager_t *manager = &demos[i][j];
+            int k;
+            for (k = 0; k < RECBUFFER; k++) {
+                recdemo_t *demo = manager->demos + k;
+                if (demo->id >= 0 && demo->stopped && time >= demo->stop_time + POSTRUN_TIME)
+                    stop(i, j, k);
+            }
+        }
+    }
 }
 
 static void cmd_external() {
@@ -55,13 +109,6 @@ static void cmd_external() {
                 start(trap->cmd_client(), i);
         }
     }
-    if (!strcmp(trap->cmd_argv(2 + target_bytes), "dcancel") || !strcmp(trap->cmd_argv(2 + target_bytes), "dcancel")) {
-        int i;
-        for (i = 0; i < target_bits; i++) {
-            if ((atoi(trap->cmd_argv(2 + (i >> 3))) & (1 << (i & 7))) && indices[trap->cmd_client()][i] != -1)
-                stop(trap->cmd_client(), i);
-        }
-    }
 }
 
 void init(plugin_interface_t *new_trap) {
@@ -70,12 +117,14 @@ void init(plugin_interface_t *new_trap) {
     int i;
     for (i = 0; i < CLIENTS; i++) {
         int j;
-        for (j = 0; j < MAX_CLIENTS; j++)
-            indices[i][j] = -1;
+        for (j = 0; j < MAX_CLIENTS; j++) {
+            manager_t *manager = &demos[i][j];
+            manager->current = -1;
+            int k;
+            for (k = 0; k < RECBUFFER; k++)
+                manager->demos[k].id = -1;
+        }
     }
-}
-
-void frame() {
 }
 
 void shutdown() {
@@ -83,8 +132,12 @@ void shutdown() {
     for (i = 0; i < CLIENTS; i++) {
         int j;
         for (j = 0; j < MAX_CLIENTS; j++) {
-            if (indices[i][j] != -1)
-                stop(i, j);
+            manager_t *manager = &demos[i][j];
+            int k;
+            for (k = 0; k < RECBUFFER; k++) {
+                if (manager->demos[k].id != -1)
+                    stop(i, j, k);
+            }
         }
     }
     trap->cmd_remove(cmd_index);
