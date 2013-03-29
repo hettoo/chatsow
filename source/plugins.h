@@ -39,7 +39,7 @@ typedef struct plugin_interface_s {
     char *(*get_host)(int id);
     int (*get_port)(int id);
     int (*client_record)(int id, FILE *fp, int target);
-    void (*client_stop_record)(int id, int demo_id);
+    void (*client_stop_record)(int id, int demo_id, void (*save)(int id, int client, int target));
 
     void (*cmd_execute)(int c, char *cmd);
     void (*cmd_execute_public)(int c, int caller, char *cmd);

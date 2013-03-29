@@ -33,15 +33,23 @@ static void end_previous_demo(demo_t *demo) {
     fseek(demo->fp, backup, SEEK_SET);
 }
 
-static void parser_stop_record_real(parser_t *parser, int id, qboolean force) {
+static void parser_terminate_record(parser_t *parser, int id) {
+    demo_t *demo = parser->demos + id;
+    end_previous_demo(demo);
+    fclose(demo->fp);
+    if (demo->save)
+        demo->save(id, parser->client, demo->target);
+    demo->fp = NULL;
+}
+
+static void parser_stop_record_real(parser_t *parser, int id, void (*save)(int id, int client, int target), qboolean force) {
     demo_t *demo = parser->demos + id;
     if (demo->fp != NULL) {
         if (force) {
-            end_previous_demo(demo);
-            fclose(demo->fp);
-            demo->fp = NULL;
+            parser_terminate_record(parser, id);
         } else {
             demo->finishing = qtrue;
+            demo->save = save;
         }
     }
 }
@@ -50,22 +58,19 @@ static void end_finishing_demos(parser_t *parser) {
     int i;
     for (i = 0; i < MAX_DEMOS; i++) {
         demo_t *demo = parser->demos + i;
-        if (demo->fp && demo->finishing) {
-            end_previous_demo(demo);
-            fclose(demo->fp);
-            demo->fp = NULL;
-        }
+        if (demo->fp && demo->finishing)
+            parser_terminate_record(parser, i);
     }
 }
 
-void parser_stop_record(parser_t *parser, int id) {
-    parser_stop_record_real(parser, id, qfalse);
+void parser_stop_record(parser_t *parser, int id, void (*save)(int id, int client, int target)) {
+    parser_stop_record_real(parser, id, save, qfalse);
 }
 
 static void terminate_demos(parser_t *parser) {
     int i;
     for (i = 0; i < MAX_DEMOS; i++)
-        parser_stop_record_real(parser, i, qtrue);
+        parser_stop_record_real(parser, i, NULL, qtrue);
 }
 
 void parser_reset(parser_t *parser) {
@@ -155,6 +160,7 @@ int parser_record(parser_t *parser, FILE *fp, int target) {
             fwrite(key, 1, strlen(key) + 1, fp);
             demo->waiting = qtrue;
             demo->finishing = qfalse;
+            demo->save = NULL;
             client_command(parser->client, "nodelta");
             return i;
         }
@@ -486,7 +492,6 @@ void parse_message(parser_t *parser, msg_t *msg) {
     int ack;
     int size;
     while (1) {
-        end_finishing_demos(parser);
         cmd = read_byte(msg);
         switch (cmd) {
             case svc_demoinfo:
@@ -568,6 +573,7 @@ void parse_message(parser_t *parser, msg_t *msg) {
                 ui_output(parser->client, "Unknown command: %d\n", cmd);
                 return;
         }
+        end_finishing_demos(parser);
     }
 }
 

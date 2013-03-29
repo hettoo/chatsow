@@ -50,19 +50,38 @@ static int pr_index;
 
 static manager_t demos[CLIENTS][MAX_CLIENTS];
 
+static void discard_demo(int id, int c, int t) {
+    manager_t *manager = &demos[c][t];
+    int i;
+    for (i = 0; i < RECBUFFER; i++) {
+        recdemo_t *demo = manager->demos + i;
+        if (demo->id == id) {
+            demo->id = -1;
+        }
+    }
+}
+
+static void save_demo(int id, int c, int t) {
+    manager_t *manager = &demos[c][t];
+    int i;
+    for (i = 0; i < RECBUFFER; i++) {
+        recdemo_t *demo = manager->demos + i;
+        if (demo->id == id) {
+            FILE *fp = fopen(trap->path("demos/records/%s.txt", trap->get_level(c)), "w");
+            char *name = player_name(trap->client_cs(c), t + 1);
+            fprintf(fp, "%s\n%s\n%d\n", trap->get_level(c), name, demo->record_time);
+            fclose(fp);
+            static char old[1024];
+            strcpy(old, trap->path("demos/runs/%d_%d_%d.wd%d", c, t, i, PROTOCOL));
+            rename(old, trap->path("demos/records/%s.wd%d", trap->get_level(c), PROTOCOL));
+            discard_demo(id, c, t);
+        }
+    }
+}
+
 static void stop(int c, int t, int d) {
     recdemo_t *demo = demos[c][t].demos + d;
-    trap->client_stop_record(c, demo->id);
-    if (demo->record) {
-        FILE *fp = fopen(trap->path("demos/records/%s.txt", trap->get_level(c)), "w");
-        char *name = player_name(trap->client_cs(c), t + 1);
-        fprintf(fp, "%s\n%s\n%d\n", trap->get_level(c), name, demo->record_time);
-        fclose(fp);
-        static char old[1024];
-        strcpy(old, trap->path("demos/runs/%d_%d_%d.wd%d", c, t, d, PROTOCOL));
-        rename(old, trap->path("demos/records/%s.wd%d", trap->get_level(c), PROTOCOL));
-    }
-    demo->id = -1;
+    trap->client_stop_record(c, demo->id, demo->record ? save_demo : discard_demo);
 }
 
 static void schedule_stop(int c, int t) {

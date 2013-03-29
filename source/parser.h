@@ -33,6 +33,7 @@ typedef struct demo_s {
     long int start;
     qboolean waiting;
     qboolean finishing;
+    void (*save)(int id, int client, int target);
 } demo_t;
 
 typedef struct parser_s {
@@ -49,6 +50,6 @@ void parser_reset(parser_t *parser);
 void parse_message(parser_t *parser, msg_t *msg);
 void parse_demo(parser_t *parser, FILE *fp);
 int parser_record(parser_t *parser, FILE *fp, int target);
-void parser_stop_record(parser_t *parser, int id);
+void parser_stop_record(parser_t *parser, int id, void (*save)(int id, int client, int target));
 
 #endif

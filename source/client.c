@@ -141,8 +141,8 @@ int client_record(int id, FILE *fp, int target) {
     return parser_record(&clients[id].parser, fp, target);
 }
 
-void client_stop_record(int id, int demo_id) {
-    parser_stop_record(&clients[id].parser, demo_id);
+void client_stop_record(int id, int demo_id, void (*save)(int id, int client, int target)) {
+    parser_stop_record(&clients[id].parser, demo_id, save);
 }
 
 qboolean client_active(int id) {
@@ -515,7 +515,7 @@ void cmd_record() {
 void cmd_stop() {
     client_t *c = clients + cmd_client();
     if (c->demo >= 0)
-        parser_stop_record(&c->parser, c->demo);
+        parser_stop_record(&c->parser, c->demo, NULL);
     c->demo = -1;
 }
 
