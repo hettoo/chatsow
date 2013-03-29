@@ -123,5 +123,6 @@ import_lib('format');
 import_lib('time');
 import_lib('database');
 import_lib('content');
+import_lib('demos');
 
 ?>
