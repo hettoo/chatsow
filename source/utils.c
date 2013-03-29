@@ -227,6 +227,8 @@ qboolean starts_with(const void *a_raw, const void *b_raw) {
     char *b = (char *)b_raw;
     strcpy(uncolored_a, uncolor(a));
     strcpy(uncolored_b, uncolor(b));
+    a = uncolored_a;
+    b = uncolored_b;
     while (*b) {
         if (!*a || *a != *b)
             return qfalse;

@@ -33,6 +33,7 @@ typedef struct recdemo_s {
     int id;
     qboolean stopped;
     qboolean record;
+    unsigned int record_time;
     signed int start_time;
     signed int stop_time;
 } recdemo_t;
@@ -53,6 +54,10 @@ static void stop(int c, int t, int d) {
     recdemo_t *demo = demos[c][t].demos + d;
     trap->client_stop_record(c, demo->id);
     if (demo->record) {
+        FILE *fp = fopen(trap->path("demos/records/%s.txt", trap->get_level(c)), "w");
+        char *name = player_name(trap->client_cs(c), t + 1);
+        fprintf(fp, "%s\n%s\n%d\n", trap->get_level(c), name, demo->record_time);
+        fclose(fp);
         static char old[1024];
         strcpy(old, trap->path("demos/runs/%d_%d_%d.wd%d", c, t, d, PROTOCOL));
         rename(old, trap->path("demos/records/%s.wd%d", trap->get_level(c), PROTOCOL));
@@ -135,18 +140,14 @@ static void cmd_external() {
 }
 
 static void cmd_pr() {
-    if (partial_match("made a new", trap->cmd_argv(1))) {
+    char *message = trap->cmd_argv(1);
+    if (partial_match("made a new MGX record", message)) {
         cs_t *cs = trap->client_cs(trap->cmd_client());
         int i;
         for (i = 0; i < MAX_CLIENTS; i++) {
             char *name = player_name(cs, i + 1);
             if (name && *name) {
-                // Why? :(
-                static char a[1024];
-                static char b[1024];
-                strcpy(a, uncolor(trap->cmd_argv(1)));
-                strcpy(b, uncolor(name));
-                if (starts_with(a, b)) {
+                if (starts_with(message, name)) {
                     manager_t *manager = &demos[trap->cmd_client()][i];
                     int min = -1;
                     int j;
@@ -158,6 +159,29 @@ static void cmd_pr() {
                     }
                     if (min >= 0) {
                         manager->demos[min].record = qtrue;
+                        manager->demos[min].record_time = 0;
+                        char *p;
+                        int multiplier = 1;
+                        int position = 1;
+                        for (p = message + strlen(message); *p != ' '; p--) {
+                            switch (*p) {
+                                case ':':
+                                    multiplier *= 60;
+                                    position = 1;
+                                    break;
+                                case '.':
+                                    multiplier *= 1000;
+                                    position = 1;
+                                    break;
+                                default:
+                                    if (*p >= '0' && *p <= '9') {
+                                        manager->demos[min].record_time +=
+                                            multiplier * position * (*p - '0');
+                                        position *= 10;
+                                    }
+                                    break;
+                            }
+                        }
                         break;
                     }
                 }
