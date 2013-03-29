@@ -140,7 +140,7 @@ static void cmd_external() {
 }
 
 static void cmd_pr() {
-    if (partial_match("made a new MGX record", trap->cmd_argv(1))) {
+    if (partial_match("New MGX record", trap->cmd_argv(1))) {
         cs_t *cs = trap->client_cs(trap->cmd_client());
         int i;
         for (i = 0; i < MAX_CLIENTS; i++) {
