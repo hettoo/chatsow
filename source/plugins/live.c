@@ -42,17 +42,20 @@ void frame() {
         for (i = 0; i < CLIENTS; i++) {
             if (trap->client_active(i)) {
                 cs_t *cs = trap->client_cs(i);
-                fprintf(fp, "%s\n", cs_get(cs, 0));
-                fprintf(fp, "%s\n", trap->get_level(i));
-                int j;
-                for (j = 1; j <= MAX_CLIENTS; j++) {
-                    if (trap->get_playernum(i) != j) {
-                        char *name = player_name(cs, j);
-                        if (name && *name)
-                            fprintf(fp, "%s\n", name);
+                char *server = cs_get(cs, 0);
+                if (*server) {
+                    fprintf(fp, "%s\n", server);
+                    fprintf(fp, "%s\n", trap->get_level(i));
+                    int j;
+                    for (j = 1; j <= MAX_CLIENTS; j++) {
+                        if (trap->get_playernum(i) != j) {
+                            char *name = player_name(cs, j);
+                            if (name && *name)
+                                fprintf(fp, "%s\n", name);
+                        }
                     }
+                    fprintf(fp, "\n");
                 }
-                fprintf(fp, "\n");
             }
         }
         fclose(fp);
