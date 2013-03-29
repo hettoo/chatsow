@@ -140,13 +140,14 @@ static void cmd_external() {
 }
 
 static void cmd_pr() {
-    if (partial_match("New MGX record", trap->cmd_argv(1))) {
+    char *message = trap->cmd_argv(1);
+    if (partial_match("made a new MGX record", message)) {
         cs_t *cs = trap->client_cs(trap->cmd_client());
         int i;
         for (i = 0; i < MAX_CLIENTS; i++) {
             char *name = player_name(cs, i + 1);
             if (name && *name) {
-                if (starts_with(trap->cmd_argv(1), name)) {
+                if (starts_with(message, name)) {
                     manager_t *manager = &demos[trap->cmd_client()][i];
                     int min = -1;
                     int j;
@@ -158,7 +159,29 @@ static void cmd_pr() {
                     }
                     if (min >= 0) {
                         manager->demos[min].record = qtrue;
-                        manager->demos[min].record_time = 0; // TODO
+                        manager->demos[min].record_time = 0;
+                        char *p;
+                        int multiplier = 1;
+                        int position = 1;
+                        for (p = message + strlen(message); *p != ' '; p--) {
+                            switch (*p) {
+                                case ':':
+                                    multiplier *= 60;
+                                    position = 1;
+                                    break;
+                                case '.':
+                                    multiplier *= 1000;
+                                    position = 1;
+                                    break;
+                                default:
+                                    if (*p >= '0' && *p <= '9') {
+                                        manager->demos[min].record_time +=
+                                            multiplier * position * (*p - '0');
+                                        position *= 10;
+                                    }
+                                    break;
+                            }
+                        }
                         break;
                     }
                 }
