@@ -101,7 +101,10 @@ function format_player($name, $id = 0) {
 }
 
 function format_map($name) {
-    return '<a href="' . resource_url("demos/$name.wd15") . '">' . htmlentities($name) . '</a>';
+    $filtered = htmlentities($name);
+    if (!file_exists("./demos/$name.wd15"))
+        return $filtered;
+    return '<a href="' . resource_url("demos/$name.wd15") . '">' . $filtered . '</a>';
 }
 
 function format_date($time) {
