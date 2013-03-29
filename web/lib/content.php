@@ -36,6 +36,10 @@ if (empty($shared['head']))
 				padding: 0px;
 				margin: 0px 0px 10px 0px;
 			}
+            h2 span.sub {
+                display: block;
+                font-size: 12px;
+            }
 			th {
 				text-align: left;
 			}

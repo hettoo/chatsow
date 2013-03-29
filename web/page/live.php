@@ -9,11 +9,11 @@ while (($result = fgets($fp)) !== FALSE) {
     } else {
         switch ($state) {
         case 0:
-            echo '<h2>' . color($result) . '</h2>';
+            echo '<h2>' . color($result);
             $state++;
             break;
         case 1:
-            echo '<b>Map:</b> ' . format_map($result) . '<br /><br />';
+            echo '<span class="sub">' . format_map($result) . '</span></h2>';
             $state++;
             break;
         case 2:
