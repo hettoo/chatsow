@@ -13,10 +13,10 @@ foreach ($files as $file) {
         $result = trim($result);
         switch ($state) {
         case 0:
-            $map = mysql_real_escape_string($result);
+            $map = $db->real_escape_string($result);
             break;
         case 1:
-            $player = mysql_real_escape_string($result);
+            $player = $db->real_escape_string($result);
             break;
         case 2:
             $time = (int)$result;
