@@ -56,7 +56,7 @@ static void stop(int c, int t, int d) {
     if (demo->record) {
         FILE *fp = fopen(trap->path("demos/records/%s.txt", trap->get_level(c)), "w");
         char *name = player_name(trap->client_cs(c), t + 1);
-        fprintf(fp, "%s\n%d\n", name, demo->record_time);
+        fprintf(fp, "%s\n%s\n%d\n", trap->get_level(c), name, demo->record_time);
         fclose(fp);
         static char old[1024];
         strcpy(old, trap->path("demos/runs/%d_%d_%d.wd%d", c, t, d, PROTOCOL));
