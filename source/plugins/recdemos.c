@@ -54,7 +54,7 @@ static void stop(int c, int t, int d) {
     recdemo_t *demo = demos[c][t].demos + d;
     trap->client_stop_record(c, demo->id);
     if (demo->record) {
-        FILE *fp = fopen(trap->path("demos/records/%s.txt", trap->get_level(c), PROTOCOL), "w");
+        FILE *fp = fopen(trap->path("demos/records/%s.txt", trap->get_level(c)), "w");
         char *name = player_name(trap->client_cs(c), t + 1);
         fprintf(fp, "%s\n%d\n", name, demo->record_time);
         fclose(fp);
