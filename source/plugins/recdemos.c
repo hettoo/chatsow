@@ -140,18 +140,13 @@ static void cmd_external() {
 }
 
 static void cmd_pr() {
-    if (partial_match("made a new", trap->cmd_argv(1))) {
+    if (partial_match("made a new MGX record", trap->cmd_argv(1))) {
         cs_t *cs = trap->client_cs(trap->cmd_client());
         int i;
         for (i = 0; i < MAX_CLIENTS; i++) {
             char *name = player_name(cs, i + 1);
             if (name && *name) {
-                // Why? :(
-                static char a[1024];
-                static char b[1024];
-                strcpy(a, uncolor(trap->cmd_argv(1)));
-                strcpy(b, uncolor(name));
-                if (starts_with(a, b)) {
+                if (starts_with(trap->cmd_argv(1), name)) {
                     manager_t *manager = &demos[trap->cmd_client()][i];
                     int min = -1;
                     int j;
