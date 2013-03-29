@@ -2,12 +2,8 @@
 
 $files = glob($chatsow . 'demos/records/*.wd15');
 foreach ($files as $file) {
-    echo $file . '<br/>';
     $raw = preg_replace('/\.[^\.]*$/', '', $file);
-    echo $raw . '<br/>';
     $txt = $raw . '.txt';
-    echo $txt . '<br/>';
-
     $fp = fopen($txt, 'r');
     $state = 0;
     $map = '';
