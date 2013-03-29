@@ -71,6 +71,7 @@ typedef struct client_s {
     char name[512];
     int port_int;
     char challenge[512];
+    int multiview;
 
     int command_seq;
 
@@ -110,6 +111,7 @@ static void reset(client_t *c) {
     c->motd[0] = '\0';
     c->game[0] = '\0';
     c->level[0] = '\0';
+    c->multiview = 0;
 
     c->demo = -1;
 
@@ -394,6 +396,8 @@ static void challenge(client_t *c) {
 static void enter(client_t *c) {
     ui_output(c->id, "Entering the game...\n");
     client_command(c->id, "begin %d", c->spawn_count);
+    if (c->multiview)
+        client_command(c->id, "multiview 1");
     set_state(c, CA_ENTERING);
 }
 
@@ -642,6 +646,18 @@ static void *cvar_name_get() {
     return c->name;
 }
 
+static void cvar_multiview() {
+    client_t *c = clients + cmd_client();
+    c->multiview = atoi(cmd_argv(1));
+    if (c->state >= CA_ENTERING)
+        client_command(c->id, "multiview %d", c->multiview);
+}
+
+static void *cvar_multiview_get() {
+    client_t *c = clients + cmd_client();
+    return c->multiview;
+}
+
 static char suggestions[MAX_CMDS][MAX_SUGGESTION_SIZE];
 
 static qboolean suggestion_remove_test(void *x) {
@@ -722,6 +738,7 @@ void client_register_commands() {
     cmd_add_find_free("connect", cmd_connect);
     cmd_add_find_free("replay", cmd_replay);
     cmd_add_cvar("name", cvar_name, cvar_name_get);
+    cmd_add_cvar("multiview", cvar_multiview, cvar_multiview_get);
     cmd_add_public_generic("help", cmd_help_public);
 }
 
