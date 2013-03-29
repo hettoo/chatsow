@@ -45,6 +45,9 @@ clean:
 test: program plugins
 	./$(RELEASE)$(PROGRAM)
 
+loop:
+	while true; do git pull && make test; done
+
 $(RELEASE)$(PROGRAM): $(OBJS)
 	$(CC) $(LFLAGS) $^ -o $@
 
@@ -82,4 +85,4 @@ endef
 $(foreach module, $(MODULES_PLUGINS), $(eval $(call plugin_module_depender,$(module))))
 $(foreach module, $(MODULES_PLUGINS), $(eval $(call plugin_module_compiler,$(module))))
 
-.PHONY: default program plugins clean test
+.PHONY: default program plugins clean test loop

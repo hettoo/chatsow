@@ -655,7 +655,7 @@ static void cvar_multiview() {
 
 static void *cvar_multiview_get() {
     client_t *c = clients + cmd_client();
-    return c->multiview;
+    return &c->multiview;
 }
 
 static char suggestions[MAX_CMDS][MAX_SUGGESTION_SIZE];
