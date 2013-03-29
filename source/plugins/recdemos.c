@@ -19,6 +19,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
 #include <stdlib.h>
+#include <stdio.h>
 
 #include "../plugins.h"
 #include "../client.h"
@@ -26,11 +27,13 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #define RECBUFFER 3
 #define POSTRUN_TIME 8000
+#define MAX_TIME 300000
 
 typedef struct recdemo_s {
     int id;
     qboolean stopped;
     qboolean record;
+    signed int start_time;
     signed int stop_time;
 } recdemo_t;
 
@@ -41,13 +44,20 @@ typedef struct manager_s {
 
 plugin_interface_t *trap;
 
-static int cmd_index;
+static int external_index;
+static int pr_index;
 
 static manager_t demos[CLIENTS][MAX_CLIENTS];
 
 static void stop(int c, int t, int d) {
-    trap->client_stop_record(c, demos[c][t].demos[d].id);
-    demos[c][t].demos[d].id = -1;
+    recdemo_t *demo = demos[c][t].demos + d;
+    trap->client_stop_record(c, demo->id);
+    if (demo->record) {
+        static char old[1024];
+        strcpy(old, trap->path("demos/runs/%d_%d_%d.wd%d", c, t, d, PROTOCOL));
+        rename(old, trap->path("demos/records/%s.wd%d", trap->get_level(c), PROTOCOL));
+    }
+    demo->id = -1;
 }
 
 static void schedule_stop(int c, int t) {
@@ -66,18 +76,30 @@ static void start(int c, int t) {
     schedule_stop(c, t);
     int i;
     recdemo_t *demo = NULL;
-    for (i = 0; i < RECBUFFER; i++) {
-        if (manager->demos[i].id == -1) {
-            manager->current = i;
-            demo = manager->demos + i;
-            break;
+    if (manager->current != -1 && manager->demos[manager->current].id == -1) {
+        demo = manager->demos + manager->current;
+    } else {
+        for (i = 0; i < RECBUFFER; i++) {
+            if (manager->demos[i].id == -1) {
+                manager->current = i;
+                demo = manager->demos + i;
+                break;
+            }
+        }
+        if (demo == NULL) {
+            int min = -1;
+            for (i = 0; i < RECBUFFER; i++) {
+                if (min == -1 || manager->demos[i].stop_time - manager->demos[i].start_time
+                        < manager->demos[min].stop_time - manager->demos[min].start_time)
+                    min = i;
+            }
+            manager->current = min;
+            demo = manager->demos + min;
         }
     }
-    if (demo == NULL) {
-        manager->current = (manager->current + 1) % RECBUFFER;
-        demo = manager->demos + manager->current;
-    }
+    demo->start_time = millis();
     demo->stopped = qfalse;
+    demo->record = qfalse;
     FILE *fp = fopen(trap->path("demos/runs/%d_%d_%d.wd%d", c, t, manager->current, PROTOCOL), "w");
     demo->id = trap->client_record(trap->cmd_client(), fp, t);
 }
@@ -92,7 +114,8 @@ void frame() {
             int k;
             for (k = 0; k < RECBUFFER; k++) {
                 recdemo_t *demo = manager->demos + k;
-                if (demo->id >= 0 && demo->stopped && time >= demo->stop_time + POSTRUN_TIME)
+                if (demo->id >= 0 && (time - demo->start_time >= MAX_TIME
+                            || (demo->stopped && time >= demo->stop_time + POSTRUN_TIME)))
                     stop(i, j, k);
             }
         }
@@ -111,9 +134,40 @@ static void cmd_external() {
     }
 }
 
+static void cmd_pr() {
+    if (partial_match("made a new", trap->cmd_argv(1))) {
+        cs_t *cs = trap->client_cs(trap->cmd_client());
+        int i;
+        for (i = 0; i < MAX_CLIENTS; i++) {
+            char *name = player_name(cs, i + 1);
+            if (name && *name) {
+                // Why? :(
+                static char a[1024];
+                static char b[1024];
+                strcpy(a, uncolor(trap->cmd_argv(1)));
+                strcpy(b, uncolor(name));
+                if (starts_with(a, b)) {
+                    manager_t *manager = &demos[trap->cmd_client()][i];
+                    int min = -1;
+                    int j;
+                    for (j = 0; j < RECBUFFER; j++) {
+                        if (manager->demos[j].id != -1) {
+                            if (min == -1 || manager->demos[j].start_time < manager->demos[min].start_time)
+                                min = j;
+                        }
+                    }
+                    if (min >= 0) {
+                        manager->demos[min].record = qtrue;
+                        break;
+                    }
+                }
+            }
+        }
+    }
+}
+
 void init(plugin_interface_t *new_trap) {
     trap = new_trap;
-    cmd_index = trap->cmd_add_event("external", cmd_external);
     int i;
     for (i = 0; i < CLIENTS; i++) {
         int j;
@@ -125,6 +179,8 @@ void init(plugin_interface_t *new_trap) {
                 manager->demos[k].id = -1;
         }
     }
+    external_index = trap->cmd_add_event("external", cmd_external);
+    pr_index = trap->cmd_add_from_server("pr", cmd_pr);
 }
 
 void shutdown() {
@@ -140,5 +196,6 @@ void shutdown() {
             }
         }
     }
-    trap->cmd_remove(cmd_index);
+    trap->cmd_remove(external_index);
+    trap->cmd_remove(pr_index);
 }
