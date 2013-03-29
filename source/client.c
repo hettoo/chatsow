@@ -72,6 +72,7 @@ typedef struct client_s {
     int port_int;
     char challenge[512];
     int multiview;
+    int auto_reconnect;
 
     int command_seq;
 
@@ -112,6 +113,7 @@ static void reset(client_t *c) {
     c->game[0] = '\0';
     c->level[0] = '\0';
     c->multiview = 0;
+    c->auto_reconnect = 0;
 
     c->demo = -1;
 
@@ -658,6 +660,16 @@ static void *cvar_multiview_get() {
     return &c->multiview;
 }
 
+static void cvar_auto_reconnect() {
+    client_t *c = clients + cmd_client();
+    c->auto_reconnect = atoi(cmd_argv(1));
+}
+
+static void *cvar_auto_reconnect_get() {
+    client_t *c = clients + cmd_client();
+    return &c->auto_reconnect;
+}
+
 static char suggestions[MAX_CMDS][MAX_SUGGESTION_SIZE];
 
 static qboolean suggestion_remove_test(void *x) {
@@ -695,7 +707,7 @@ static void cmd_reject() {
     client_t *c = clients + cmd_client();
     if (c->state > CA_CONNECTING)
         return;
-    if (atoi(cmd_argv(2)) & DROP_FLAG_AUTORECONNECT)
+    if (atoi(cmd_argv(2)) & DROP_FLAG_AUTORECONNECT || c->auto_reconnect)
         reconnect(c);
     else
         disconnect(c->id);
@@ -739,6 +751,7 @@ void client_register_commands() {
     cmd_add_find_free("replay", cmd_replay);
     cmd_add_cvar("name", cvar_name, cvar_name_get);
     cmd_add_cvar("multiview", cvar_multiview, cvar_multiview_get);
+    cmd_add_cvar("auto_reconnect", cvar_auto_reconnect, cvar_auto_reconnect_get);
     cmd_add_public_generic("help", cmd_help_public);
 }
 
