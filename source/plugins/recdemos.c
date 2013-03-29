@@ -33,6 +33,7 @@ typedef struct recdemo_s {
     int id;
     qboolean stopped;
     qboolean record;
+    unsigned int record_time;
     signed int start_time;
     signed int stop_time;
 } recdemo_t;
@@ -53,6 +54,10 @@ static void stop(int c, int t, int d) {
     recdemo_t *demo = demos[c][t].demos + d;
     trap->client_stop_record(c, demo->id);
     if (demo->record) {
+        FILE *fp = fopen(trap->path("demos/records/%s.txt", trap->get_level(c), PROTOCOL), "w");
+        char *name = player_name(trap->client_cs(c), t + 1);
+        fprintf(fp, "%s\n%d\n", name, demo->record_time);
+        fclose(fp);
         static char old[1024];
         strcpy(old, trap->path("demos/runs/%d_%d_%d.wd%d", c, t, d, PROTOCOL));
         rename(old, trap->path("demos/records/%s.wd%d", trap->get_level(c), PROTOCOL));
@@ -158,6 +163,7 @@ static void cmd_pr() {
                     }
                     if (min >= 0) {
                         manager->demos[min].record = qtrue;
+                        manager->demos[min].record_time = 0; // TODO
                         break;
                     }
                 }
