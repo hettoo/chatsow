@@ -1,5 +1,5 @@
 <?php
 
-$shared['head'] = 'Maps';
+init_child_page('_');
 
 ?>

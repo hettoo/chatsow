@@ -83,6 +83,11 @@ function url($target, $level = 0, $rootify = true) {
     return $result;
 }
 
+function this_url() {
+    global $hierarchy;
+    return url(join('/', $hierarchy));
+}
+
 function init_page($page) {
     $file = page_file(real_page($page) . '_init');
     if (file_exists(script($file)))
