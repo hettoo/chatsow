@@ -71,6 +71,7 @@ typedef struct client_s {
     char name[512];
     int port_int;
     char challenge[512];
+    int tvserver;
     int multiview;
     int auto_reconnect;
 
@@ -112,6 +113,7 @@ static void reset(client_t *c) {
     c->motd[0] = '\0';
     c->game[0] = '\0';
     c->level[0] = '\0';
+    c->tvserver = 0;
     c->multiview = 0;
     c->auto_reconnect = 0;
 
@@ -380,7 +382,7 @@ static void client_recv(client_t *c) {
 static void connection_request(client_t *c) {
     ui_output(c->id, "Sending connection request...\n");
     msg_t *msg = sock_init_send(&c->sock, qfalse);
-    write_string(msg, "connect %d %s %s \"\\name\\%s\" 1", PROTOCOL, c->port, c->challenge, c->name);
+    write_string(msg, "connect %d %s %s \"\\name\\%s\" %d", PROTOCOL, c->port, c->challenge, c->name, c->tvserver);
     client_send(c);
 
     set_state(c, CA_CONNECTING);
@@ -650,6 +652,16 @@ static void *cvar_name_get() {
     return c->name;
 }
 
+static void cvar_tvserver() {
+    client_t *c = clients + cmd_client();
+    c->tvserver = atoi(cmd_argv(1));
+}
+
+static void *cvar_tvserver_get() {
+    client_t *c = clients + cmd_client();
+    return &c->tvserver;
+}
+
 static void cvar_multiview() {
     client_t *c = clients + cmd_client();
     c->multiview = atoi(cmd_argv(1));
@@ -752,6 +764,7 @@ void client_register_commands() {
     cmd_add_find_free("connect", cmd_connect);
     cmd_add_find_free("replay", cmd_replay);
     cmd_add_cvar("name", cvar_name, cvar_name_get);
+    cmd_add_cvar("tvserver", cvar_tvserver, cvar_tvserver_get);
     cmd_add_cvar("multiview", cvar_multiview, cvar_multiview_get);
     cmd_add_cvar("auto_reconnect", cvar_auto_reconnect, cvar_auto_reconnect_get);
     cmd_add_public_generic("help", cmd_help_public);
