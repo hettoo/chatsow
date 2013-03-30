@@ -25,9 +25,9 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "../client.h"
 #include "../utils.h"
 
-#define RECBUFFER 3
+#define RECBUFFER 4
 #define POSTRUN_TIME 8000
-#define MAX_TIME 300000
+#define MAX_TIME 600000
 
 typedef struct recdemo_s {
     int id;
@@ -114,9 +114,17 @@ static void start(int c, int t) {
         if (demo == NULL) {
             int min = -1;
             for (i = 0; i < RECBUFFER; i++) {
-                if (min == -1 || manager->demos[i].stop_time - manager->demos[i].start_time
-                        < manager->demos[min].stop_time - manager->demos[min].start_time)
+                if (!manager->demos[i].record && (min == -1
+                            || manager->demos[i].stop_time - manager->demos[i].start_time
+                        < manager->demos[min].stop_time - manager->demos[min].start_time))
                     min = i;
+            }
+            if (min == -1) {
+                for (i = 0; i < RECBUFFER; i++) {
+                    if (min == -1 || manager->demos[i].stop_time - manager->demos[i].start_time
+                            < manager->demos[min].stop_time - manager->demos[min].start_time)
+                        min = i;
+                }
             }
             manager->current = min;
             demo = manager->demos + min;
