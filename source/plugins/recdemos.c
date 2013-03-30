@@ -55,9 +55,8 @@ static void discard_demo(int id, int c, int t) {
     int i;
     for (i = 0; i < RECBUFFER; i++) {
         recdemo_t *demo = manager->demos + i;
-        if (demo->id == id) {
+        if (demo->id == id)
             demo->id = -1;
-        }
     }
 }
 
@@ -70,9 +69,9 @@ static void save_demo(int id, int c, int t) {
             static char old[1024];
             strcpy(old, trap->path("demos/runs/%d_%d_%d.wd%d", c, t, i, PROTOCOL));
             rename(old, trap->path("demos/records/%s.wd%d", trap->get_level(c), PROTOCOL));
-            discard_demo(id, c, t);
         }
     }
+    discard_demo(id, c, t);
 }
 
 static void stop(int c, int t, int d) {
