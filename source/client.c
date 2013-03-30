@@ -34,7 +34,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #define TIMEOUT 1800
 
-#define NOP_TIME 5000
+#define INACTIVE_TIME 4000
 
 #define COMMAND_BUFFER 32
 
@@ -80,6 +80,9 @@ typedef struct client_s {
     unsigned int resend;
     unsigned int last_send;
 
+    int lastframe;
+    unsigned int server_time;
+
     int bitflags;
     int protocol;
     int spawn_count;
@@ -105,6 +108,9 @@ static void reset(client_t *c) {
 
     c->resend = 0;
     c->last_send = 0;
+
+    c->lastframe = -1;
+    c->server_time = 0;
 
     c->protocol = 0;
     c->bitflags = 0;
@@ -350,15 +356,21 @@ void client_ack(int id, int num) {
     client_send(c);
 }
 
-void client_ack_frame(int id, int lastframe, unsigned int server_time) {
-    client_t *c = clients + id;
-    msg_t *msg = sock_init_send(&c->sock, qtrue);
+static void add_move(client_t *c, msg_t *msg) {
     write_byte(msg, clc_move);
-    write_long(msg, lastframe);
+    write_long(msg, c->lastframe);
     write_long(msg, 2);
     write_byte(msg, 1);
     write_byte(msg, 0);
-    write_long(msg, server_time);
+    write_long(msg, c->server_time);
+}
+
+void client_ack_frame(int id, int lastframe, unsigned int server_time) {
+    client_t *c = clients + id;
+    c->lastframe = lastframe;
+    c->server_time = server_time;
+    msg_t *msg = sock_init_send(&c->sock, qtrue);
+    add_move(c, msg);
     client_send(c);
 }
 
@@ -443,9 +455,9 @@ void client_frame(int id) {
             }
             break;
         case CA_ACTIVE:
-            if (millis() >= c->last_send + NOP_TIME) {
+            if (millis() >= c->last_send + INACTIVE_TIME) {
                 msg_t *msg = sock_init_send(&c->sock, qtrue);
-                write_byte(msg, clc_nop);
+                add_move(c, msg);
                 client_send(c);
             }
             break;
