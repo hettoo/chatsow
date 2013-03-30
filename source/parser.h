@@ -50,8 +50,9 @@ typedef struct parser_s {
 void parser_reset(parser_t *parser);
 void parse_message(parser_t *parser, msg_t *msg);
 void parse_demo(parser_t *parser, FILE *fp);
-int parser_record(parser_t *parser, FILE *fp, int target);
-void parser_stop_record(parser_t *parser, int id, void (*save)(int id, int client, int target));
+int parser_record(parser_t *parser, FILE *fp, int target, void (*save)(int id, int client, int target));
+void parser_stop_record(parser_t *parser, int id);
+void parser_terminate_record(parser_t *parser, int id);
 unsigned int get_server_time(parser_t *parser);
 
 #endif

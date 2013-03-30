@@ -44,8 +44,9 @@ cs_t *client_cs(int id);
 int player_suggest(int id, char *cmd, char suggestions[][MAX_SUGGESTION_SIZE]);
 void disconnect(int id);
 
-int client_record(int id, FILE *fp, int target);
-void client_stop_record(int id, int demo_id, void (*save)(int id, int client, int target));
+int client_record(int id, FILE *fp, int target, void (*save)(int id, int client, int target));
+void client_stop_record(int id, int demo_id);
+void client_terminate_record(int id, int demo_id);
 
 void demoinfo_key(int id, char *key);
 void demoinfo_value(int id, char *value);

@@ -50,39 +50,32 @@ static int pr_index;
 
 static manager_t demos[CLIENTS][MAX_CLIENTS];
 
-static void discard_demo(int id, int c, int t) {
-    manager_t *manager = &demos[c][t];
-    int i;
-    for (i = 0; i < RECBUFFER; i++) {
-        recdemo_t *demo = manager->demos + i;
-        if (demo->id == id)
-            demo->id = -1;
-    }
-}
-
 static void save_demo(int id, int c, int t) {
     manager_t *manager = &demos[c][t];
     int i;
     for (i = 0; i < RECBUFFER; i++) {
         recdemo_t *demo = manager->demos + i;
         if (demo->id == id) {
-            static char old[1024];
-            strcpy(old, trap->path("demos/runs/%d_%d_%d.wd%d", c, t, i, PROTOCOL));
-            rename(old, trap->path("demos/records/%s.wd%d", trap->get_level(c), PROTOCOL));
+            if (demo->record) {
+                static char old[1024];
+                strcpy(old, trap->path("demos/runs/%d_%d_%d.wd%d", c, t, i, PROTOCOL));
+                rename(old, trap->path("demos/records/%s.wd%d", trap->get_level(c), PROTOCOL));
+            }
+            demo->id = -1;
         }
     }
-    discard_demo(id, c, t);
 }
 
 static void stop(int c, int t, int d) {
     recdemo_t *demo = demos[c][t].demos + d;
-    trap->client_stop_record(c, demo->id, demo->record ? save_demo : discard_demo);
+    trap->client_stop_record(c, demo->id);
 }
 
 static void terminate(int c, int t, int d) {
     recdemo_t *demo = demos[c][t].demos + d;
-    trap->client_stop_record(c, demo->id, NULL);
-    demo->id = -1;
+    if (demo->id == -1)
+        return;
+    trap->client_terminate_record(c, demo->id);
 }
 
 static void schedule_stop(int c, int t) {
@@ -126,6 +119,7 @@ static void start(int c, int t) {
                         min = i;
                 }
             }
+            terminate(c, t, min);
             manager->current = min;
             demo = manager->demos + min;
         }
@@ -134,7 +128,7 @@ static void start(int c, int t) {
     demo->stopped = qfalse;
     demo->record = qfalse;
     FILE *fp = fopen(trap->path("demos/runs/%d_%d_%d.wd%d", c, t, manager->current, PROTOCOL), "w");
-    demo->id = trap->client_record(trap->cmd_client(), fp, t);
+    demo->id = trap->client_record(trap->cmd_client(), fp, t, save_demo);
 }
 
 void frame() {
@@ -219,6 +213,14 @@ static void cmd_pr() {
                             }
                         }
                         if (min >= 0) {
+                            for (j = 0; j < MAX_CLIENTS; j++) {
+                                manager_t *other = &demos[c][j];
+                                int k;
+                                for (k = 0; k < RECBUFFER; k++) {
+                                    if (other->demos[j].id != -1)
+                                        other->demos[j].record = qfalse;
+                                }
+                            }
                             manager->demos[min].record = qtrue;
                             manager->demos[min].record_time = time;
                             fp = fopen(trap->path("demos/records/%s.txt", trap->get_level(c)), "w");

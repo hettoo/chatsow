@@ -37,24 +37,14 @@ static void end_previous_demo(demo_t *demo) {
     fseek(demo->fp, backup, SEEK_SET);
 }
 
-static void parser_terminate_record(parser_t *parser, int id) {
+static void parser_terminate_record_real(parser_t *parser, int id, qboolean discard) {
     demo_t *demo = parser->demos + id;
-    end_previous_demo(demo);
-    fclose(demo->fp);
-    if (demo->save)
-        demo->save(id, parser->client, demo->target);
-    demo->fp = NULL;
-}
-
-static void parser_stop_record_real(parser_t *parser, int id, void (*save)(int id, int client, int target), qboolean force) {
-    demo_t *demo = parser->demos + id;
-    if (demo->fp != NULL) {
-        if (force) {
-            parser_terminate_record(parser, id);
-        } else {
-            demo->finishing = qtrue;
-            demo->save = save;
-        }
+    if (demo->fp) {
+        end_previous_demo(demo);
+        fclose(demo->fp);
+        if (!discard && demo->save)
+            demo->save(id, parser->client, demo->target);
+        demo->fp = NULL;
     }
 }
 
@@ -63,18 +53,24 @@ static void end_finishing_demos(parser_t *parser) {
     for (i = 0; i < MAX_DEMOS; i++) {
         demo_t *demo = parser->demos + i;
         if (demo->fp && demo->finishing)
-            parser_terminate_record(parser, i);
+            parser_terminate_record_real(parser, i, qfalse);
     }
 }
 
-void parser_stop_record(parser_t *parser, int id, void (*save)(int id, int client, int target)) {
-    parser_stop_record_real(parser, id, save, qfalse);
+void parser_stop_record(parser_t *parser, int id) {
+    demo_t *demo = parser->demos + id;
+    if (demo->fp != NULL)
+        demo->finishing = qtrue;
+}
+
+void parser_terminate_record(parser_t *parser, int id) {
+    parser_terminate_record_real(parser, id, qtrue);
 }
 
 static void terminate_demos(parser_t *parser) {
     int i;
     for (i = 0; i < MAX_DEMOS; i++)
-        parser_stop_record_real(parser, i, NULL, qtrue);
+        parser_terminate_record_real(parser, i, qtrue);
 }
 
 void parser_reset(parser_t *parser) {
@@ -117,7 +113,7 @@ static void end_previous(parser_t *parser) {
     }
 }
 
-int parser_record(parser_t *parser, FILE *fp, int target) {
+int parser_record(parser_t *parser, FILE *fp, int target, void (*save)(int id, int client, int target)) {
     int i;
     for (i = 0; i < MAX_DEMOS; i++) {
         demo_t *demo = parser->demos + i;
@@ -164,7 +160,7 @@ int parser_record(parser_t *parser, FILE *fp, int target) {
             fwrite(key, 1, strlen(key) + 1, fp);
             demo->waiting = qtrue;
             demo->finishing = qfalse;
-            demo->save = NULL;
+            demo->save = save;
             client_command(parser->client, "nodelta");
             return i;
         }

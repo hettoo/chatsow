@@ -139,12 +139,16 @@ cs_t *client_cs(int id) {
     return &clients[id].cs;
 }
 
-int client_record(int id, FILE *fp, int target) {
-    return parser_record(&clients[id].parser, fp, target);
+int client_record(int id, FILE *fp, int target, void (*save)(int id, int client, int target)) {
+    return parser_record(&clients[id].parser, fp, target, save);
 }
 
-void client_stop_record(int id, int demo_id, void (*save)(int id, int client, int target)) {
-    parser_stop_record(&clients[id].parser, demo_id, save);
+void client_stop_record(int id, int demo_id) {
+    parser_stop_record(&clients[id].parser, demo_id);
+}
+
+void client_terminate_record(int id, int demo_id) {
+    parser_terminate_record(&clients[id].parser, demo_id);
 }
 
 qboolean client_active(int id) {
@@ -512,14 +516,14 @@ void cmd_record() {
         char *name = path("demos/%s.wd%d", cmd_argv(1), PROTOCOL);
         ui_output(c->id, "Recording to %s\n", name);
         FILE *fp = fopen(name, "w");
-        c->demo = parser_record(&c->parser, fp, cmd_argc() > 2 ? atoi(cmd_argv(2)) : -1);
+        c->demo = parser_record(&c->parser, fp, cmd_argc() > 2 ? atoi(cmd_argv(2)) : -1, NULL);
     }
 }
 
 void cmd_stop() {
     client_t *c = clients + cmd_client();
     if (c->demo >= 0)
-        parser_stop_record(&c->parser, c->demo, NULL);
+        parser_stop_record(&c->parser, c->demo);
     c->demo = -1;
 }
 
