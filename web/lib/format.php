@@ -107,6 +107,19 @@ function format_map($name) {
     return '<a href="' . resource_url("demos/$name.wd15") . '">' . $filtered . '</a>';
 }
 
+function format_map_external($name) {
+    global $db;
+    $result = format_map($name);
+    if (file_exists("./demos/$name.wd15")) {
+        $name = $db->real_escape_string($name);
+        $res = $db->query("SELECT `record`, `record_holder` FROM `map` WHERE `name`='$name'") or die($db->error);
+        if ($row = $res->fetch_array()) {
+            $result .= ' (' . format_time($row['record']) . ' by ' . format_player($row['record_holder']) . ')';
+        }
+    }
+    return $result;
+}
+
 function format_date($time) {
     return '<span class="time">' . relative_time($time) . ' <span class="exacttime">' . date("j F Y @ G:i", $time == 0 ? time() : $time) . '</span></span>';
 }

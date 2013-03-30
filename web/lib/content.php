@@ -38,7 +38,8 @@ if (empty($shared['head']))
             }
             h2 span.sub {
                 display: block;
-                font-size: 12px;
+                font-size: 13px;
+                font-weight: normal;
             }
             th {
                 text-align: left;

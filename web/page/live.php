@@ -13,7 +13,7 @@ while (($result = fgets($fp)) !== FALSE) {
             $state++;
             break;
         case 1:
-            echo '<span class="sub">' . format_map($result) . '</span></h2>';
+            echo '<span class="sub">' . format_map_external($result) . '</span></h2>';
             $state++;
             break;
         case 2:
