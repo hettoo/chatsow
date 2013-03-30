@@ -186,10 +186,24 @@ static qboolean target_match(parser_t *parser, int target, qbyte *targets) {
     return (targets[target >> 3] & (1 << (target & 7))) > 0;
 }
 
+static qboolean target_wrap_match(parser_t *parser, int target, int actual) {
+    if (target == -1 || actual == -1)
+        return qtrue;
+    return parser->playernums[target] == parser->playernums[actual];
+}
+
 static void record(parser_t *parser, msg_t *msg, int size, qbyte *targets) {
     int i;
     for (i = 0; i < MAX_DEMOS; i++) {
         if (parser->demos[i].fp && !parser->demos[i].waiting && target_match(parser, parser->demos[i].target, targets))
+            fwrite(msg->data + msg->readcount, 1, size, parser->demos[i].fp);
+    }
+}
+
+static void record_wrapped(parser_t *parser, msg_t *msg, int size, int target) {
+    int i;
+    for (i = 0; i < MAX_DEMOS; i++) {
+        if (parser->demos[i].fp && !parser->demos[i].waiting && target_wrap_match(parser, parser->demos[i].target, target))
             fwrite(msg->data + msg->readcount, 1, size, parser->demos[i].fp);
     }
 }
@@ -464,16 +478,9 @@ static void parse_frame(parser_t *parser, msg_t *msg) {
     while ((cmd = read_byte(msg)) != 0) { // svc_playerinfo
         start = msg->readcount - 1;
         parser->playernums[players] = parse_player_state(msg, parser->playernums[players]);
-        int i;
-        for (i = 0; i < MAX_CLIENTS / 8; i++)
-            targets[i] = 0;
-        for (i = 0; i < MAX_CLIENTS; i++) {
-            if (players == parser->playernums[i])
-                targets[i >> 3] |= 1 << (i & 7);
-        }
         backup = msg->readcount;
         msg->readcount = start;
-        record(parser, msg, backup - start, targets);
+        record_wrapped(parser, msg, backup - start, players);
         msg->readcount = backup;
         players++;
     }
