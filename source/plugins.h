@@ -38,7 +38,7 @@ typedef struct plugin_interface_s {
     char *(*get_level)(int id);
     char *(*get_host)(int id);
     int (*get_port)(int id);
-    int (*client_record)(int id, FILE *fp, int target, void (*save)(int id, int client, int target));
+    int (*client_record)(int id, FILE *fp, int target, void (*save)(int id, int client, int target, qboolean terminated));
     void (*client_stop_record)(int id, int demo_id);
     void (*client_terminate_record)(int id, int demo_id);
 

@@ -37,13 +37,13 @@ static void end_previous_demo(demo_t *demo) {
     fseek(demo->fp, backup, SEEK_SET);
 }
 
-static void parser_terminate_record_real(parser_t *parser, int id, qboolean discard) {
+static void parser_terminate_record_real(parser_t *parser, int id, qboolean terminated) {
     demo_t *demo = parser->demos + id;
     if (demo->fp) {
         end_previous_demo(demo);
         fclose(demo->fp);
-        if (!discard && demo->save)
-            demo->save(id, parser->client, demo->target);
+        if (demo->save)
+            demo->save(id, parser->client, demo->target, terminated);
         demo->fp = NULL;
     }
 }
@@ -113,7 +113,7 @@ static void end_previous(parser_t *parser) {
     }
 }
 
-int parser_record(parser_t *parser, FILE *fp, int target, void (*save)(int id, int client, int target)) {
+int parser_record(parser_t *parser, FILE *fp, int target, void (*save)(int id, int client, int target, qboolean terminated)) {
     int i;
     for (i = 0; i < MAX_DEMOS; i++) {
         demo_t *demo = parser->demos + i;

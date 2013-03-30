@@ -33,7 +33,7 @@ typedef struct demo_s {
     long int start;
     qboolean waiting;
     qboolean finishing;
-    void (*save)(int id, int client, int target);
+    void (*save)(int id, int client, int target, qboolean terminated);
 } demo_t;
 
 typedef struct parser_s {
@@ -50,7 +50,7 @@ typedef struct parser_s {
 void parser_reset(parser_t *parser);
 void parse_message(parser_t *parser, msg_t *msg);
 void parse_demo(parser_t *parser, FILE *fp);
-int parser_record(parser_t *parser, FILE *fp, int target, void (*save)(int id, int client, int target));
+int parser_record(parser_t *parser, FILE *fp, int target, void (*save)(int id, int client, int target, qboolean terminated));
 void parser_stop_record(parser_t *parser, int id);
 void parser_terminate_record(parser_t *parser, int id);
 unsigned int get_server_time(parser_t *parser);

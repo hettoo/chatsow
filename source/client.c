@@ -139,7 +139,7 @@ cs_t *client_cs(int id) {
     return &clients[id].cs;
 }
 
-int client_record(int id, FILE *fp, int target, void (*save)(int id, int client, int target)) {
+int client_record(int id, FILE *fp, int target, void (*save)(int id, int client, int target, qboolean terminated)) {
     return parser_record(&clients[id].parser, fp, target, save);
 }
 
