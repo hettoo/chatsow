@@ -95,7 +95,7 @@ static void start_new(parser_t *parser) {
     int i;
     for (i = 0; i < MAX_DEMOS; i++) {
         demo_t *demo = parser->demos + i;
-        if (demo->fp)
+        if (demo->fp && !demo->waiting)
             start_new_demo(demo);
     }
 }
@@ -104,7 +104,7 @@ static void end_previous(parser_t *parser) {
     int i;
     for (i = 0; i < MAX_DEMOS; i++) {
         demo_t *demo = parser->demos + i;
-        if (demo->fp)
+        if (demo->fp && !demo->waiting)
             end_previous_demo(demo);
     }
 }
@@ -116,6 +116,9 @@ int parser_record(parser_t *parser, FILE *fp, int target, void (*save)(int id, i
         if (demo->fp == NULL) {
             demo->fp = fp;
             demo->target = target;
+            demo->waiting = qfalse;
+            demo->finishing = qfalse;
+            demo->save = save;
             int x = 0;
             start_new_demo(demo);
             qbyte c = svc_demoinfo;
@@ -154,10 +157,8 @@ int parser_record(parser_t *parser, FILE *fp, int target, void (*save)(int id, i
             fwrite(&c, 1, 1, fp);
             key = "precache";
             fwrite(key, 1, strlen(key) + 1, fp);
-            demo->waiting = qtrue;
-            demo->finishing = qfalse;
-            demo->save = save;
             client_command(parser->client, "nodelta");
+            demo->waiting = qtrue;
             return i;
         }
     }
