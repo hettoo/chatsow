@@ -119,9 +119,6 @@ static void reset(client_t *c) {
     c->motd[0] = '\0';
     c->game[0] = '\0';
     c->level[0] = '\0';
-    c->tvserver = 0;
-    c->multiview = 0;
-    c->auto_reconnect = 0;
 
     c->demo = -1;
 
@@ -799,7 +796,12 @@ int player_suggest(int id, char *partial, char suggestions[][MAX_SUGGESTION_SIZE
 
 void client_start(int id) {
     client_t *c = clients + id;
+
     reset(c);
+    c->tvserver = 0;
+    c->multiview = 0;
+    c->auto_reconnect = 0;
+
     register_configstring_commands(c);
     cmd_add_persistent(id, "reconnect", cmd_reconnect);
     cmd_add(id, "disconnect", cmd_disconnect);
