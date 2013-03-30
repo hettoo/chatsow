@@ -13,13 +13,13 @@ foreach ($files as $file) {
         $result = trim($result);
         switch ($state) {
         case 0:
-            $map = $db->real_escape_string($result);
+            $time = (int)$result;
             break;
         case 1:
-            $player = $db->real_escape_string($result);
+            $map = $db->real_escape_string($result);
             break;
         case 2:
-            $time = (int)$result;
+            $player = $db->real_escape_string($result);
             break;
         }
         $state++;
@@ -28,7 +28,6 @@ foreach ($files as $file) {
     $db->query("DELETE FROM `map` WHERE `name`='$map'") or die($db->error);
     $db->query("INSERT INTO `map` SET `name`='$map', `record`=$time, `record_holder`='$player'") or die($db->error);
     rename($file, "./demos/$map.wd15");
-    unlink($txt);
 }
 
 ?>

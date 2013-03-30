@@ -67,10 +67,6 @@ static void save_demo(int id, int c, int t) {
     for (i = 0; i < RECBUFFER; i++) {
         recdemo_t *demo = manager->demos + i;
         if (demo->id == id) {
-            FILE *fp = fopen(trap->path("demos/records/%s.txt", trap->get_level(c)), "w");
-            char *name = player_name(trap->client_cs(c), t + 1);
-            fprintf(fp, "%s\n%s\n%d\n", trap->get_level(c), name, demo->record_time);
-            fclose(fp);
             static char old[1024];
             strcpy(old, trap->path("demos/runs/%d_%d_%d.wd%d", c, t, i, PROTOCOL));
             rename(old, trap->path("demos/records/%s.wd%d", trap->get_level(c), PROTOCOL));
@@ -160,48 +156,63 @@ static void cmd_external() {
 
 static void cmd_pr() {
     char *message = trap->cmd_argv(1);
-    if (partial_match("made a new MGX record", message)) {
-        cs_t *cs = trap->client_cs(trap->cmd_client());
-        int i;
-        for (i = 0; i < MAX_CLIENTS; i++) {
-            char *name = player_name(cs, i + 1);
-            if (name && *name) {
-                if (starts_with(message, name)) {
-                    manager_t *manager = &demos[trap->cmd_client()][i];
-                    int min = -1;
-                    int j;
-                    for (j = 0; j < RECBUFFER; j++) {
-                        if (manager->demos[j].id != -1) {
-                            if (min == -1 || manager->demos[j].start_time < manager->demos[min].start_time)
-                                min = j;
-                        }
+    if (partial_match("made a new server record", message)) {
+        unsigned int time = 0;
+        char *p;
+        int multiplier = 1;
+        int position = 1;
+        for (p = message + strlen(message); *p != ' '; p--) {
+            switch (*p) {
+                case ':':
+                    multiplier *= 60;
+                    position = 1;
+                    break;
+                case '.':
+                    multiplier *= 1000;
+                    position = 1;
+                    break;
+                default:
+                    if (*p >= '0' && *p <= '9') {
+                        time += multiplier * position * (*p - '0');
+                        position *= 10;
                     }
-                    if (min >= 0) {
-                        manager->demos[min].record = qtrue;
-                        manager->demos[min].record_time = 0;
-                        char *p;
-                        int multiplier = 1;
-                        int position = 1;
-                        for (p = message + strlen(message); *p != ' '; p--) {
-                            switch (*p) {
-                                case ':':
-                                    multiplier *= 60;
-                                    position = 1;
-                                    break;
-                                case '.':
-                                    multiplier *= 1000;
-                                    position = 1;
-                                    break;
-                                default:
-                                    if (*p >= '0' && *p <= '9') {
-                                        manager->demos[min].record_time +=
-                                            multiplier * position * (*p - '0');
-                                        position *= 10;
-                                    }
-                                    break;
+                    break;
+            }
+        }
+        int c = trap->cmd_client();
+        unsigned int old_time = 0;
+        char *level = trap->get_level(c);
+        FILE *fp = fopen(trap->path("demos/records/%s.txt", level), "r");
+        if (fp) {
+            fscanf(fp, "%u", &old_time);
+            fclose(fp);
+        } else {
+            old_time = time + 1;
+        }
+        if (time < old_time) {
+            cs_t *cs = trap->client_cs(c);
+            int i;
+            for (i = 0; i < MAX_CLIENTS; i++) {
+                char *name = player_name(cs, i + 1);
+                if (name && *name) {
+                    if (starts_with(message, name)) {
+                        manager_t *manager = &demos[c][i];
+                        int min = -1;
+                        int j;
+                        for (j = 0; j < RECBUFFER; j++) {
+                            if (manager->demos[j].id != -1) {
+                                if (min == -1 || manager->demos[j].start_time < manager->demos[min].start_time)
+                                    min = j;
                             }
                         }
-                        break;
+                        if (min >= 0) {
+                            manager->demos[min].record = qtrue;
+                            manager->demos[min].record_time = time;
+                            fp = fopen(trap->path("demos/records/%s.txt", trap->get_level(c)), "w");
+                            fprintf(fp, "%u\n%s\n%s\n", time, level, name);
+                            fclose(fp);
+                            break;
+                        }
                     }
                 }
             }
