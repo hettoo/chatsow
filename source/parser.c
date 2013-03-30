@@ -183,7 +183,6 @@ static void record_initial(parser_t *parser, msg_t *source, int size) {
 static qboolean target_match(parser_t *parser, int target, qbyte *targets) {
     if (target == -1 || targets == NULL)
         return qtrue;
-    target = parser->playernums[target];
     return (targets[target >> 3] & (1 << (target & 7))) > 0;
 }
 
@@ -468,7 +467,10 @@ static void parse_frame(parser_t *parser, msg_t *msg) {
         int i;
         for (i = 0; i < MAX_CLIENTS / 8; i++)
             targets[i] = 0;
-        targets[parser->playernums[players] >> 3] |= 1 << (parser->playernums[players] & 7);
+        for (i = 0; i < MAX_CLIENTS; i++) {
+            if (players == parser->playernums[i])
+                targets[i >> 3] |= 1 << (i & 7);
+        }
         backup = msg->readcount;
         msg->readcount = start;
         record(parser, msg, backup - start, targets);

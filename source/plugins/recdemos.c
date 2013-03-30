@@ -80,6 +80,12 @@ static void stop(int c, int t, int d) {
     trap->client_stop_record(c, demo->id, demo->record ? save_demo : discard_demo);
 }
 
+static void terminate(int c, int t, int d) {
+    recdemo_t *demo = demos[c][t].demos + d;
+    trap->client_stop_record(c, demo->id, NULL);
+    demo->id = -1;
+}
+
 static void schedule_stop(int c, int t) {
     manager_t *manager = &demos[c][t];
     if (manager->current == -1)
@@ -246,7 +252,7 @@ void shutdown() {
             int k;
             for (k = 0; k < RECBUFFER; k++) {
                 if (manager->demos[k].id != -1)
-                    stop(i, j, k);
+                    terminate(i, j, k);
             }
         }
     }

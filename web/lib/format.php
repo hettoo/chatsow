@@ -112,12 +112,12 @@ function format_date($time) {
 }
 
 function format_time($time) {
-    $result = '.' . ($time % 1000);
+    $result = '.' . sprintf('%03d', $time % 1000);
     $time = floor($time / 1000);
-    $result = ($time % 60) . $result;
+    $result = sprintf('%02d', $time % 60) . $result;
     $time = floor($time / 60);
     if ($time > 0) {
-        $result = ($time % 60) . ':' . $result;
+        $result = sprintf('%02d', $time % 60) . ':' . $result;
         $time = floor($time / 60);
         if ($time > 0) {
             $result = $time . ':' . $result;
