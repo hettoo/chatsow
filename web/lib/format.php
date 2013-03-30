@@ -96,7 +96,14 @@ function format_pages($level, $pager) {
 }
 
 function format_player($name, $id = 0) {
+    global $db;
     $name = htmlentities($name);
+    if ($id == -1) {
+        $filtered = $db->real_escape_string($name);
+        $result = $db->query("SELECT `id` FROM `map` WHERE `record_holder`='$filtered' LIMIT 1") or die($db->error);
+        if ($row = $result->fetch_array())
+            $id = $row['id'];
+    }
     return $id > 0 ? colored($name, 'players/' . $id) : color($name);
 }
 

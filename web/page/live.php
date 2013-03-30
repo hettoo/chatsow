@@ -17,7 +17,7 @@ while (($result = fgets($fp)) !== FALSE) {
             $state++;
             break;
         case 2:
-            echo format_player($result) . '<br />';
+            echo format_player($result, -1) . '<br />';
             break;
         }
     }

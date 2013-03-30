@@ -4,12 +4,12 @@ import_lib('Pager');
 
 $like = $db->real_escape_string($hierarchy[2]);
 
-$pager = new Pager($hierarchy[1] - 1, $shared['max_rows'], "SELECT `name`, `record`, `record_holder` FROM `map` WHERE `name` LIKE '%$like%' ORDER BY `name`");
+$pager = new Pager($hierarchy[1] - 1, $shared['max_rows'], "SELECT `id`, `name`, `record`, `record_holder` FROM `map` WHERE `name` LIKE '%$like%' ORDER BY `name`");
 
 $maps = '';
 $rows = $pager->getRows();
 foreach ($rows as $row) {
-    $maps .= '<tr><td>' . format_map($row['name']) . '</td><td>' . format_player($row['record_holder']) . '</td><td>' . format_time($row['record']) . '</td></tr>';
+    $maps .= '<tr><td>' . format_map($row['name']) . '</td><td>' . format_player($row['record_holder'], $row['id']) . '</td><td>' . format_time($row['record']) . '</td></tr>';
 }
 
 ?>
