@@ -38,7 +38,6 @@ typedef struct demo_s {
 
 typedef struct parser_s {
     int client;
-    unsigned int server_time;
     int last_frame;
     int last_cmd_num;
     int last_cmd_ack;
@@ -53,6 +52,5 @@ void parse_demo(parser_t *parser, FILE *fp);
 int parser_record(parser_t *parser, FILE *fp, int target, void (*save)(int id, int client, int target, qboolean terminated));
 void parser_stop_record(parser_t *parser, int id);
 void parser_terminate_record(parser_t *parser, int id);
-unsigned int get_server_time(parser_t *parser);
 
 #endif

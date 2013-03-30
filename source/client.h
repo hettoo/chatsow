@@ -35,7 +35,7 @@ void client_activate(int id);
 qboolean client_active(int id);
 qboolean client_ready(int id);
 void client_ack(int id, int num);
-void client_ack_frame(int id, int lastframe);
+void client_ack_frame(int id, int lastframe, unsigned int server_time);
 void client_get_ack(int id, int ack);
 void client_command(int id, char *format, ...);
 void client_say(int id, char *format, ...);
