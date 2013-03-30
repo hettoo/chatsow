@@ -25,6 +25,10 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "ui.h"
 #include "parser.h"
 
+unsigned int get_server_time(parser_t *parser) {
+    return parser->server_time;
+}
+
 static void end_previous_demo(demo_t *demo) {
     long int backup = ftell(demo->fp);
     fseek(demo->fp, demo->start, SEEK_SET);
@@ -395,7 +399,7 @@ static void parse_delta_gamestate(msg_t *msg) {
 static void parse_frame(parser_t *parser, msg_t *msg) {
     int length = read_short(msg); // length
     int pos = msg->readcount;
-    read_long(msg); // serverTime
+    parser->server_time = read_long(msg);
     int frame = read_long(msg);
     read_long(msg); // delta frame number
     read_long(msg); // ucmd executed

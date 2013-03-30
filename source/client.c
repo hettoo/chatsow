@@ -349,8 +349,10 @@ void client_ack_frame(int id, int lastframe) {
     msg_t *msg = sock_init_send(&c->sock, qtrue);
     write_byte(msg, clc_move);
     write_long(msg, lastframe);
-    write_long(msg, 0);
+    write_long(msg, 2);
+    write_byte(msg, 1);
     write_byte(msg, 0);
+    write_long(msg, get_server_time(&c->parser));
     client_send(c);
 }
 
