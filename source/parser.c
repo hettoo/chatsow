@@ -186,6 +186,8 @@ static qboolean target_match(parser_t *parser, int target, qbyte *targets) {
 static qboolean target_wrap_match(parser_t *parser, int target, int actual) {
     if (target == -1 || actual == -1)
         return qtrue;
+    if (target == 0)
+        target = parser->playernums[0];
     return target == parser->playernums[actual];
 }
 
