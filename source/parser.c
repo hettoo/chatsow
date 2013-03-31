@@ -497,6 +497,8 @@ void parse_message(parser_t *parser, msg_t *msg) {
     int cmd;
     int ack;
     int size;
+    int start;
+    int backup;
     while (1) {
         cmd = read_byte(msg);
         switch (cmd) {
@@ -523,7 +525,7 @@ void parse_message(parser_t *parser, msg_t *msg) {
                 client_activate(parser->client);
                 break;
             case svc_servercmd:
-                prepare_fragment(parser, msg);
+                start = msg->readcount;
                 if (!(get_bitflags(parser->client) & SV_BITFLAGS_RELIABLE)) {
                     int cmd_num = read_long(msg);
                     if (cmd_num != parser->last_cmd_num + 1) {
@@ -535,7 +537,11 @@ void parse_message(parser_t *parser, msg_t *msg) {
                 }
             case svc_servercs:
                 if (cmd == svc_servercs)
-                    prepare_fragment(parser, msg);
+                    start = msg->readcount;
+                backup = msg->readcount;
+                msg->readcount = start;
+                prepare_fragment(parser, msg);
+                msg->readcount = backup;
                 record_string(parser, msg, NULL);
                 execute(parser->client, read_string(msg), NULL);
                 break;
