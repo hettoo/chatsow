@@ -131,6 +131,10 @@ function format_date($time) {
     return '<span class="time">' . relative_time($time) . ' <span class="exacttime">' . date("j F Y @ G:i", $time == 0 ? time() : $time) . '</span></span>';
 }
 
+function format_server($server) {
+    return '<a href="warsow://' . $server . '" target="_blank">' . $server . '</a>';
+}
+
 function format_time($time) {
     $result = '.' . sprintf('%03d', $time % 1000);
     $time = floor($time / 1000);

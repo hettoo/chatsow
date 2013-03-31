@@ -45,6 +45,7 @@ void frame() {
                 char *server = cs_get(cs, 0);
                 if (*server) {
                     fprintf(fp, "%s\n", server);
+                    fprintf(fp, "%s:%d\n", trap->get_host(i), trap->get_port(i));
                     fprintf(fp, "%s\n", trap->get_level(i));
                     int j;
                     for (j = 1; j <= MAX_CLIENTS; j++) {
@@ -64,4 +65,5 @@ void frame() {
 }
 
 void shutdown() {
+    remove(trap->path("live.txt"));
 }

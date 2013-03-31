@@ -13,10 +13,14 @@ while (($result = fgets($fp)) !== FALSE) {
             $state++;
             break;
         case 1:
-            echo '<span class="sub">' . format_map_external($result) . '</span></h2>';
+            echo '<span class="sub">' . format_server($result);
             $state++;
             break;
         case 2:
+            echo '<br />' . format_map_external($result) . '</span></h2>';
+            $state++;
+            break;
+        case 3:
             echo format_player($result, -1) . '<br />';
             break;
         }
