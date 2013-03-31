@@ -30,7 +30,7 @@ foreach ($files as $file) {
     }
     fclose($fp);
     $db->query("DELETE FROM `map` WHERE `name`='$map'") or die($db->error);
-    $db->query("INSERT INTO `map` SET `name`='$map', `record`=$time, `record_holder`='$player'") or die($db->error);
+    $db->query("INSERT INTO `map` SET `name`='$map', `record`=$time, `record_holder`='$player', `timestamp`=FROM_UNIXTIME($timestamp)") or die($db->error);
     rename($file, "./demos/$map.wd15");
 }
 
