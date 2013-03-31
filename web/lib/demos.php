@@ -9,6 +9,7 @@ foreach ($files as $file) {
     $map = '';
     $player = '';
     $time = 0;
+    $timestamp = 0;
     while (($result = fgets($fp)) !== FALSE) {
         $result = trim($result);
         switch ($state) {
@@ -20,6 +21,9 @@ foreach ($files as $file) {
             break;
         case 2:
             $player = $db->real_escape_string($result);
+            break;
+        case 3:
+            $timestamp = (int)$result;
             break;
         }
         $state++;

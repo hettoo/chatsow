@@ -224,7 +224,7 @@ static void cmd_pr() {
                             manager->demos[min].record = qtrue;
                             manager->demos[min].record_time = time;
                             fp = fopen(trap->path("demos/records/%s.txt", trap->get_level(c)), "w");
-                            fprintf(fp, "%u\n%s\n%s\n", time, level, name);
+                            fprintf(fp, "%u\n%s\n%s\n%u\n", time, level, name, millis());
                             fclose(fp);
                             break;
                         }
