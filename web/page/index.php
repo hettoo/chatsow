@@ -7,7 +7,7 @@ while ($row = $result->fetch_array())
 
 ?>
 <p>
-This is the webinterface of an instance of the <a href="http://github.com/hettoo/chatsow" target="_blank">chatsow</a> project, created by <?= format_player('^0/^7inc^2.^7hettoo^0/', -1); ?>.
+This is the webinterface of an instance of the <a href="http://github.com/hettoo/chatsow" target="_blank">chatsow</a> project, created by <?= format_player('^7^0/^7inc^2.^7hettoo^0/', -1); ?>.
 </p>
 <h2>Latest records</h2>
 <p>
