@@ -9,12 +9,12 @@ $pager = new Pager($hierarchy[1] - 1, $shared['max_rows'], "SELECT `id`, `name`,
 $maps = '';
 $rows = $pager->getRows();
 foreach ($rows as $row) {
-    $maps .= '<tr><td>' . format_map($row['name']) . '</td><td>' . format_player($row['record_holder'], $row['id']) . '</td><td>' . format_time($row['record']) . '</td></tr>';
+    $maps .= '<tr><td>' . format_map($row['name']) . '</td><td>' . format_player($row['record_holder'], $row['id'], -1) . '</td><td>' . format_time($row['record']) . '</td></tr>';
 }
 
 ?>
 <p>
-Records below are the best records recorded by the bot, not necessarily actual records.
+Records below are the best runs recorded by the bot, not necessarily actual records.
 </p>
 <p>
 <form action="<?= url('maps'); ?>" method="POST">

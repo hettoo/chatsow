@@ -95,16 +95,23 @@ function format_pages($level, $pager) {
     return $result;
 }
 
-function format_player($name, $id = 0) {
+function format_player($name, $id = 0, $records = 0) {
     global $db;
     $name = htmlentities($name);
-    if ($id == -1) {
+    if ($id == -1 || $records == -1) {
         $filtered = $db->real_escape_string($name);
-        $result = $db->query("SELECT `id` FROM `map` WHERE `record_holder`='$filtered' LIMIT 1") or die($db->error);
-        if ($row = $result->fetch_array())
-            $id = $row['id'];
+        $result = $db->query("SELECT `id`, COUNT(`id`) AS `records` FROM `map` WHERE `record_holder`='$filtered' LIMIT 1") or die($db->error);
+        if ($row = $result->fetch_array()) {
+            if ($id == -1)
+                $id = $row['id'];
+            if ($records == -1)
+                $records = $row['records'];
+        }
     }
-    return $id > 0 ? colored($name, 'players/' . $id) : color($name);
+    $result = $id > 0 ? colored($name, 'players/' . $id) : color($name);
+    if ($records > 0)
+        $result .= ' (' . $records . ')';
+    return $result;
 }
 
 function format_map($name) {

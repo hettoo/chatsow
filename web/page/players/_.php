@@ -15,7 +15,7 @@ foreach ($rows as $row) {
 
 ?>
 <p>
-Records below are the best records recorded by the bot, not necessarily actual records.
+Records below are the best runs recorded by the bot, not necessarily actual records.
 </p>
 <p>
 <form action="<?= url('players/' . $hierarchy[1]); ?>" method="POST">

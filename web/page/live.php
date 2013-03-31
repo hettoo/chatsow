@@ -1,3 +1,6 @@
+<p>
+The bot is currently connected to the following servers.
+</p>
 <?php
 
 $fp = fopen($chatsow . 'live.txt', 'r');
@@ -21,7 +24,7 @@ while (($result = fgets($fp)) !== FALSE) {
             $state++;
             break;
         case 3:
-            echo format_player($result, -1) . '<br />';
+            echo format_player($result, -1, -1) . '<br />';
             break;
         }
     }
