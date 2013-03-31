@@ -20,7 +20,7 @@ while (($result = fgets($fp)) !== FALSE) {
             $state++;
             break;
         case 2:
-            echo '<br />' . format_map_external($result) . '</span></h2>';
+            echo '<br /><b>Map: ' . format_map_external($result) . '</span></h2>';
             $state++;
             break;
         case 3:
