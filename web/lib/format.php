@@ -121,7 +121,7 @@ function format_map_external($name) {
         $name = $db->real_escape_string($name);
         $res = $db->query("SELECT `record`, `record_holder` FROM `map` WHERE `name`='$name'") or die($db->error);
         if ($row = $res->fetch_array()) {
-            $result .= ' (' . format_time($row['record']) . ' by ' . format_player($row['record_holder']) . ')';
+            $result .= ' (' . format_time($row['record']) . ' by ' . format_player($row['record_holder'], -1) . ')';
         }
     }
     return $result;
