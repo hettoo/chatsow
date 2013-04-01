@@ -110,7 +110,7 @@ function format_player($name, $id = 0, $records = 0) {
     }
     $result = $id > 0 ? colored($name, 'players/' . $id) : color($name);
     if ($records > 0)
-        $result .= ' (' . $records . ')';
+        $result .= ' [' . $records . ']';
     return $result;
 }
 
