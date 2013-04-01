@@ -23,7 +23,7 @@ foreach ($files as $file) {
             $player = $db->real_escape_string($result);
             break;
         case 3:
-            $timestamp = (int)($result / 1000);
+            $timestamp = (int)$result;
             break;
         }
         $state++;

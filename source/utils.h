@@ -38,6 +38,7 @@ typedef struct parse_state_s {
 int min(int a, int b);
 int max(int a, int b);
 unsigned int millis();
+unsigned int unixtime();
 int timestring(char *string);
 
 void parse(char *string, void (*f_char)(char c), void (*f_ghost)(char c), void (*f_color)(int color));

@@ -41,6 +41,10 @@ unsigned int millis() {
 	return tp.tv_sec * 1000 + tp.tv_usec / 1000;
 }
 
+unsigned int unixtime() {
+    return time(NULL);
+}
+
 int timestring(char *string) {
     time_t raw_time;
     time(&raw_time);
