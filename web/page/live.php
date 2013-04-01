@@ -16,7 +16,7 @@ while (($result = fgets($fp)) !== FALSE) {
             $state++;
             break;
         case 1:
-            echo '<span class="sub">' . format_server($result);
+            echo '<span class="sub">Location: ' . format_server($result);
             $state++;
             break;
         case 2:
