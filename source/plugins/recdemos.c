@@ -191,7 +191,8 @@ static void cmd_pr() {
         char *level = trap->get_level(c);
         FILE *fp = fopen(trap->path("demos/records/%s.txt", level), "r");
         if (fp) {
-            fscanf(fp, "%u", &old_time);
+            if (!fscanf(fp, "%u", &old_time))
+                old_time = 0;
             fclose(fp);
         } else {
             old_time = time + 1;

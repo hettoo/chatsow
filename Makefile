@@ -52,7 +52,7 @@ updateloop:
 	while true; do git pull && make test; done
 
 $(RELEASE)$(PROGRAM): $(OBJS)
-	$(CC) $(LFLAGS) $^ -o $@
+	$(CC) $^ $(LFLAGS) -o $@
 
 define module_depender
 $(shell touch $(BUILD)$(1).d)
@@ -82,7 +82,7 @@ define plugin_module_compiler
 $(BUILD_PLUGINS)$(1).o: $(PLUGINS)$(1).c $(THIS)
 	$(CC) $(CFLAGS_PLUGINS) $$< -o $$@
 $(RELEASE_PLUGINS)$(1).so: $(BUILD_PLUGINS)$(1).o $(BUILD)import.o $(BUILD)utils.o $(BUILD)cs.o
-	$(CC) $(LFLAGS_PLUGINS) $$^ -o $$@
+	$(CC) $$^ $(LFLAGS_PLUGINS) -o $$@
 endef
 
 $(foreach module, $(MODULES_PLUGINS), $(eval $(call plugin_module_depender,$(module))))
