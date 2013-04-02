@@ -10,7 +10,7 @@ $pager = new Pager($hierarchy[2] - 1, $shared['max_rows'], "SELECT M.`name`, M.`
 $maps = '';
 $rows = $pager->getRows();
 foreach ($rows as $row) {
-    $maps .= '<tr><td>' . format_map($row['name']) . '</td><td>' . format_time($row['record']) . '</td></tr>';
+    $maps .= '<tr><td>' . format_map($row['name']) . '</td><td class="right">' . format_time($row['record'], $row['name']) . '</td></tr>';
 }
 
 ?>
@@ -25,6 +25,6 @@ Records below are the best runs recorded by the bot, not necessarily actual reco
 </p>
 <?= format_pages(2, $pager); ?>
 <table>
-    <tr><th>Map</th><th>Record</th></tr>
+    <tr><th>Map</th><th class="right">Record</th></tr>
     <?= $maps; ?>
 </table>
