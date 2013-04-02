@@ -16,7 +16,7 @@ For example, when the 'new server record' message comes more than 8 seconds afte
 <p>
 Some players believe that their records should not be shared.
 In my opinion, race should be a collaboration of players trying to approach the optimal time for a map together, not a place where selfish people desperately try to suppress competition.
-Eventually, routes will be stolen anyway, if people really want to do this.
+Eventually routes will be stolen anyway, if people really want to do this.
 Play on your own server, disconnected from the rest of the world, if you want to be sure.
 </p>
 <h2>Latest records</h2>
