@@ -21,7 +21,7 @@ if (empty($shared['head']))
             body {
                 font-family: Sans, Arial, Verdana;
                 font-size: 12px;
-                background-color: #24202d;
+                background-color: #302d36;
                 color: #fff;
             }
 
