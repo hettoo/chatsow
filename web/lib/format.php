@@ -97,7 +97,6 @@ function format_pages($level, $pager) {
 
 function format_player($name, $id = 0, $records = 0) {
     global $db;
-    $name = htmlentities($name);
     if ($id == -1 || $records == -1) {
         $filtered = $db->real_escape_string($name);
         $result = $db->query("SELECT `id`, COUNT(`id`) AS `records` FROM `map` WHERE `record_holder`='$filtered' LIMIT 1") or die($db->error);
@@ -108,6 +107,7 @@ function format_player($name, $id = 0, $records = 0) {
                 $records = $row['records'];
         }
     }
+    $name = htmlentities($name);
     $result = $id > 0 ? colored($name, 'players/' . $id) : color($name);
     if ($records > 0)
         $result .= ' [' . $records . ']';
