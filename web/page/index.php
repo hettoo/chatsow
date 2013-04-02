@@ -3,7 +3,7 @@
 $maps = '';
 $result = $db->query("SELECT `id`, `name`, `record`, `record_holder` FROM `map` ORDER BY `timestamp` DESC, `name` LIMIT 8") or die($db->error);
 while ($row = $result->fetch_array())
-    $maps .= '<tr><td>' . format_map($row['name']) . '</td><td>' . format_player($row['record_holder'], $row['id'], -1) . '</td><td align="right">' . format_time($row['record'], $row['name']) . '</td></tr>';
+    $maps .= '<tr><td>' . format_map($row['name']) . '</td><td>' . format_player($row['record_holder'], $row['id'], -1) . '</td><td class="right">' . format_time($row['record'], $row['name']) . '</td></tr>';
 
 ?>
 <p>
@@ -24,6 +24,6 @@ Play on your own server, disconnected from the rest of the world, if you want to
 Records below are the best runs recorded by the bot, not necessarily actual records.
 </p>
 <table>
-    <tr><th>Map</th><th>Record holder</th><th align="right">Record</th></tr>
+    <tr><th>Map</th><th>Record holder</th><th class="right">Record</th></tr>
     <?= $maps; ?>
 </table>

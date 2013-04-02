@@ -54,6 +54,10 @@ if (empty($shared['head']))
                 color: #fff;
             }
 
+            .right {
+                text-align: right;
+            }
+
             .clear {
                 clear: both;
             }
