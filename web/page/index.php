@@ -7,6 +7,10 @@ while ($row = $result->fetch_array())
 
 ?>
 <p>
+<font color="red">Sorry, but until the server issues get fixed I won't be running this anymore.</font>
+It was a nice experiment so far though.
+</p>
+<p>
 This is the webinterface of an instance of the <a href="http://github.com/hettoo/chatsow" target="_blank">chatsow</a> project, a <a href="http://warsow.net" target="_blank">Warsow</a> chat client with specific plugin functionality for <a href="http://mgxrace.com" target="_blank">MGX Race</a> created by <?= format_player('^7^0/^7inc^2.^7hettoo^0/', -1); ?>.
 </p>
 <p>
