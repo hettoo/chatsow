@@ -116,9 +116,7 @@ function format_player($name, $id = 0, $records = 0) {
 
 function format_map($name) {
     $filtered = htmlentities($name);
-    if (!file_exists("./demos/$name.wd15"))
-        return $filtered;
-    return '<a href="' . resource_url("demos/$name.wd15") . '">' . $filtered . '</a>';
+    return '<a href="http://pk3.mgxrace.com/race10/basewsw/' . $name . '.pk3" target="_blank">' . $filtered . '</a>';
 }
 
 function format_map_external($name) {
@@ -127,9 +125,8 @@ function format_map_external($name) {
     if (file_exists("./demos/$name.wd15")) {
         $name = $db->real_escape_string($name);
         $res = $db->query("SELECT `record`, `record_holder` FROM `map` WHERE `name`='$name'") or die($db->error);
-        if ($row = $res->fetch_array()) {
-            $result .= ' (' . format_time($row['record']) . ' by ' . format_player($row['record_holder'], -1) . ')';
-        }
+        if ($row = $res->fetch_array())
+            $result .= ' (' . format_time($row['record'], $name) . ' by ' . format_player($row['record_holder'], -1) . ')';
     }
     return $result;
 }
@@ -142,7 +139,7 @@ function format_server($server) {
     return '<a href="warsow://' . $server . '" target="_blank">' . $server . '</a>';
 }
 
-function format_time($time) {
+function format_time($time, $map) {
     $result = '.' . sprintf('%03d', $time % 1000);
     $time = floor($time / 1000);
     $result = sprintf('%02d', $time % 60) . $result;
@@ -154,7 +151,9 @@ function format_time($time) {
             $result = $time . ':' . $result;
         }
     }
-    return $result;
+    if (!file_exists("./demos/$map.wd15"))
+        return $result;
+    return '<a href="' . resource_url("demos/$map.wd15") . '" target="_blank">' . $result . '</a>';
 }
 
 function format_rank($rank) {
