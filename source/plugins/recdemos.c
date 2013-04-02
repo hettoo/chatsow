@@ -20,6 +20,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <unistd.h>
 
 #include "../plugins.h"
 #include "../client.h"
@@ -60,6 +61,8 @@ static void save_demo(int id, int c, int t, qboolean terminated) {
                 static char old[1024];
                 strcpy(old, trap->path("demos/runs/%d_%d_%d.wd%d", c, t, i, PROTOCOL));
                 rename(old, trap->path("demos/records/%s.wd%d", trap->get_level(c), PROTOCOL));
+            } else {
+                unlink(trap->path("demos/runs/%d_%d_%d.wd%d", c, t, i, PROTOCOL));
             }
             demo->id = -1;
         }
@@ -192,7 +195,7 @@ static void cmd_pr() {
         FILE *fp = fopen(trap->path("demos/records/%s.txt", level), "r");
         if (fp) {
             if (!fscanf(fp, "%u", &old_time))
-                old_time = 0;
+                old_time = time + 1;
             fclose(fp);
         } else {
             old_time = time + 1;
