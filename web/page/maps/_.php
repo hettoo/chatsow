@@ -24,6 +24,6 @@ Records below are the best runs recorded by the bot, not necessarily actual reco
 </p>
 <?= format_pages(1, $pager); ?>
 <table>
-    <tr><th>Map</th><th>Record holder</th><th>Record</th></tr>
+    <tr><th>Map</th><th>Record holder</th><th align="right">Record</th></tr>
     <?= $maps; ?>
 </table>
