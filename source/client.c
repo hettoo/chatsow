@@ -69,6 +69,7 @@ typedef struct client_s {
     char host[512];
     char port[512];
     char name[512];
+    char password[512];
     int port_int;
     char challenge[512];
     int tvserver;
@@ -395,7 +396,7 @@ static void client_recv(client_t *c) {
 static void connection_request(client_t *c) {
     ui_output(c->id, "Sending connection request...\n");
     msg_t *msg = sock_init_send(&c->sock, qfalse);
-    write_string(msg, "connect %d %s %s \"\\name\\%s\" %d", PROTOCOL, c->port, c->challenge, c->name, c->tvserver);
+    write_string(msg, "connect %d %s %s \"\\name\\%s\\password\\%s\" %d", PROTOCOL, c->port, c->challenge, c->name, c->password, c->tvserver);
     client_send(c);
 
     set_state(c, CA_CONNECTING);
@@ -665,6 +666,16 @@ static void *cvar_name_get() {
     return c->name;
 }
 
+static void cvar_password() {
+    client_t *c = clients + cmd_client();
+    strcpy(c->password, cmd_argv(1));
+}
+
+static void *cvar_password_get() {
+    client_t *c = clients + cmd_client();
+    return c->password;
+}
+
 static void cvar_tvserver() {
     client_t *c = clients + cmd_client();
     c->tvserver = atoi(cmd_argv(1));
@@ -734,6 +745,7 @@ static void cmd_reject() {
     client_t *c = clients + cmd_client();
     if (c->state > CA_CONNECTING)
         return;
+    ui_output(c->id, "Rejected: %s %s\n", cmd_argv(3), cmd_argv(4));
     if (atoi(cmd_argv(2)) & DROP_FLAG_AUTORECONNECT || c->auto_reconnect)
         reconnect(c);
     else
@@ -777,6 +789,7 @@ void client_register_commands() {
     cmd_add_find_free("connect", cmd_connect);
     cmd_add_find_free("replay", cmd_replay);
     cmd_add_cvar("name", cvar_name, cvar_name_get);
+    cmd_add_cvar("password", cvar_password, cvar_password_get);
     cmd_add_cvar("tvserver", cvar_tvserver, cvar_tvserver_get);
     cmd_add_cvar("multiview", cvar_multiview, cvar_multiview_get);
     cmd_add_cvar("auto_reconnect", cvar_auto_reconnect, cvar_auto_reconnect_get);
@@ -811,6 +824,7 @@ void client_start(int id) {
     cmd_add(id, "stop", cmd_stop);
 
     strcpy(c->name, "chatter");
+    strcpy(c->password, "");
     set_state(c, CA_DISCONNECTED);
     set_server(c, NULL, NULL);
     set_status(c->id, c->name, cs_get(&c->cs, 0));
