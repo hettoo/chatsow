@@ -116,7 +116,7 @@ function format_player($name, $id = 0, $records = 0) {
 
 function format_map($name) {
     $filtered = htmlentities($name);
-    return '<a href="http://pk3.mgxrace.com/racesow/' . $name . '.pk3" target="_blank">' . $filtered . '</a>';
+    return '<a href="/basewsw/' . $name . '.pk3" target="_blank">' . $filtered . '</a>';
 }
 
 function format_map_external($name) {
