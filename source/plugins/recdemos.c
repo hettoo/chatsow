@@ -224,8 +224,8 @@ static void cmd_pr() {
                                 manager_t *other = &demos[c][j];
                                 int k;
                                 for (k = 0; k < RECBUFFER; k++) {
-                                    if (other->demos[j].id != -1)
-                                        other->demos[j].record = qfalse;
+                                    if (other->demos[k].id != -1)
+                                        other->demos[k].record = qfalse;
                                 }
                             }
                             manager->demos[min].record = qtrue;
