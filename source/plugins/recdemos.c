@@ -33,6 +33,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 typedef struct recdemo_s {
     int id;
     qboolean stopped;
+    qboolean finished;
     qboolean record;
     unsigned int record_time;
     signed int start_time;
@@ -72,6 +73,7 @@ static void save_demo(int id, int c, int t, qboolean terminated) {
 static void stop(int c, int t, int d) {
     recdemo_t *demo = demos[c][t].demos + d;
     trap->client_stop_record(c, demo->id);
+    demo->finished = qtrue;
 }
 
 static void terminate(int c, int t, int d) {
@@ -129,6 +131,7 @@ static void start(int c, int t) {
     }
     demo->start_time = millis();
     demo->stopped = qfalse;
+    demo->finished = qfalse;
     demo->record = qfalse;
     FILE *fp = fopen(trap->path("demos/runs/%d_%d_%d.wd%d", c, t, manager->current, PROTOCOL), "w");
     demo->id = trap->client_record(trap->cmd_client(), fp, t, save_demo);
@@ -144,7 +147,7 @@ void frame() {
             int k;
             for (k = 0; k < RECBUFFER; k++) {
                 recdemo_t *demo = manager->demos + k;
-                if (demo->id >= 0 && (time - demo->start_time >= MAX_TIME
+                if (demo->id >= 0 && !demo->finished && (time - demo->start_time >= MAX_TIME
                             || (demo->stopped && time >= demo->stop_time + POSTRUN_TIME)))
                     stop(i, j, k);
             }
