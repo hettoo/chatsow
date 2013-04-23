@@ -21,6 +21,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <stdio.h>
 
 #include "import.h"
+#include "utils.h"
 #include "client.h"
 #include "ui.h"
 #include "parser.h"
@@ -415,8 +416,11 @@ static void parse_frame(parser_t *parser, msg_t *msg) {
     static qbyte targets[MAX_CLIENTS / 8];
     while ((framediff = read_short(msg)) != -1) {
         qboolean valid = frame > parser->last_frame + framediff;
+        qboolean record_valid = valid;
         int pos = msg->readcount;
         char *cmd = read_string(msg);
+        if (partial_match("private message", cmd))
+            record_valid = qfalse;
         int numtargets = 0;
         int i;
         for (i = 0; i < MAX_CLIENTS / 8; i++)
@@ -426,7 +430,7 @@ static void parse_frame(parser_t *parser, msg_t *msg) {
             numtargets = read_byte(msg);
             int b = msg->readcount;
             read_data(msg, targets, numtargets);
-            if (valid) {
+            if (record_valid) {
                 int real = msg->readcount;
                 msg->readcount = pos - 2;
                 record(parser, msg, 2, numtargets ? targets : NULL);
@@ -438,7 +442,7 @@ static void parse_frame(parser_t *parser, msg_t *msg) {
                 record_multipov(parser, msg, numtargets);
                 msg->readcount = real;
             }
-        } else if (valid) {
+        } else if (record_valid) {
             int real = msg->readcount;
             msg->readcount = pos - 2;
             record(parser, msg, 2, NULL);
