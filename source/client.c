@@ -555,6 +555,14 @@ void client_activate(int id) {
     cmd_execute(id, "players");
 }
 
+static void cmd_disconnect_server() {
+    client_t *c = clients + cmd_client();
+    if (c->auto_reconnect)
+        reconnect(c);
+    else
+        disconnect(c->id);
+}
+
 static void cmd_disconnect() {
     client_t *c = clients + cmd_client();
     disconnect(c->id);
@@ -758,7 +766,7 @@ void client_register_commands() {
     cmd_add_from_server("cs", cmd_cs);
     cmd_add_from_server("cmd", cmd_cmd);
     cmd_add_from_server("precache", cmd_precache);
-    cmd_add_from_server("disconnect", cmd_disconnect);
+    cmd_add_from_server("disconnect", cmd_disconnect_server);
     cmd_add_from_server("reject", cmd_reject);
     cmd_add_from_server("forcereconnect", cmd_force_reconnect);
     cmd_add_from_server("reconnect", cmd_reconnect);
