@@ -6,12 +6,12 @@ import_lib('Pager');
 
 $players = '';
 $i = 0;
-$pager = new Pager($hierarchy[2] - 1, $shared['max_rows'] * COLUMNS, "SELECT `id`, `record_holder`, COUNT(`record_holder`) AS `records` FROM `map` GROUP BY `record_holder` ORDER BY COUNT(`record_holder`) DESC, `record_holder`");
+$pager = new Pager($hierarchy[2] - 1, $shared['max_rows'] * COLUMNS, "P.`id`, P.`name`, COUNT(*) AS `records` FROM `map` M, `player` P WHERE M.`player`=P.`id` GROUP BY P.`name_raw` ORDER BY COUNT(*) DESC, P.`name`");
 $rows = $pager->getRows();
 foreach ($rows as $row) {
 	if ($i == 0)
 		$players .= '<tr>';
-	$players .= '<td>' . format_player($row['record_holder'], $row['id'], $row['records']) . '</td>';
+	$players .= '<td>' . format_player($row['name'], $row['id'], $row['records']) . '</td>';
 	$i = ($i + 1) % COLUMNS;
 	if ($i == 0)
 		$players .= '</tr>';

@@ -30,9 +30,13 @@ foreach ($files as $file) {
     }
     fclose($fp);
     $raw_player = uncolor($player);
-    $db->query("DELETE FROM `map` WHERE `name`='$map'") or die($db->error);
-    $db->query("INSERT INTO `map` SET `name`='$map', `record`=$time, `record_holder`='$player', `record_holder_raw`='$raw_player', `timestamp`=FROM_UNIXTIME($timestamp)") or die($db->error);
-    rename($file, "./demos/$map.wd15");
+    $db->query("INSERT INTO `player` SET `name`='$player', `name_raw`='$raw_player' ON DUPLICATE KEY UPDATE `name`=VALUES(`name`)") or die($db->error);
+    $result = $db->query("SELECT `id` FROM `player` WHERE `name_raw`='$raw_player'") or die($db->error);
+    if ($row = $result->fetch_array()) {
+        $id = $row['id'];
+        $db->query("INSERT INTO `map` SET `name`='$map', `record`=$time, `player`=$id, `timestamp`=FROM_UNIXTIME($timestamp) ON DUPLICATE KEY UPDATE `record`=VALUES(`record`), `player`=VALUES(`player`), `timestamp`=VALUES(`timestamp`)") or die($db->error);
+        rename($file, "./demos/$map.wd15");
+    }
 }
 
 ?>

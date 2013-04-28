@@ -117,8 +117,8 @@ function format_pages($level, $pager) {
 function format_player($name, $id = 0, $records = 0) {
     global $db;
     if ($id == -1 || $records == -1) {
-        $filtered = $db->real_escape_string($name);
-        $result = $db->query("SELECT `id`, COUNT(`id`) AS `records` FROM `map` WHERE `record_holder`='$filtered' LIMIT 1") or die($db->error);
+        $filtered = $db->real_escape_string(uncolor($name));
+        $result = $db->query("SELECT P.`id`, COUNT(*) AS `records` FROM `map` M, `player` P WHERE P.`name_raw`='$filtered' AND M.`player`=P.`id` LIMIT 1") or die($db->error);
         if ($row = $result->fetch_array()) {
             if ($id == -1)
                 $id = $row['id'];
@@ -143,9 +143,9 @@ function format_map_external($name) {
     $result = format_map($name);
     if (file_exists("./demos/$name.wd15")) {
         $name = $db->real_escape_string($name);
-        $res = $db->query("SELECT `record`, `record_holder` FROM `map` WHERE `name`='$name'") or die($db->error);
+        $res = $db->query("SELECT `record`, P.`name` FROM `map` M, `player` P WHERE M.`name`='$name' AND P.`id`=M.`player`") or die($db->error);
         if ($row = $res->fetch_array())
-            $result .= ' (' . format_time($row['record'], $name) . ' by ' . format_player($row['record_holder'], -1) . ')';
+            $result .= ' (' . format_time($row['record'], $name) . ' by ' . format_player($row['name'], -1) . ')';
     }
     return $result;
 }

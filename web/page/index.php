@@ -1,7 +1,7 @@
 <?php
 
 $maps = '';
-$result = $db->query("SELECT `id`, `name`, `record`, `record_holder` FROM `map` ORDER BY `timestamp` DESC, `name` LIMIT 8") or die($db->error);
+$result = $db->query("SELECT P.`id`, M.`name`, `record`, P.`name` AS `record_holder` FROM `map` M, `player` P WHERE P.`id`=M.`player` ORDER BY `timestamp` DESC LIMIT 8") or die($db->error);
 while ($row = $result->fetch_array())
     $maps .= '<tr><td>' . format_map($row['name']) . '</td><td>' . format_player($row['record_holder'], $row['id'], -1) . '</td><td class="right">' . format_time($row['record'], $row['name']) . '</td></tr>';
 

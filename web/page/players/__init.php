@@ -6,9 +6,9 @@ if (count($hierarchy) == 2 && $_POST['submit']) {
 }
 
 $players = '';
-$result = $db->query("SELECT `id`, `record_holder` FROM `map` WHERE `id`=" . (int)$hierarchy[1]) or die($db->error);
+$result = $db->query("SELECT `id`, `name` FROM `player` WHERE `id`=" . (int)$hierarchy[1]) or die($db->error);
 while ($row = $result->fetch_array()) {
-    $shared['head'] = 'Player ' . format_player($row['record_holder'], $row['id']);
+    $shared['head'] = 'Player ' . format_player($row['name'], $row['id']);
     $shared['player'] = $row;
 }
 

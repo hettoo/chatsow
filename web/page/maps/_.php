@@ -4,7 +4,7 @@ import_lib('Pager');
 
 $like = $db->real_escape_string($hierarchy[2]);
 
-$pager = new Pager($hierarchy[1] - 1, $shared['max_rows'], "SELECT `id`, `name`, `record`, `record_holder` FROM `map` WHERE `name` LIKE '%$like%' OR `record_holder_raw` LIKE '%$like%' ORDER BY `name`");
+$pager = new Pager($hierarchy[1] - 1, $shared['max_rows'], "P.`id`, M.`name`, `record`, P.`name` AS `record_holder` FROM `map` M, `player` P WHERE P.`id`=M.`player` AND (M.`name` LIKE '%$like%' OR P.`name_raw` LIKE '%$like%') ORDER BY `name`");
 
 $maps = '';
 $rows = $pager->getRows();
