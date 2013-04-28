@@ -3,7 +3,7 @@ The bot is currently connected to the following servers.
 </p>
 <?php
 
-$fp = fopen($chatsow . 'live.txt', 'r');
+$fp = fopen($shared['chatsow'] . 'live.txt', 'r');
 $state = 0;
 while (($result = fgets($fp)) !== FALSE) {
     $result = trim($result);

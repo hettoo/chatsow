@@ -1,5 +1,5 @@
 <?php
 
-$shared['head'] = $project;
+$shared['head'] = $shared['project'];
 
 ?>
