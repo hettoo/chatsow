@@ -109,6 +109,8 @@ if (!isset($base)) {
     exit;
 }
 
+header('Content-Type: text/html; charset=iso-8859-1');
+
 $args = preg_replace('/\/$/', '', $args);
 
 if (empty($args))

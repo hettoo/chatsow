@@ -17,7 +17,6 @@ if (empty($shared['head']))
 <html>
 <head>
         <title><?= preg_replace('/<[^>]*>/', '', $shared['head']); ?></title>
-        <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
         <style type="text/css">
             body {
                 font-family: Sans, Arial, Verdana;
