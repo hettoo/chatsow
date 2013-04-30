@@ -6,13 +6,12 @@ while ($row = $result->fetch_array())
     $maps .= '<tr><td>' . format_map($row['name']) . '</td><td>' . format_player($row['record_holder'], $row['id'], -1) . '</td><td class="right">' . format_time($row['record'], $row['name']) . '</td><td class="right">' . format_date_relative($row['timestamp']) . '</td></tr>';
 
 $map_count = 0;
-$result = $db->query("SELECT COUNT(*) AS `maps` FROM `map`") or die($db->error);
-while ($row = $result->fetch_array())
-    $map_count = $row['maps'];
 $player_count = 0;
-$result = $db->query("SELECT COUNT(*) AS `players` FROM `player`") or die($db->error);
-while ($row = $result->fetch_array())
+$result = $db->query("SELECT COUNT(*) AS `maps`, COUNT(DISTINCT `player`) AS `players` FROM `map`") or die($db->error);
+if ($row = $result->fetch_array()) {
+    $map_count = $row['maps'];
     $player_count = $row['players'];
+}
 
 ?>
 <p>
