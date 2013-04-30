@@ -9,7 +9,7 @@ $pager = new Pager($hierarchy[1] - 1, $shared['max_rows'], "P.`id`, M.`name`, `r
 $maps = '';
 $rows = $pager->getRows();
 foreach ($rows as $row) {
-    $maps .= '<tr><td>' . format_map($row['name']) . '</td><td>' . format_player($row['record_holder'], $row['id'], -1) . '</td><td class="right">' . format_time($row['record'], $row['name']) . '</td><td>' . format_date($row['timestamp']) . '</td></tr>';
+    $maps .= '<tr><td>' . format_map($row['name']) . '</td><td>' . format_player($row['record_holder'], $row['id'], -1) . '</td><td class="right">' . format_time($row['record'], $row['name']) . '</td><td class="right">' . format_date($row['timestamp']) . '</td></tr>';
 }
 
 ?>
@@ -24,6 +24,6 @@ Records below are the best runs recorded by the bot, not necessarily actual reco
 </p>
 <?= format_pages(1, $pager); ?>
 <table>
-    <tr><th>Map</th><th>Record holder</th><th class="right">Record</th><th>Date</th></tr>
+    <tr><th>Map</th><th>Record holder</th><th class="right">Record</th><th class="right">Date</th></tr>
     <?= $maps; ?>
 </table>
