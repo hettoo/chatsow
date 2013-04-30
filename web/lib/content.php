@@ -154,6 +154,7 @@ if (empty($shared['head']))
             }
             .time .exacttime {
                 display: none;
+                text-align: center;
             }
             .time:hover .exacttime {
                 position: absolute;
