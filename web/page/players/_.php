@@ -10,7 +10,7 @@ $pager = new Pager($hierarchy[2] - 1, $shared['max_rows'], "`name`, `record`, UN
 $maps = '';
 $rows = $pager->getRows();
 foreach ($rows as $row) {
-    $maps .= '<tr><td>' . format_map($row['name']) . '</td><td class="right">' . format_time($row['record'], $row['name']) . '</td><td class="right">' . exact_date($row['timestamp']) . '</td></tr>';
+    $maps .= '<tr><td>' . format_map($row['name']) . '</td><td class="right">' . format_time($row['record'], $row['name']) . '</td><td class="right">' . format_date($row['timestamp']) . '</td></tr>';
 }
 
 ?>

@@ -150,8 +150,12 @@ function format_map_external($name) {
     return $result;
 }
 
-function format_date($time) {
+function format_date_relative($time) {
     return '<span class="time">' . relative_time($time) . ($time == 0 ? '' : ' <span class="exacttime">' . exact_time($time) . '</span>') . '</span>';
+}
+
+function format_date($time) {
+    return '<span class="time">' . exact_date($time) . ($time == 0 ? '' : ' <span class="exacttime">' . exact_time($time) . '</span>') . '</span>';
 }
 
 function format_server($server) {

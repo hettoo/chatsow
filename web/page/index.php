@@ -3,7 +3,7 @@
 $maps = '';
 $result = $db->query("SELECT P.`id`, M.`name`, `record`, P.`name` AS `record_holder`, UNIX_TIMESTAMP(`timestamp`) AS `timestamp` FROM `map` M, `player` P WHERE P.`id`=M.`player` ORDER BY `timestamp` DESC LIMIT 8") or die($db->error);
 while ($row = $result->fetch_array())
-    $maps .= '<tr><td>' . format_map($row['name']) . '</td><td>' . format_player($row['record_holder'], $row['id'], -1) . '</td><td class="right">' . format_time($row['record'], $row['name']) . '</td><td class="right">' . format_date($row['timestamp']) . '</td></tr>';
+    $maps .= '<tr><td>' . format_map($row['name']) . '</td><td>' . format_player($row['record_holder'], $row['id'], -1) . '</td><td class="right">' . format_time($row['record'], $row['name']) . '</td><td class="right">' . format_date_relative($row['timestamp']) . '</td></tr>';
 
 $map_count = 0;
 $result = $db->query("SELECT COUNT(*) AS `maps` FROM `map`") or die($db->error);
