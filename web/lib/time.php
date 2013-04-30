@@ -1,5 +1,11 @@
 <?php
 
+function exact_time($time) {
+    if ($time == 0)
+        return 'unknown';
+    return date("j F Y @ G:i", $time);
+}
+
 function plural($num) {
     if ($num != 1)
         return 's';

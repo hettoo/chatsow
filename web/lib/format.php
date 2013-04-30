@@ -151,7 +151,7 @@ function format_map_external($name) {
 }
 
 function format_date($time) {
-    return '<span class="time">' . relative_time($time) . ($time == 0 ? '' : ' <span class="exacttime">' . date("j F Y @ G:i", $time == 0 ? time() : $time) . '</span>') . '</span>';
+    return '<span class="time">' . relative_time($time) . ($time == 0 ? '' : ' <span class="exacttime">' . exact_time($time) . '</span>') . '</span>';
 }
 
 function format_server($server) {
