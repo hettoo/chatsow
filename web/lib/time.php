@@ -7,10 +7,16 @@ function exact_date($time) {
 }
 
 function exact_time($time) {
+    if ($time == 0)
+        return 'unknown';
+    return $result . date("G:i", $time);
+}
+
+function exact_datetime($time) {
     $result = exact_date($time);
     if ($time == 0)
         return $result;
-    return $result . date(" @ G:i", $time);
+    return $result . ' @ ' . exact_time($time);
 }
 
 function plural($num) {
