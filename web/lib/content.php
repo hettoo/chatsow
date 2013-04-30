@@ -171,8 +171,9 @@ $main_menu = create_menu(0, array(
         }
         .time:hover .exacttime {
             position: absolute;
-            top: -16px;
-            width: 200px;
+            top: -20px;
+            white-space: nowrap;
+            padding: 1px 2px;
             display: block;
             background-color: #000;
         }
