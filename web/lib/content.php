@@ -3,13 +3,16 @@
 $shared['submenu'] = '';
 $shared['head'] = 'Unnamed page';
 $shared['keywords'] = $shared['project'] . ', Racesow, Warsow Race, Warsow, chatsow';
-$shared['description'] = '';
+$shared['description'] = 'Chatsow instance improving the Racesow competitiveness by disclosing record demos.';
 init_page($args);
 if ($shared['head'] == '') {
     $shared['head'] = $shared['project'];
     $shared['title'] = $shared['head'];
+    $shared['head'] = strip_tags($shared['head']);
 } else {
     $shared['title'] = $shared['head'];
+    $shared['head'] = strip_tags($shared['head']);
+    $shared['keywords'] = $shared['head'] . ', ' . $shared['keywords'];
     $shared['head'] .= ' | ' . $shared['project'];
 }
 $main_menu = create_menu(0, array(
@@ -24,7 +27,7 @@ $main_menu = create_menu(0, array(
 <html>
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
-    <title><?= preg_replace('/<[^>]*>/', '', $shared['head']); ?></title>
+    <title><?= $shared['head']; ?></title>
     <meta name="keywords" content="<?= $shared['keywords']; ?>">
     <meta name="description" content="<?= $shared['description']; ?>">
     <style type="text/css">
