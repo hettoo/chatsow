@@ -2,9 +2,11 @@
 
 import_lib('Pager');
 
-$like = $db->real_escape_string($hierarchy[2]);
+list($order, $descending) = get_order(1, 'name');
+$page = $hierarchy[2] - 1;
+$like = $db->real_escape_string($hierarchy[3]);
 
-$pager = new Pager($hierarchy[1] - 1, $shared['max_rows'], "P.`id`, M.`name`, `record`, P.`name` AS `record_holder`, UNIX_TIMESTAMP(`timestamp`) AS `timestamp` FROM `map` M, `player` P WHERE P.`id`=M.`player` AND (M.`name` LIKE '%$like%' OR P.`name_raw` LIKE '%$like%') ORDER BY `name`");
+$pager = new Pager($page, $shared['max_rows'], "P.`id`, M.`name`, `record`, P.`name` AS `record_holder`, UNIX_TIMESTAMP(`timestamp`) AS `timestamp` FROM `map` M, `player` P WHERE P.`id`=M.`player` AND (M.`name` LIKE '%$like%' OR P.`name_raw` LIKE '%$like%') ORDER BY `$order`" . ($descending ? 'DESC' : 'ASC'));
 
 $maps = '';
 $rows = $pager->getRows();
@@ -17,13 +19,13 @@ foreach ($rows as $row) {
 Records below are the best runs recorded by the bot, not necessarily actual records.
 </p>
 <p>
-<form action="<?= url('maps'); ?>" method="POST">
+<form action="<?= this_url(); ?>" method="POST">
 <input type="text" name="name" value="<?= $like; ?>" />
 <input type="submit" name="submit" value="Search">
 </form>
 </p>
-<?= format_pages(1, $pager); ?>
+<?= format_pages(2, $pager); ?>
 <table>
-    <tr><th>Map</th><th>Record holder</th><th class="right">Record</th><th class="right">Date</th></tr>
+    <?= format_head(1, array('Map' => 'name', 'Record holder' => 'player'), array('Record' => 'record', 'Date' => 'timestamp')); ?>
     <?= $maps; ?>
 </table>

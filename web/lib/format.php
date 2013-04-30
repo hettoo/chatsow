@@ -77,6 +77,16 @@ function uncolor($string) {
     return $result;
 }
 
+function format_head($level, $left, $right) {
+    $result = '<tr>';
+    foreach ($left as $title => $link)
+        $result .= '<th><a href="' . url(invert_search($level, $link), $level, false) . '">' . $title . '</a></th>';
+    foreach ($right as $title => $link)
+        $result .= '<th class="right"><a href="' . url(invert_search($level, $link), $level, false) . '">' . $title . '</a></th>';
+    $result .= '</tr>';
+    return $result;
+}
+
 function format_pages($level, $pager) {
     global $shared;
 

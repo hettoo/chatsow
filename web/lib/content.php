@@ -60,6 +60,12 @@ $main_menu = create_menu(0, array(
         th, td {
             padding-right: 20px;
         }
+        th a {
+            color: #fff;
+        }
+        th a:hover {
+            color: #fff;
+        }
         li.active {
             background-color: #090;
         }
