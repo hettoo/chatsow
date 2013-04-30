@@ -8,7 +8,7 @@ function plural($num) {
 function relative_time($time) {
     $diff = time() - $time;
     if ($time == 0)
-        $diff = 0;
+        return 'unknown';
 
     if ($diff == 0)
         return 'now';
