@@ -1,7 +1,17 @@
 <?php
 
 $shared['submenu'] = '';
+$shared['head'] = 'Unnamed page';
+$shared['keywords'] = $shared['project'] . ', Racesow, Warsow Race, Warsow, chatsow';
+$shared['description'] = '';
 init_page($args);
+if ($shared['head'] == '') {
+    $shared['head'] = $shared['project'];
+    $shared['title'] = $shared['head'];
+} else {
+    $shared['title'] = $shared['head'];
+    $shared['head'] .= ' | ' . $shared['project'];
+}
 $main_menu = create_menu(0, array(
     array('', 'Home'),
     array('maps', 'Maps'),
@@ -9,14 +19,13 @@ $main_menu = create_menu(0, array(
     array('live', 'Live')
 ));
 
-if (empty($shared['head']))
-    $shared['head'] = 'Unnamed page';
-
 ?>
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
 <html>
 <head>
         <title><?= preg_replace('/<[^>]*>/', '', $shared['head']); ?></title>
+        <meta name="keywords" content="<?= $shared['keywords']; ?>">
+        <meta name="description" content="<?= $shared['description']; ?>">
         <style type="text/css">
             body {
                 font-family: Sans, Arial, Verdana;
@@ -176,7 +185,7 @@ if (empty($shared['head']))
             </div>
             <div class="clear"></div>
             <div id="head">
-                <h1><?= empty($shared['head']) ? 'Unnamed page' : $shared['head']; ?></h1>
+                <h1><?= $shared['title']; ?></h1>
             </div>
             <div id="sub-menu">
                 <?= $shared['submenu']; ?>
