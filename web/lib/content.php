@@ -173,6 +173,7 @@ $main_menu = create_menu(0, array(
                 background-color: #000;
             }
         </style>
+        <?= $shared['analytics']; ?>
 </head>
 <body>
         <div id="main">

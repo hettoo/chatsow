@@ -7,5 +7,6 @@ $shared['host'] = 'localhost';
 
 $shared['chatsow'] = '/home/user/.chatsow/';
 $shared['project'] = 'Chatsow bot page';
+$shared['analytics'] = '';
 
 ?>
