@@ -26,6 +26,6 @@ Records below are the best runs recorded by the bot, not necessarily actual reco
 </p>
 <?= format_pages(2, $pager); ?>
 <table>
-    <?= format_head(1, array('Map' => 'name', 'Record holder' => 'player'), array('Record' => 'record', 'Date' => 'timestamp')); ?>
+    <?= format_head(1, 2, array('Map' => 'name', 'Record holder' => 'player'), array('Record' => 'record', 'Date' => 'timestamp')); ?>
     <?= $maps; ?>
 </table>
