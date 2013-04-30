@@ -1,9 +1,16 @@
 <?php
 
-function exact_time($time) {
+function exact_date($time) {
     if ($time == 0)
         return 'unknown';
-    return date("j F Y @ G:i", $time);
+    return date("j F Y", $time);
+}
+
+function exact_time($time) {
+    $result = exact_date($time);
+    if ($time == 0)
+        return $result;
+    return $result . date(" @ G:i", $time);
 }
 
 function plural($num) {
