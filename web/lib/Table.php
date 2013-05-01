@@ -121,7 +121,10 @@ class Table {
             $page = $hierarchy[$index];
             $hierarchy[$index] = '1';
         }
-        $result .= '<table>';
+        $result .= '<table';
+        if (!$this->head)
+            $result .= ' class="headless"';
+        $result .= '>';
         if ($this->head) {
             $result .= '<tr>';
             foreach ($this->columns as $values) {
