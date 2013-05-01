@@ -143,7 +143,8 @@ $main_menu = create_menu(0, array(
         ul.pager {
             list-style-type: none;
             margin: 0;
-            padding: 6px 0;
+            padding: 4px 0;
+            font-size: 14px;
         }
         ul.pager li {
             display: inline;
