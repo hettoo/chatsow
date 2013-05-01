@@ -34,6 +34,7 @@ while ($row = $result->fetch_array()) {
     $shared['head'] = 'Player ' . format_player($row['name'], $row['id']);
     $shared['player'] = $row;
 }
+$table->setPager($pager);
 
 $shared['search'] = $search;
 $shared['table'] = $table;

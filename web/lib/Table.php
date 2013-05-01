@@ -102,12 +102,14 @@ class Table {
 
     function format() {
         global $hierarchy;
-        $result = '<table>';
+        $result = '';
         if (isset($this->pager)) {
+            $result .= $this->pager->format();
             $index = $this->pager->getIndex();
             $page = $hierarchy[$index];
             $hierarchy[$index] = '1';
         }
+        $result .= '<table>';
         if ($this->head) {
             $result .= '<tr>';
             foreach ($this->columns as $values) {
