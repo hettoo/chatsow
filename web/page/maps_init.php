@@ -2,6 +2,7 @@
 
 import_lib('Pager');
 import_lib('Table');
+import_lib('Search');
 
 $shared['head'] = 'Maps';
 
@@ -13,11 +14,12 @@ $table->addColumn(array('name' => 'timestamp', 'title' => 'Date', 'align' => 'ri
 
 $table->processOrder('name');
 
-$like = search_get(3);
+$search = new Search(3);
+$like = $search->get();
 
 $pager = new Pager(2, $shared['max_rows'], "P.`id`, M.`name`, `record`, P.`name` AS `record_holder`, UNIX_TIMESTAMP(`timestamp`) AS `timestamp` FROM `map` M, `player` P WHERE P.`id`=M.`player` AND (M.`name` LIKE '%$like%' OR P.`name_raw` LIKE '%$like%')" . $table->getOrder());
 
-search_redirect(3, $pager, $_POST['name']);
+$search->redirect($pager);
 
 $pager->query();
 $rows = $pager->getRows();
@@ -29,7 +31,7 @@ foreach ($rows as $row) {
 }
 $table->setPager($pager);
 
-$shared['like'] = $like;
+$shared['search'] = $search;
 $shared['table'] = $table;
 $shared['pager'] = $pager;
 

@@ -2,6 +2,7 @@
 
 import_lib('Pager');
 import_lib('Table');
+import_lib('Search');
 
 $id = (int)$hierarchy[1];
 
@@ -12,11 +13,12 @@ $table->addColumn(array('name' => 'timestamp', 'title' => 'Date', 'align' => 'ri
 
 $table->processOrder('name');
 
-$like = search_get(4);
+$search = new Search(4);
+$like = $search->get();
 
 $pager = new Pager(3, $shared['max_rows'], "`name`, `record`, UNIX_TIMESTAMP(`timestamp`) AS `timestamp` FROM `map` WHERE `player`=$id AND `name` LIKE '%$like%'" . $table->getOrder());
 
-search_redirect(4, $pager, $_POST['name']);
+$search->redirect($pager);
 
 $maps = '';
 $pager->query();
@@ -33,7 +35,7 @@ while ($row = $result->fetch_array()) {
     $shared['player'] = $row;
 }
 
-$shared['like'] = $like;
+$shared['search'] = $search;
 $shared['table'] = $table;
 $shared['pager'] = $pager;
 

@@ -77,16 +77,6 @@ function uncolor($string) {
     return $result;
 }
 
-function format_search($current) {
-    $result = '<p>';
-    $result .= '<form action="' . this_url() . '" method="POST">';
-    $result .= '<input type="text" name="name" value="' . $current . '" />';
-    $result .= '<input type="submit" name="submit" value="Search">';
-    $result .= '</form>';
-    $result .= '</p>';
-    return $result;
-}
-
 function format_player($name, $id = 0, $records = 0) {
     global $db;
     if ($id == -1 || $records == -1) {

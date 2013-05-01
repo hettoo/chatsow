@@ -35,9 +35,23 @@ class Table {
         $this->columns[] = $values;
     }
 
-    function processOrder($default_order) {
+    function getOrdering($default = null) {
+        global $db, $hierarchy;
+        $order = $db->real_escape_string($hierarchy[$this->order_index]);
+        if (isset($default)) {
+            if ($order == '')
+                $order = 'name';
+            $hierarchy[$this->order_index] = $order;
+        }
+        $descending = substr($order, 0, 1) == '-';
+        if ($descending)
+            $order = substr($order, 1);
+        return array($order, $descending);
+    }
+
+    function processOrder($default_order = null) {
         $table = '';
-        list($order, $this->descending) = get_order($this->order_index, $default_order);
+        list($order, $this->descending) = $this->getOrdering($this->order_index, $default_order);
         foreach ($this->columns as $values) {
             if ($values['name'] == $order) {
                 $this->column = $values['column'];
@@ -68,6 +82,24 @@ class Table {
         $this->pager = $pager;
     }
 
+    function invert($link) {
+        global $hierarchy;
+        $current = $hierarchy[$this->order_index];
+        if ($current == $link)
+            return '-' . $link;
+        return $link;
+    }
+
+    function prefix($link) {
+        global $hierarchy;
+        $current = $hierarchy[$this->order_index];
+        if ($current == $link)
+            return '+';
+        if ($current == '-' . $link)
+            return '-';
+        return '';
+    }
+
     function format() {
         global $hierarchy;
         $result = '<table>';
@@ -84,8 +116,8 @@ class Table {
                     $result .= ' class="' . $values['align'] . '"';
                 $result .= '>';
                 if (isset($this->order_index)) {
-                    $result .= '<a href="' . url(invert_search($this->order_index, $values['name']), $this->order_index, false) . '">';
-                    $result .= search_prefix($this->order_index, $values['name']);
+                    $result .= '<a href="' . url($this->invert($values['name']), $this->order_index, false) . '">';
+                    $result .= $this->prefix($values['name']);
                 }
                 $result .= $values['title'];
                 if (isset($this->order_index))
