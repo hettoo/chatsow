@@ -3,6 +3,7 @@
 class Table {
     private $columns;
     private $order_index;
+    private $pager;
 
     private $content;
     private $x;
@@ -14,6 +15,7 @@ class Table {
     function __construct($order_index = null) {
         $this->content = '';
         $this->x = 0;
+        $this->pager = null;
         $this->columns = array();
         $this->order_index = $order_index;
     }
@@ -53,11 +55,15 @@ class Table {
             $this->content .= '</tr>';
     }
 
-    function format($pager = null) {
+    function setPager($pager) {
+        $this->pager = $pager;
+    }
+
+    function format() {
         global $hierarchy;
         $result = '<table>';
-        if (isset($pager)) {
-            $index = $pager->getIndex();
+        if (isset($this->pager)) {
+            $index = $this->pager->getIndex();
             $page = $hierarchy[$index];
             $hierarchy[$index] = '1';
         }
@@ -77,8 +83,8 @@ class Table {
             $result .= '</th>';
         }
         $result .= '</tr>';
-        if (isset($pager))
-            $hierarchy[$pager->getIndex()] = $page;
+        if (isset($this->pager))
+            $hierarchy[$this->pager->getIndex()] = $page;
         $result .= $this->content;
         $result .= '</table>';
         return $result;

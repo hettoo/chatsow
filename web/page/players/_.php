@@ -8,6 +8,7 @@ $like = $db->real_escape_string($hierarchy[3]);
 $pager = new Pager(2, $shared['max_rows'], "`name`, `record`, UNIX_TIMESTAMP(`timestamp`) AS `timestamp` FROM `map` WHERE `player`=$id AND `name` LIKE '%$like%' ORDER BY `name`");
 
 $maps = '';
+$pager->query();
 $rows = $pager->getRows();
 foreach ($rows as $row) {
     $maps .= '<tr><td>' . format_map($row['name']) . '</td><td class="right">' . format_time($row['record'], $row['name']) . '</td><td class="right">' . format_date($row['timestamp']) . '</td></tr>';

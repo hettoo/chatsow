@@ -1,7 +1,36 @@
 <?php
 
-search_redirect(3, 2, $_POST['name']);
+import_lib('Pager');
+import_lib('Table');
 
 $shared['head'] = 'Maps';
+
+$table = new Table(1);
+$table->addColumn(array('name' => 'name', 'title' => 'Map'));
+$table->addColumn(array('name' => 'player', 'title' => 'Record holder', 'table' => 'P', 'column' => 'name_raw'));
+$table->addColumn(array('name' => 'record', 'title' => 'Record', 'align' => 'right'));
+$table->addColumn(array('name' => 'timestamp', 'title' => 'Date', 'align' => 'right'));
+
+$table->processOrder('name');
+
+$like = search_get(3);
+
+$pager = new Pager(2, $shared['max_rows'], "P.`id`, M.`name`, `record`, P.`name` AS `record_holder`, UNIX_TIMESTAMP(`timestamp`) AS `timestamp` FROM `map` M, `player` P WHERE P.`id`=M.`player` AND (M.`name` LIKE '%$like%' OR P.`name_raw` LIKE '%$like%')" . $table->getOrder());
+
+search_redirect(3, $pager, $_POST['name']);
+
+$pager->query();
+$rows = $pager->getRows();
+foreach ($rows as $row) {
+    $table->addField(format_map($row['name']));
+    $table->addField(format_player($row['record_holder'], $row['id'], -1));
+    $table->addField(format_time($row['record'], $row['name']));
+    $table->addField(format_date($row['timestamp']));
+}
+$table->setPager($pager);
+
+$shared['like'] = $like;
+$shared['table'] = $table;
+$shared['pager'] = $pager;
 
 ?>

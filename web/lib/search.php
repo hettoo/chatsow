@@ -1,9 +1,9 @@
 <?php
 
-function search_redirect($index, $page_index, $value) {
+function search_redirect($index, $pager, $value) {
     global $hierarchy;
     if ($_POST['submit']) {
-        $hierarchy[$page_index] = '1';
+        $hierarchy[$pager->getIndex()] = '1';
         header('Location: http://' . $_SERVER['HTTP_HOST'] . url($value, $index, false));
         exit;
     }

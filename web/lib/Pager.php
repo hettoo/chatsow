@@ -15,7 +15,6 @@ class Pager {
         $this->page = max((int)$hierarchy[$index] - 1, 0);
         $this->limit = (int)$limit;
         $this->query = $query;
-        $this->query();
     }
 
     function getIndex() {
