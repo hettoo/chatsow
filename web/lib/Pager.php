@@ -1,6 +1,7 @@
 <?php
 
 class Pager {
+    private $index;
     private $page;
     private $limit;
     private $query;
@@ -8,11 +9,17 @@ class Pager {
     private $pages;
     private $rows;
 
-    function __construct($page, $limit, $query) {
-        $this->page = max((int)$page, 0);
+    function __construct($index, $limit, $query) {
+        global $hierarchy;
+        $this->index = $index;
+        $this->page = max((int)$hierarchy[$index] - 1, 0);
         $this->limit = (int)$limit;
         $this->query = $query;
         $this->query();
+    }
+
+    function getIndex() {
+        return $this->index;
     }
 
     function getOffset() {
@@ -40,6 +47,43 @@ class Pager {
 
     function getPages() {
         return $this->pages;
+    }
+
+    function format() {
+        global $shared;
+
+        $pages = $this->getPages();
+        if ($pages <= 1)
+            return '';
+
+        $page = $this->getPage() + 1;
+        $start = 1;
+        $end = $pages;
+        $max_left = floor(($shared['max_pages'] - 1) / 2);
+        $max_right = ceil(($shared['max_pages'] - 1) / 2);
+        $fit_left = $page - $start;
+        $fit_right = $end - $page;
+        $missed_left = max(0, $max_left - $fit_left);
+        $missed_right = max(0, $max_right - $fit_right);
+        $left = min($fit_left, $max_left + $missed_right);
+        $right = min($fit_right, $max_right + $missed_left);
+        $start = $page - $left;
+        $end = $page + $right;
+
+        $result = '';
+        $result .= '<ul class="pager">';
+        $result .= '<li><a href="' . url(1, $this->index, false) . '">&lt;&lt;</a></li>';
+        $result .= '<li><a href="' . url(max($page - 1, 1), $this->index, false) . '">&lt;</a></li>';
+        if ($start > 1)
+            $result .= '...';
+        for ($i = $start; $i <= $end; $i++)
+            $result .= '<li' . ($i == $page ? ' class="active"' : '') . '><a href="' . url($i, $this->index, false) . '">' . $i . '</a></li>';
+        if ($end < $pages)
+            $result .= '...';
+        $result .= '<li><a href="' . url(min($page + 1, $pages), $this->index, false) . '">&gt;</a></li>';
+        $result .= '<li><a href="' . url($pages, $this->index, false) . '">&gt;&gt;</a></li>';
+        $result .= '</ul>';
+        return $result;
     }
 }
 

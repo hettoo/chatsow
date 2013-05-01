@@ -53,12 +53,13 @@ class Table {
             $this->content .= '</tr>';
     }
 
-    function format($page_index = null) {
+    function format($pager = null) {
         global $hierarchy;
         $result = '<table>';
-        if (isset($page_index)) {
-            $page = $hierarchy[$page_index];
-            $hierarchy[$page_index] = '1';
+        if (isset($pager)) {
+            $index = $pager->getIndex();
+            $page = $hierarchy[$index];
+            $hierarchy[$index] = '1';
         }
         $result .= '<tr>';
         foreach ($this->columns as $values) {
@@ -76,8 +77,8 @@ class Table {
             $result .= '</th>';
         }
         $result .= '</tr>';
-        if (isset($page_index))
-            $hierarchy[$page_index] = $page;
+        if (isset($pager))
+            $hierarchy[$pager->getIndex()] = $page;
         $result .= $this->content;
         $result .= '</table>';
         return $result;

@@ -87,43 +87,6 @@ function format_search($current) {
     return $result;
 }
 
-function format_pages($level, $pager) {
-    global $shared;
-
-    $pages = $pager->getPages();
-    if ($pages <= 1)
-        return '';
-
-    $page = $pager->getPage() + 1;
-    $start = 1;
-    $end = $pages;
-    $max_left = floor(($shared['max_pages'] - 1) / 2);
-    $max_right = ceil(($shared['max_pages'] - 1) / 2);
-    $fit_left = $page - $start;
-    $fit_right = $end - $page;
-    $missed_left = max(0, $max_left - $fit_left);
-    $missed_right = max(0, $max_right - $fit_right);
-    $left = min($fit_left, $max_left + $missed_right);
-    $right = min($fit_right, $max_right + $missed_left);
-    $start = $page - $left;
-    $end = $page + $right;
-
-    $result = '';
-    $result .= '<ul class="pager">';
-    $result .= '<li><a href="' . url(1, $level, false) . '">&lt;&lt;</a></li>';
-    $result .= '<li><a href="' . url(max($page - 1, 1), $level, false) . '">&lt;</a></li>';
-    if ($start > 1)
-        $result .= '...';
-    for ($i = $start; $i <= $end; $i++)
-        $result .= '<li' . ($i == $page ? ' class="active"' : '') . '><a href="' . url($i, $level, false) . '">' . $i . '</a></li>';
-    if ($end < $pages)
-        $result .= '...';
-    $result .= '<li><a href="' . url(min($page + 1, $pages), $level, false) . '">&gt;</a></li>';
-    $result .= '<li><a href="' . url($pages, $level, false) . '">&gt;&gt;</a></li>';
-    $result .= '</ul>';
-    return $result;
-}
-
 function format_player($name, $id = 0, $records = 0) {
     global $db;
     if ($id == -1 || $records == -1) {

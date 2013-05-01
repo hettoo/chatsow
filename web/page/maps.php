@@ -11,10 +11,9 @@ $table->addColumn(array('name' => 'timestamp', 'title' => 'Date', 'align' => 'ri
 
 $table->processOrder('name');
 
-$page = $hierarchy[2] - 1;
 $like = search_get(3);
 
-$pager = new Pager($page, $shared['max_rows'], "P.`id`, M.`name`, `record`, P.`name` AS `record_holder`, UNIX_TIMESTAMP(`timestamp`) AS `timestamp` FROM `map` M, `player` P WHERE P.`id`=M.`player` AND (M.`name` LIKE '%$like%' OR P.`name_raw` LIKE '%$like%')" . $table->getOrder());
+$pager = new Pager(2, $shared['max_rows'], "P.`id`, M.`name`, `record`, P.`name` AS `record_holder`, UNIX_TIMESTAMP(`timestamp`) AS `timestamp` FROM `map` M, `player` P WHERE P.`id`=M.`player` AND (M.`name` LIKE '%$like%' OR P.`name_raw` LIKE '%$like%')" . $table->getOrder());
 
 $rows = $pager->getRows();
 foreach ($rows as $row) {
@@ -29,5 +28,5 @@ foreach ($rows as $row) {
 Records below are the best runs recorded by the bot, not necessarily actual records.
 </p>
 <?= format_search($like); ?>
-<?= format_pages(2, $pager); ?>
-<?= $table->format(2); ?>
+<?= $pager->format(); ?>
+<?= $table->format($pager); ?>

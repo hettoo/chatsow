@@ -5,7 +5,7 @@ import_lib('Pager');
 $id = (int)$hierarchy[1];
 $like = $db->real_escape_string($hierarchy[3]);
 
-$pager = new Pager($hierarchy[2] - 1, $shared['max_rows'], "`name`, `record`, UNIX_TIMESTAMP(`timestamp`) AS `timestamp` FROM `map` WHERE `player`=$id AND `name` LIKE '%$like%' ORDER BY `name`");
+$pager = new Pager(2, $shared['max_rows'], "`name`, `record`, UNIX_TIMESTAMP(`timestamp`) AS `timestamp` FROM `map` WHERE `player`=$id AND `name` LIKE '%$like%' ORDER BY `name`");
 
 $maps = '';
 $rows = $pager->getRows();
@@ -23,7 +23,7 @@ Records below are the best runs recorded by the bot, not necessarily actual reco
 <input type="submit" name="submit" value="Search">
 </form>
 </p>
-<?= format_pages(2, $pager); ?>
+<?= $pager->format(); ?>
 <table>
     <tr><th>Map</th><th class="right">Record</th><th class="right">Date</th></tr>
     <?= $maps; ?>
