@@ -61,7 +61,7 @@ $main_menu = create_menu(0, array(
             padding-right: 10px;
         }
         .headless th, .headless td {
-            padding-right: 50px;
+            padding-right: 30px;
         }
         th a {
             color: #fff;
@@ -199,6 +199,10 @@ $main_menu = create_menu(0, array(
             padding: 1px 2px;
             display: block;
             background-color: #000;
+        }
+
+        td.last {
+            padding-right: 0px;
         }
     </style>
     <?= $shared['analytics']; ?>

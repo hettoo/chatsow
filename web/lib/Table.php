@@ -83,6 +83,8 @@ class Table {
             $classes = $this->getClasses($this->columns[$this->x]);
             if (count($classes))
                 $this->content .= ' class="' . implode(' ', $classes) . '"';
+        } else if ($this->x == $this->force_columns - 1) {
+            $this->content .= ' class="last"';
         }
         $this->content .= '>';
         $this->content .= $value;
