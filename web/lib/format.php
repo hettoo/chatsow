@@ -77,17 +77,13 @@ function uncolor($string) {
     return $result;
 }
 
-function format_head($level, $page_level, $left, $right) {
-    global $hierarchy;
-    $page = $hierarchy[$page_level];
-    $hierarchy[$page_level] = '1';
-    $result = '<tr>';
-    foreach ($left as $title => $link)
-        $result .= '<th><a href="' . url(invert_search($level, $link), $level, false) . '">' . $title . '</a></th>';
-    foreach ($right as $title => $link)
-        $result .= '<th class="right"><a href="' . url(invert_search($level, $link), $level, false) . '">' . $title . '</a></th>';
-    $result .= '</tr>';
-    $hierarchy[$page_level] = $page;
+function format_search($current) {
+    $result = '<p>';
+    $result .= '<form action="' . this_url() . '" method="POST">';
+    $result .= '<input type="text" name="name" value="' . $current . '" />';
+    $result .= '<input type="submit" name="submit" value="Search">';
+    $result .= '</form>';
+    $result .= '</p>';
     return $result;
 }
 

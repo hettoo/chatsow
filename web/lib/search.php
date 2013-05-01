@@ -9,6 +9,11 @@ function search_redirect($index, $page_index, $value) {
     }
 }
 
+function search_get($index) {
+    global $db, $hierarchy;
+    return $db->real_escape_string($hierarchy[$index]);
+}
+
 function get_order($index, $default = null) {
     global $db, $hierarchy;
     $order = $db->real_escape_string($hierarchy[$index]);
@@ -29,6 +34,16 @@ function invert_search($level, $link) {
     if ($current == $link)
         return '-' . $link;
     return $link;
+}
+
+function search_prefix($level, $link) {
+    global $hierarchy;
+    $current = $hierarchy[$level];
+    if ($current == $link)
+        return '+';
+    if ($current == '-' . $link)
+        return '-';
+    return '';
 }
 
 ?>

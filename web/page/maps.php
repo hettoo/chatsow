@@ -1,36 +1,33 @@
 <?php
 
 import_lib('Pager');
+import_lib('Table');
 
-$table = 'M';
-list($order, $descending) = get_order(1, 'name');
-if ($order == 'player') {
-    $order = 'name_raw';
-    $table = 'P';
-}
+$table = new Table(1);
+$table->addColumn(array('name' => 'name', 'title' => 'Map'));
+$table->addColumn(array('name' => 'player', 'title' => 'Record holder', 'table' => 'P', 'column' => 'name_raw'));
+$table->addColumn(array('name' => 'record', 'title' => 'Record', 'align' => 'right'));
+$table->addColumn(array('name' => 'timestamp', 'title' => 'Date', 'align' => 'right'));
+
+$table->processOrder('name');
+
 $page = $hierarchy[2] - 1;
-$like = $db->real_escape_string($hierarchy[3]);
+$like = search_get(3);
 
-$pager = new Pager($page, $shared['max_rows'], "P.`id`, M.`name`, `record`, P.`name` AS `record_holder`, UNIX_TIMESTAMP(`timestamp`) AS `timestamp` FROM `map` M, `player` P WHERE P.`id`=M.`player` AND (M.`name` LIKE '%$like%' OR P.`name_raw` LIKE '%$like%') ORDER BY $table.`$order`" . ($descending ? 'DESC' : 'ASC'));
+$pager = new Pager($page, $shared['max_rows'], "P.`id`, M.`name`, `record`, P.`name` AS `record_holder`, UNIX_TIMESTAMP(`timestamp`) AS `timestamp` FROM `map` M, `player` P WHERE P.`id`=M.`player` AND (M.`name` LIKE '%$like%' OR P.`name_raw` LIKE '%$like%')" . $table->getOrder());
 
-$maps = '';
 $rows = $pager->getRows();
 foreach ($rows as $row) {
-    $maps .= '<tr><td>' . format_map($row['name']) . '</td><td>' . format_player($row['record_holder'], $row['id'], -1) . '</td><td class="right">' . format_time($row['record'], $row['name']) . '</td><td class="right">' . format_date($row['timestamp']) . '</td></tr>';
+    $table->addField(format_map($row['name']));
+    $table->addField(format_player($row['record_holder'], $row['id'], -1));
+    $table->addField(format_time($row['record'], $row['name']));
+    $table->addField(format_date($row['timestamp']));
 }
 
 ?>
 <p>
 Records below are the best runs recorded by the bot, not necessarily actual records.
 </p>
-<p>
-<form action="<?= this_url(); ?>" method="POST">
-<input type="text" name="name" value="<?= $like; ?>" />
-<input type="submit" name="submit" value="Search">
-</form>
-</p>
+<?= format_search($like); ?>
 <?= format_pages(2, $pager); ?>
-<table>
-    <?= format_head(1, 2, array('Map' => 'name', 'Record holder' => 'player'), array('Record' => 'record', 'Date' => 'timestamp')); ?>
-    <?= $maps; ?>
-</table>
+<?= $table->format(); ?>
