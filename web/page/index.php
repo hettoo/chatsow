@@ -1,30 +1,3 @@
-<?php
-
-import_lib('Table');
-
-$table = new Table();
-$table->addColumn(array('title' => 'Map'));
-$table->addColumn(array('title' => 'Record holder', 'column' => 'name_raw'));
-$table->addColumn(array('title' => 'Record', 'align' => 'right'));
-$table->addColumn(array('title' => 'Date', 'align' => 'right'));
-
-$result = $db->query("SELECT P.`id`, M.`name`, `record`, P.`name` AS `record_holder`, UNIX_TIMESTAMP(`timestamp`) AS `timestamp` FROM `map` M, `player` P WHERE P.`id`=M.`player` ORDER BY `timestamp` DESC LIMIT 8") or die($db->error);
-while ($row = $result->fetch_array()) {
-    $table->addField(format_map($row['name']));
-    $table->addField(format_player($row['record_holder'], $row['id'], -1));
-    $table->addField(format_time($row['record'], $row['name']));
-    $table->addField(format_date_relative($row['timestamp']));
-}
-
-$map_count = 0;
-$player_count = 0;
-$result = $db->query("SELECT COUNT(*) AS `maps`, COUNT(DISTINCT `player`) AS `players` FROM `map`") or die($db->error);
-if ($row = $result->fetch_array()) {
-    $map_count = $row['maps'];
-    $player_count = $row['players'];
-}
-
-?>
 <p>
 This is the webinterface of an instance of the <a href="http://github.com/hettoo/chatsow" target="_blank">chatsow</a> project created by <?= format_player('^7^0/^7inc^2.^7hettoo^0/', -1); ?>, a <a href="http://warsow.net" target="_blank">Warsow</a> chat client with specific plugin functionality for <a href="http://github.com/Racenet/racesow" target="_blank">Racesow</a>.
 </p>
@@ -40,10 +13,10 @@ Play on your own server, disconnected from the rest of the world, if you want to
 </p>
 <h2>Stats</h2>
 <p>
-A total of <b><?= $map_count; ?></b> records have been recorded from <b><?= $player_count; ?></b> different players.
+A total of <b><?= $shared['map_count']; ?></b> records have been recorded from <b><?= $shared['player_count']; ?></b> different players.
 </p>
 <h2>Latest records</h2>
 <p>
 Records below are the best runs recorded by the bot, not necessarily actual records.
 </p>
-<?= $table->format(); ?>
+<?= $shared['table']->format(); ?>

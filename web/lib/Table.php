@@ -4,6 +4,8 @@ class Table {
     private $columns;
     private $order_index;
     private $pager;
+    private $head;
+    private $force_columns;
 
     private $content;
     private $x;
@@ -18,6 +20,13 @@ class Table {
         $this->pager = null;
         $this->columns = array();
         $this->order_index = $order_index;
+        $this->head = true;
+        $this->force_columns = 1;
+    }
+
+    function forceColumns($amount) {
+        $this->head = false;
+        $this->force_columns = $amount;
     }
 
     function addColumn($values) {
@@ -45,12 +54,12 @@ class Table {
         if ($this->x == 0)
             $this->content .= '<tr>';
         $this->content .= '<td';
-        if (isset($this->columns[$this->x]['align']))
+        if ($this->head && isset($this->columns[$this->x]['align']))
             $this->content .= ' class="' . $this->columns[$this->x]['align'] . '"';
         $this->content .= '>';
         $this->content .= $value;
         $this->content .= '</td>';
-        $this->x = ($this->x + 1) % count($this->columns);
+        $this->x = ($this->x + 1) % ($this->head ? count($this->columns) : $this->force_columns);
         if ($this->x == 0)
             $this->content .= '</tr>';
     }
@@ -67,25 +76,29 @@ class Table {
             $page = $hierarchy[$index];
             $hierarchy[$index] = '1';
         }
-        $result .= '<tr>';
-        foreach ($this->columns as $values) {
-            $result .= '<th';
-            if (isset($values['align']))
-                $result .= ' class="' . $values['align'] . '"';
-            $result .= '>';
-            if (isset($this->order_index)) {
-                $result .= '<a href="' . url(invert_search($this->order_index, $values['name']), $this->order_index, false) . '">';
-                $result .= search_prefix($this->order_index, $values['name']);
+        if ($this->head) {
+            $result .= '<tr>';
+            foreach ($this->columns as $values) {
+                $result .= '<th';
+                if (isset($values['align']))
+                    $result .= ' class="' . $values['align'] . '"';
+                $result .= '>';
+                if (isset($this->order_index)) {
+                    $result .= '<a href="' . url(invert_search($this->order_index, $values['name']), $this->order_index, false) . '">';
+                    $result .= search_prefix($this->order_index, $values['name']);
+                }
+                $result .= $values['title'];
+                if (isset($this->order_index))
+                    $result .= '</a>';
+                $result .= '</th>';
             }
-            $result .= $values['title'];
-            if (isset($this->order_index))
-                $result .= '</a>';
-            $result .= '</th>';
+            $result .= '</tr>';
         }
-        $result .= '</tr>';
         if (isset($this->pager))
             $hierarchy[$this->pager->getIndex()] = $page;
         $result .= $this->content;
+        if ($this->x != 0)
+            $result .= '</tr>';
         $result .= '</table>';
         return $result;
     }
