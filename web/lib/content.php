@@ -59,6 +59,7 @@ $main_menu = create_menu(0, array(
         }
         th, td {
             padding-right: 10px;
+            padding-left: 0px;
         }
         .headless th, .headless td {
             padding-right: 30px;
