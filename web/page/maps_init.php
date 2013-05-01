@@ -7,10 +7,10 @@ import_lib('Search');
 $shared['head'] = 'Maps';
 
 $table = new Table(1);
-$table->addColumn(array('name' => 'name', 'title' => 'Map'));
-$table->addColumn(array('name' => 'player', 'title' => 'Record holder', 'table' => 'P', 'column' => 'name_raw'));
-$table->addColumn(array('name' => 'record', 'title' => 'Record', 'align' => 'right'));
-$table->addColumn(array('name' => 'timestamp', 'title' => 'Date', 'align' => 'right'));
+$table->addColumn(array('name' => 'name', 'title' => 'Map', 'size' => 'large'));
+$table->addColumn(array('name' => 'player', 'title' => 'Record holder', 'table' => 'P', 'column' => 'name_raw', 'size' => 'large'));
+$table->addColumn(array('name' => 'record', 'title' => 'Record', 'align' => 'right', 'size' => 'small'));
+$table->addColumn(array('name' => 'timestamp', 'title' => 'Date', 'align' => 'right', 'size' => 'medium'));
 
 $table->processOrder('name');
 

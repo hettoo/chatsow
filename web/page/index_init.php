@@ -5,10 +5,10 @@ import_lib('Table');
 $shared['head'] = '';
 
 $table = new Table();
-$table->addColumn(array('title' => 'Map'));
-$table->addColumn(array('title' => 'Record holder', 'column' => 'name_raw'));
-$table->addColumn(array('title' => 'Record', 'align' => 'right'));
-$table->addColumn(array('title' => 'Date', 'align' => 'right'));
+$table->addColumn(array('title' => 'Map', 'size' => 'large'));
+$table->addColumn(array('title' => 'Record holder', 'column' => 'name_raw', 'size' => 'large'));
+$table->addColumn(array('title' => 'Record', 'align' => 'right', 'size' => 'small'));
+$table->addColumn(array('title' => 'Date', 'align' => 'right', 'size' => 'medium'));
 
 $result = $db->query("SELECT P.`id`, M.`name`, `record`, P.`name` AS `record_holder`, UNIX_TIMESTAMP(`timestamp`) AS `timestamp` FROM `map` M, `player` P WHERE P.`id`=M.`player` ORDER BY `timestamp` DESC LIMIT 8") or die($db->error);
 while ($row = $result->fetch_array()) {

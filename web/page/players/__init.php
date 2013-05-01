@@ -7,9 +7,9 @@ import_lib('Search');
 $id = (int)$hierarchy[1];
 
 $table = new Table(2);
-$table->addColumn(array('name' => 'name', 'title' => 'Map'));
-$table->addColumn(array('name' => 'record', 'title' => 'Record', 'align' => 'right'));
-$table->addColumn(array('name' => 'timestamp', 'title' => 'Date', 'align' => 'right'));
+$table->addColumn(array('name' => 'name', 'title' => 'Map', 'size' => 'large'));
+$table->addColumn(array('name' => 'record', 'title' => 'Record', 'align' => 'right', 'size' => 'small'));
+$table->addColumn(array('name' => 'timestamp', 'title' => 'Date', 'align' => 'right', 'size' => 'medium'));
 
 $table->processOrder('name');
 

@@ -58,7 +58,16 @@ $main_menu = create_menu(0, array(
             text-align: left;
         }
         th, td {
-            padding-right: 20px;
+            padding-right: 10px;
+        }
+        .small {
+            width: 80px;
+        }
+        .medium {
+            width: 125px;
+        }
+        .large {
+            width: 170px;
         }
         th a {
             color: #fff;

@@ -64,12 +64,24 @@ class Table {
         return ' ORDER BY ' . (isset($this->table) ? $this->table . '.' : '') . '`' . $this->column . '` ' . ($this->descending ? 'DESC' : 'ASC');
     }
 
+    function getClasses($values) {
+        $result = array();
+        if (isset($values['align']))
+            $result[] = $values['align'];
+        if (isset($values['size']))
+            $result[] = $values['size'];
+        return $result;
+    }
+
     function addField($value) {
         if ($this->x == 0)
             $this->content .= '<tr>';
         $this->content .= '<td';
-        if ($this->head && isset($this->columns[$this->x]['align']))
-            $this->content .= ' class="' . $this->columns[$this->x]['align'] . '"';
+        if ($this->head) {
+            $classes = $this->getClasses($this->columns[$this->x]);
+            if (count($classes))
+                $this->content .= ' class="' . implode(' ', $classes) . '"';
+        }
         $this->content .= '>';
         $this->content .= $value;
         $this->content .= '</td>';
@@ -113,9 +125,10 @@ class Table {
         if ($this->head) {
             $result .= '<tr>';
             foreach ($this->columns as $values) {
+                $classes = $this->getClasses($values);
                 $result .= '<th';
-                if (isset($values['align']))
-                    $result .= ' class="' . $values['align'] . '"';
+                if (count($classes))
+                    $result .= ' class="' . implode(' ', $classes) . '"';
                 $result .= '>';
                 if (isset($this->order_index)) {
                     $result .= '<a href="' . url($this->invert($values['name']), $this->order_index, false) . '">';
