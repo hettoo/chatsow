@@ -4,6 +4,7 @@ class Table {
     private $columns;
     private $order_index;
     private $pager;
+    private $search;
     private $head;
     private $force_columns;
 
@@ -18,6 +19,7 @@ class Table {
         $this->content = '';
         $this->x = 0;
         $this->pager = null;
+        $this->search = null;
         $this->columns = array();
         $this->order_index = $order_index;
         $this->head = true;
@@ -94,6 +96,10 @@ class Table {
         $this->pager = $pager;
     }
 
+    function setSearch($search) {
+        $this->search = $search;
+    }
+
     function invert($link) {
         global $hierarchy;
         $current = $hierarchy[$this->order_index];
@@ -115,8 +121,11 @@ class Table {
     function format() {
         global $hierarchy;
         $result = '';
-        if (isset($this->pager)) {
+        if (isset($this->search))
+            $result .= $this->search->format($this->pager);
+        else if (isset($this->pager))
             $result .= $this->pager->format();
+        if (isset($this->pager)) {
             $index = $this->pager->getIndex();
             $page = $hierarchy[$index];
             $hierarchy[$index] = '1';

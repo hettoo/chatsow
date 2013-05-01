@@ -35,9 +35,8 @@ while ($row = $result->fetch_array()) {
     $shared['player'] = $row;
 }
 $table->setPager($pager);
+$table->setSearch($search);
 
-$shared['search'] = $search;
 $shared['table'] = $table;
-$shared['pager'] = $pager;
 
 ?>

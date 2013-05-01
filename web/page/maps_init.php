@@ -30,9 +30,8 @@ foreach ($rows as $row) {
     $table->addField(format_date($row['timestamp']));
 }
 $table->setPager($pager);
+$table->setSearch($search);
 
-$shared['search'] = $search;
 $shared['table'] = $table;
-$shared['pager'] = $pager;
 
 ?>

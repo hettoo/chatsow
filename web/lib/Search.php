@@ -21,13 +21,15 @@ class Search {
         return $db->real_escape_string($hierarchy[$this->index]);
     }
 
-    function format() {
+    function format($pager = null) {
         global $hierarchy;
         $result = '<p>';
-        $result .= '<form action="' . this_url() . '" method="POST">';
+        $result .= '<form action="' . this_url() . '" method="POST"' . ($pager && $pager->drawable() ? ' class="left"' : '' ) . '>';
         $result .= '<input type="text" name="name" value="' . $hierarchy[$this->index] . '" />';
         $result .= '<input type="submit" name="submit" value="Search">';
         $result .= '</form>';
+        if ($pager)
+            $result .= $pager->format();
         $result .= '</p>';
         return $result;
     }

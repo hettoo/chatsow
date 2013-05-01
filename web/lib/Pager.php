@@ -48,13 +48,17 @@ class Pager {
         return $this->pages;
     }
 
+    function drawable() {
+        return $this->getPages() > 1;
+    }
+
     function format() {
         global $shared;
 
-        $pages = $this->getPages();
-        if ($pages <= 1)
+        if (!$this->drawable())
             return '';
 
+        $pages = $this->getPages();
         $page = $this->getPage() + 1;
         $start = 1;
         $end = $pages;

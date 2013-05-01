@@ -63,15 +63,6 @@ $main_menu = create_menu(0, array(
         .headless th, .headless td {
             padding-right: 50px;
         }
-        .small {
-            width: 80px;
-        }
-        .medium {
-            width: 125px;
-        }
-        .large {
-            width: 170px;
-        }
         th a {
             color: #fff;
         }
@@ -85,6 +76,20 @@ $main_menu = create_menu(0, array(
             color: #fff;
         }
 
+        .small {
+            width: 80px;
+        }
+        .medium {
+            width: 125px;
+        }
+        .large {
+            width: 170px;
+        }
+
+        form.left {
+            float: left;
+            padding-right: 15px;
+        }
         .right {
             text-align: right;
         }
@@ -137,8 +142,8 @@ $main_menu = create_menu(0, array(
 
         ul.pager {
             list-style-type: none;
-            margin: 8px 0;
-            padding: 0;
+            margin: 0;
+            padding: 6px 0;
         }
         ul.pager li {
             display: inline;
