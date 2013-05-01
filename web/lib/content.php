@@ -61,7 +61,7 @@ $main_menu = create_menu(0, array(
             padding-right: 10px;
         }
         .headless th, .headless td {
-            padding-right: 30px;
+            padding-right: 50px;
         }
         .small {
             width: 80px;
