@@ -2,11 +2,16 @@
 
 import_lib('Pager');
 
+$table = 'M';
 list($order, $descending) = get_order(1, 'name');
+if ($order == 'player') {
+    $order = 'name_raw';
+    $table = 'P';
+}
 $page = $hierarchy[2] - 1;
 $like = $db->real_escape_string($hierarchy[3]);
 
-$pager = new Pager($page, $shared['max_rows'], "P.`id`, M.`name`, `record`, P.`name` AS `record_holder`, UNIX_TIMESTAMP(`timestamp`) AS `timestamp` FROM `map` M, `player` P WHERE P.`id`=M.`player` AND (M.`name` LIKE '%$like%' OR P.`name_raw` LIKE '%$like%') ORDER BY `$order`" . ($descending ? 'DESC' : 'ASC'));
+$pager = new Pager($page, $shared['max_rows'], "P.`id`, M.`name`, `record`, P.`name` AS `record_holder`, UNIX_TIMESTAMP(`timestamp`) AS `timestamp` FROM `map` M, `player` P WHERE P.`id`=M.`player` AND (M.`name` LIKE '%$like%' OR P.`name_raw` LIKE '%$like%') ORDER BY $table.`$order`" . ($descending ? 'DESC' : 'ASC'));
 
 $maps = '';
 $rows = $pager->getRows();
