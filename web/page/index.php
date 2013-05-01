@@ -1,9 +1,20 @@
 <?php
 
-$maps = '';
+import_lib('Table');
+
+$table = new Table();
+$table->addColumn(array('title' => 'Map'));
+$table->addColumn(array('title' => 'Record holder', 'column' => 'name_raw'));
+$table->addColumn(array('title' => 'Record', 'align' => 'right'));
+$table->addColumn(array('title' => 'Date', 'align' => 'right'));
+
 $result = $db->query("SELECT P.`id`, M.`name`, `record`, P.`name` AS `record_holder`, UNIX_TIMESTAMP(`timestamp`) AS `timestamp` FROM `map` M, `player` P WHERE P.`id`=M.`player` ORDER BY `timestamp` DESC LIMIT 8") or die($db->error);
-while ($row = $result->fetch_array())
-    $maps .= '<tr><td>' . format_map($row['name']) . '</td><td>' . format_player($row['record_holder'], $row['id'], -1) . '</td><td class="right">' . format_time($row['record'], $row['name']) . '</td><td class="right">' . format_date_relative($row['timestamp']) . '</td></tr>';
+while ($row = $result->fetch_array()) {
+    $table->addField(format_map($row['name']));
+    $table->addField(format_player($row['record_holder'], $row['id'], -1));
+    $table->addField(format_time($row['record'], $row['name']));
+    $table->addField(format_date_relative($row['timestamp']));
+}
 
 $map_count = 0;
 $player_count = 0;
@@ -35,7 +46,4 @@ A total of <b><?= $map_count; ?></b> records have been recorded from <b><?= $pla
 <p>
 Records below are the best runs recorded by the bot, not necessarily actual records.
 </p>
-<table>
-    <tr><th>Map</th><th>Record holder</th><th class="right">Record</th><th class="right">Date</th></tr>
-    <?= $maps; ?>
-</table>
+<?= $table->format(); ?>

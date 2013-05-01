@@ -30,4 +30,4 @@ Records below are the best runs recorded by the bot, not necessarily actual reco
 </p>
 <?= format_search($like); ?>
 <?= format_pages(2, $pager); ?>
-<?= $table->format(); ?>
+<?= $table->format(2); ?>

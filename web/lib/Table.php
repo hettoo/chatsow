@@ -11,7 +11,7 @@ class Table {
     private $table;
     private $descending;
 
-    function __construct($order_index) {
+    function __construct($order_index = null) {
         $this->content = '';
         $this->x = 0;
         $this->columns = array();
@@ -53,22 +53,31 @@ class Table {
             $this->content .= '</tr>';
     }
 
-    function format($page_index) {
+    function format($page_index = null) {
         global $hierarchy;
         $result = '<table>';
-        $page = $hierarchy[$page_level];
-        $hierarchy[$page_index] = '1';
+        if (isset($page_index)) {
+            $page = $hierarchy[$page_index];
+            $hierarchy[$page_index] = '1';
+        }
         $result .= '<tr>';
         foreach ($this->columns as $values) {
             $result .= '<th';
             if (isset($values['align']))
                 $result .= ' class="' . $values['align'] . '"';
             $result .= '>';
-            $result .= '<a href="' . url(invert_search($this->order_index, $values['name']), $this->order_index, false) . '">' . search_prefix($this->order_index, $values['name']) . $values['title'] . '</a>';
+            if (isset($this->order_index)) {
+                $result .= '<a href="' . url(invert_search($this->order_index, $values['name']), $this->order_index, false) . '">';
+                $result .= search_prefix($this->order_index, $values['name']);
+            }
+            $result .= $values['title'];
+            if (isset($this->order_index))
+                $result .= '</a>';
             $result .= '</th>';
         }
         $result .= '</tr>';
-        $hierarchy[$page_level] = $page;
+        if (isset($page_index))
+            $hierarchy[$page_index] = $page;
         $result .= $this->content;
         $result .= '</table>';
         return $result;
