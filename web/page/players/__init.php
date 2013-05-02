@@ -31,7 +31,9 @@ foreach ($rows as $row) {
 
 $result = $db->query("SELECT `id`, `name` FROM `player` WHERE `id`=" . $id) or die($db->error);
 while ($row = $result->fetch_array()) {
-    $shared['head'] = 'Player ' . format_player($row['name'], $row['id']);
+    $formatted = format_player($row['name'], $row['id']);
+    $shared['head'] = 'Player ' . $formatted;
+    $shared['description'] = 'Record demos for ' . strip_tags($formatted) . '.';
     $shared['player'] = $row;
 }
 $table->setPager($pager);

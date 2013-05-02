@@ -5,6 +5,7 @@ import_lib('Table');
 import_lib('Search');
 
 $shared['head'] = 'Maps';
+$shared['description'] = 'Record demo listing for all recorded maps.';
 
 $table = new Table(1);
 $table->addColumn(array('name' => 'name', 'title' => 'Map', 'size' => 'large'));
