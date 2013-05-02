@@ -1,7 +1,7 @@
 <?php
 
 $shared['head'] = 'Players';
-$shared['description'] = 'Player list ordered by the amount of record demos they own.';
+$shared['description'] = 'Racesow player list ordered by the amount of record demos they own.';
 
 define('COLUMNS', 4);
 

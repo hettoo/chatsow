@@ -2,7 +2,7 @@
 
 $shared['submenu'] = '';
 $shared['head'] = 'Unnamed page';
-$shared['keywords'] = $shared['project'] . ', Racesow, Warsow Race, Warsow, chatsow';
+$shared['keywords'] = $shared['project'] . ', Racesow, Warsow Race, demos, record, Warsow, chatsow';
 $shared['description'] = 'Chatsow instance improving the Racesow competitiveness by disclosing record demos.';
 init_page($args);
 if ($shared['head'] == '') {
