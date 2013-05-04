@@ -72,6 +72,8 @@ static void save_demo(int id, int c, int t, qboolean terminated) {
 
 static void stop(int c, int t, int d) {
     recdemo_t *demo = demos[c][t].demos + d;
+    if (demo->finished)
+        return;
     trap->client_stop_record(c, demo->id);
     demo->finished = qtrue;
 }
@@ -88,7 +90,7 @@ static void schedule_stop(int c, int t) {
     if (manager->current == -1)
         return;
     recdemo_t *demo = manager->demos + manager->current;
-    if (demo->id == -1 || demo->stopped)
+    if (demo->id == -1 || demo->stopped || demo->finished)
         return;
     demo->stopped = qtrue;
     demo->stop_time = millis();
@@ -147,7 +149,7 @@ void frame() {
             int k;
             for (k = 0; k < RECBUFFER; k++) {
                 recdemo_t *demo = manager->demos + k;
-                if (demo->id >= 0 && !demo->finished && (time - demo->start_time >= MAX_TIME
+                if (demo->id >= 0 && (time - demo->start_time >= MAX_TIME
                             || (demo->stopped && time >= demo->stop_time + POSTRUN_TIME)))
                     stop(i, j, k);
             }
@@ -233,6 +235,7 @@ static void cmd_pr() {
                             fp = fopen(trap->path("demos/records/%s.txt", trap->get_level(c)), "w");
                             fprintf(fp, "%u\n%s\n%s\n%u\n", time, level, name, unixtime());
                             fclose(fp);
+                            schedule_stop(c, i);
                             break;
                         }
                     }
