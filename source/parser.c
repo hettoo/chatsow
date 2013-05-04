@@ -19,6 +19,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
 #include <stdio.h>
+#include <time.h>
+#include <math.h>
 
 #include "import.h"
 #include "utils.h"
@@ -31,6 +33,8 @@ static void end_previous_demo(demo_t *demo) {
     fseek(demo->fp, demo->start, SEEK_SET);
     int length = LittleLong(backup - demo->start - 4);
     fwrite(&length, 4, 1, demo->fp);
+    fseek(demo->fp, demo->pos_duration, SEEK_SET);
+    fprintf(demo->fp, "%u", (unsigned int)time(NULL) - demo->start_time + 1);
     fseek(demo->fp, backup, SEEK_SET);
 }
 
@@ -123,27 +127,65 @@ int parser_record(parser_t *parser, FILE *fp, int target, void (*save)(int id, i
             int x = 0;
             start_new_demo(demo);
             qbyte c = svc_demoinfo;
-            char *key = "multipov";
             fwrite(&c, 1, 1, fp);
-            x = LittleLong(20 + strlen(key) + 1 + 2);
+            long pos_meta_length = ftell(fp);
+            x = 0;
             fwrite(&x, 4, 1, fp); // demoinfo length
+            long pos_meta_start = ftell(fp);
             x = 4;
             fwrite(&x, 4, 1, fp); // metadata offset
-            x = 0;
+            x = time(NULL);
             fwrite(&x, 4, 1, fp); // time
-            x = LittleLong(strlen(key) + 1 + 2);
+            long pos_meta_keys_length = ftell(fp);
+            x = 0;
             fwrite(&x, 4, 1, fp); // size
             fwrite(&x, 4, 1, fp); // max size
-            fwrite(key, 1, strlen(key) + 1, fp);
-            c = '0' + (target < 0);
-            fwrite(&c, 1, 1, fp);
-            c = 0;
-            fwrite(&c, 1, 1, fp);
+            long pos_meta_keys_start = ftell(fp);
+            cs_t *cs = client_cs(parser->client);
+            fprintf(fp, "hostname");
+            fwrite(&x, 1, 1, fp);
+            fprintf(fp, "%s", cs_get(cs, CS_HOSTNAME));
+            fwrite(&x, 1, 1, fp);
+            fprintf(fp, "localtime");
+            fwrite(&x, 1, 1, fp);
+            demo->start_time = time(NULL);
+            fprintf(fp, "%u", demo->start_time);
+            fwrite(&x, 1, 1, fp);
+            fprintf(fp, "multipov");
+            fwrite(&x, 1, 1, fp);
+            fprintf(fp, "%d", target < 0);
+            fwrite(&x, 1, 1, fp);
+            fprintf(fp, "mapname");
+            fwrite(&x, 1, 1, fp);
+            fprintf(fp, "%s", cs_get(cs, CS_MAPNAME));
+            fwrite(&x, 1, 1, fp);
+            fprintf(fp, "gametype");
+            fwrite(&x, 1, 1, fp);
+            fprintf(fp, "%s", cs_get(cs, CS_GAMETYPENAME));
+            fwrite(&x, 1, 1, fp);
+            fprintf(fp, "levelname");
+            fwrite(&x, 1, 1, fp);
+            fprintf(fp, "%s", cs_get(cs, CS_MESSAGE));
+            fwrite(&x, 1, 1, fp);
+            fprintf(fp, "duration");
+            fwrite(&x, 1, 1, fp);
+            demo->pos_duration = ftell(fp);
+            int j;
+            for (j = 0; j < 32; j++)
+                fwrite(&x, 1, 1, fp);
+            long pos_meta_end = ftell(fp);
+            fseek(fp, pos_meta_length, SEEK_SET);
+            x = pos_meta_end - pos_meta_start;
+            fwrite(&x, 4, 1, fp);
+            fseek(fp, pos_meta_keys_length, SEEK_SET);
+            x = pos_meta_end - pos_meta_keys_start;
+            fwrite(&x, 4, 1, fp);
+            fseek(fp, pos_meta_keys_length + 4, SEEK_SET);
+            fwrite(&x, 4, 1, fp);
+            fseek(fp, pos_meta_end, SEEK_SET);
             end_previous_demo(demo);
             start_new_demo(demo);
             fwrite(parser->initial.data, 1, parser->initial.cursize, fp);
-            int j;
-            cs_t *cs = client_cs(parser->client);
             for (j = 0; j < MAX_CONFIGSTRINGS; j++) {
                 char *string = cs_get(cs, j);
                 if (string && string[0]) {
@@ -156,8 +198,9 @@ int parser_record(parser_t *parser, FILE *fp, int target, void (*save)(int id, i
             }
             c = svc_servercs;
             fwrite(&c, 1, 1, fp);
-            key = "precache";
-            fwrite(key, 1, strlen(key) + 1, fp);
+            fprintf(fp, "precache");
+            c = 0;
+            fwrite(&c, 1, 1, fp);
             client_command(parser->client, "nodelta");
             demo->waiting = qtrue;
             return i;

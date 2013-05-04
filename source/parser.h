@@ -31,9 +31,12 @@ typedef struct demo_s {
     FILE *fp;
     int target;
     long int start;
+    unsigned int start_time;
     qboolean waiting;
     qboolean finishing;
     void (*save)(int id, int client, int target, qboolean terminated);
+
+    long pos_duration;
 } demo_t;
 
 typedef struct parser_s {
