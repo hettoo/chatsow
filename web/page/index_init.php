@@ -20,14 +20,17 @@ while ($row = $result->fetch_array()) {
 
 $map_count = 0;
 $player_count = 0;
-$result = $db->query("SELECT COUNT(*) AS `maps`, COUNT(DISTINCT `player`) AS `players` FROM `map`") or die($db->error);
+$time = 0;
+$result = $db->query("SELECT COUNT(*) AS `maps`, COUNT(DISTINCT `player`) AS `players`, SUM(`record`) AS `time` FROM `map`") or die($db->error);
 if ($row = $result->fetch_array()) {
     $map_count = $row['maps'];
     $player_count = $row['players'];
+    $time = $row['time'];
 }
 
 $shared['map_count'] = $map_count;
 $shared['player_count'] = $player_count;
+$shared['time'] = $time;
 $shared['table'] = $table;
 
 ?>
