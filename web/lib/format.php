@@ -90,7 +90,7 @@ function format_player($name, $id = 0, $records = 0) {
         }
     }
     $name = htmlentities($name);
-    $result = $id > 0 ? colored($name, 'players/' . $id) : color($name);
+    $result = $id > 0 && $records > 0 ? colored($name, 'players/' . $id) : color($name);
     if ($records > 0)
         $result .= ' [' . $records . ']';
     return $result;
