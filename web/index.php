@@ -118,7 +118,7 @@ if (empty($args))
 
 $shared = array(
     'max_rows' => 20,
-    'max_pages' => 10
+    'max_pages' => 8
 );
 $hierarchy = explode('/', substr($args, 1));
 
