@@ -42,6 +42,7 @@ typedef struct demo_s {
 typedef struct parser_s {
     int client;
     int last_frame;
+    unsigned int server_time;
     int last_cmd_num;
     int last_cmd_ack;
     demo_t demos[MAX_DEMOS];

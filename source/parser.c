@@ -77,6 +77,7 @@ static void terminate_demos(parser_t *parser) {
 void parser_reset(parser_t *parser) {
     static qboolean first = qtrue;
     parser->last_frame = -1;
+    parser->server_time = 0;
     parser->last_cmd_num = 0;
     parser->last_cmd_ack = -1;
     if (!first)
@@ -132,9 +133,9 @@ int parser_record(parser_t *parser, FILE *fp, int target, void (*save)(int id, i
             x = 0;
             fwrite(&x, 4, 1, fp); // demoinfo length
             long pos_meta_start = ftell(fp);
-            x = 4;
+            x = LittleLong(4);
             fwrite(&x, 4, 1, fp); // metadata offset
-            x = time(NULL);
+            x = LittleLong(parser->server_time);
             fwrite(&x, 4, 1, fp); // time
             long pos_meta_keys_length = ftell(fp);
             x = 0;
@@ -175,10 +176,10 @@ int parser_record(parser_t *parser, FILE *fp, int target, void (*save)(int id, i
                 fwrite(&x, 1, 1, fp);
             long pos_meta_end = ftell(fp);
             fseek(fp, pos_meta_length, SEEK_SET);
-            x = pos_meta_end - pos_meta_start;
+            x = LittleLong(pos_meta_end - pos_meta_start);
             fwrite(&x, 4, 1, fp);
             fseek(fp, pos_meta_keys_length, SEEK_SET);
-            x = pos_meta_end - pos_meta_keys_start;
+            x = LittleLong(pos_meta_end - pos_meta_keys_start);
             fwrite(&x, 4, 1, fp);
             fseek(fp, pos_meta_keys_length + 4, SEEK_SET);
             fwrite(&x, 4, 1, fp);
@@ -436,7 +437,7 @@ static void parse_delta_gamestate(msg_t *msg) {
 static void parse_frame(parser_t *parser, msg_t *msg) {
     int length = read_short(msg); // length
     int pos = msg->readcount;
-    unsigned int server_time = read_long(msg);
+    parser->server_time = read_long(msg);
     int frame = read_long(msg);
     read_long(msg); // delta frame number
     read_long(msg); // ucmd executed
@@ -535,7 +536,7 @@ static void parse_frame(parser_t *parser, msg_t *msg) {
     skip_data(msg, length - (msg->readcount - pos));
 
     if (frame > parser->last_frame)
-        client_ack_frame(parser->client, frame, server_time);
+        client_ack_frame(parser->client, frame, parser->server_time);
 
     parser->last_frame = frame;
 }
