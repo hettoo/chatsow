@@ -40,10 +40,10 @@ $main_menu = create_menu(0, array(
 
         a {
             text-decoration: none;
-            color: #090;
+            color: #3c3;
         }
         a:hover {
-            color: #070;
+            color: #0a0;
         }
         h1 {
             padding: 0px;
@@ -69,9 +69,6 @@ $main_menu = create_menu(0, array(
         }
         th a:hover {
             color: #fff;
-        }
-        li.active {
-            background-color: #090;
         }
         li.active a {
             color: #fff;
@@ -127,9 +124,6 @@ $main_menu = create_menu(0, array(
             font-size: 16px;
             margin-bottom: 24px;
         }
-        #main-menu .active, #sub-menu .active {
-            background-color: #090;
-        }
         #main-menu .active a, #sub-menu .active a {
             color: #fff;
         }
@@ -152,8 +146,11 @@ $main_menu = create_menu(0, array(
             padding: 0 5px;
         }
 
+        .active {
+            background-color: #090;
+        }
         .colored a:hover {
-            border-bottom: 1px dotted #090;
+            border-bottom: 1px dotted #3c3;
         }
 
         .c0 {
