@@ -122,6 +122,8 @@ class Table {
 
     function format() {
         global $hierarchy;
+        if (empty($this->content))
+            return (isset($this->search) ? $this->search->format() : '') . '<p>No data found.</p>';
         $result = '';
         if (isset($this->search))
             $result .= $this->search->format($this->pager);
