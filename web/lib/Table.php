@@ -38,8 +38,8 @@ class Table {
     }
 
     function getOrdering($default = null) {
-        global $db, $hierarchy;
-        $order = $db->real_escape_string($hierarchy[$this->order_index]);
+        global $s, $hierarchy;
+        $order = $s['db']->real_escape_string($hierarchy[$this->order_index]);
         if (isset($default)) {
             if ($order == '')
                 $order = 'name';

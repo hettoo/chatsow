@@ -30,11 +30,11 @@ class Pager {
     }
 
     function query() {
-        global $db;
+        global $s;
 
         $skip = $this->getOffset();
         $this->rows = array();
-        $result = $db->query("SELECT $this->query LIMIT $skip, 18446744073709551615") or die($db->error);
+        $result = $s['db']->query("SELECT $this->query LIMIT $skip, 18446744073709551615") or die($s['db']->error);
         for ($i = 0; $i < $this->limit && ($row = $result->fetch_array()); $i++)
             $this->rows[] = $row;
         $this->pages = ceil($result->num_rows / $this->limit) + $this->page;

@@ -29,7 +29,7 @@ foreach ($rows as $row) {
     $table->addField(format_date($row['timestamp']));
 }
 
-$result = $db->query("SELECT `id`, `name` FROM `player` WHERE `id`=" . $id) or die($db->error);
+$result = $s['db']->query("SELECT `id`, `name` FROM `player` WHERE `id`=" . $id) or die($s['db']->error);
 while ($row = $result->fetch_array()) {
     $formatted = format_player($row['name'], $row['id']);
     $s['head'] = 'Player ' . $formatted;

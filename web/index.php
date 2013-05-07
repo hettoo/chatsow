@@ -5,13 +5,13 @@ function script($script) {
 }
 
 function import_once($script) {
-    global $base, $args, $hierarchy, $db;
+    global $base, $args, $hierarchy;
     global $s;
     include_once(script($script));
 }
 
 function import($script) {
-    global $base, $args, $hierarchy, $db;
+    global $base, $args, $hierarchy;
     global $s;
     include(script($script));
 }
