@@ -1,19 +1,19 @@
 <?php
 
-$shared['submenu'] = '';
-$shared['head'] = 'Unnamed page';
-$shared['keywords'] = $shared['project'] . ', Racesow, Warsow Race, demos, record, Warsow, chatsow';
-$shared['description'] = 'Chatsow instance improving the Racesow competitiveness by disclosing record demos.';
+$s['submenu'] = '';
+$s['head'] = 'Unnamed page';
+$s['keywords'] = $s['project'] . ', Racesow, Warsow Race, demos, record, Warsow, chatsow';
+$s['description'] = 'Chatsow instance improving the Racesow competitiveness by disclosing record demos.';
 init_page($args);
-if ($shared['head'] == '') {
-    $shared['head'] = $shared['project'];
-    $shared['title'] = $shared['head'];
-    $shared['head'] = strip_tags($shared['head']);
+if ($s['head'] == '') {
+    $s['head'] = $s['project'];
+    $s['title'] = $s['head'];
+    $s['head'] = strip_tags($s['head']);
 } else {
-    $shared['title'] = $shared['head'];
-    $shared['head'] = strip_tags($shared['head']);
-    $shared['keywords'] = $shared['head'] . ', ' . $shared['keywords'];
-    $shared['head'] .= ' | ' . $shared['project'];
+    $s['title'] = $s['head'];
+    $s['head'] = strip_tags($s['head']);
+    $s['keywords'] = $s['head'] . ', ' . $s['keywords'];
+    $s['head'] .= ' | ' . $s['project'];
 }
 $main_menu = create_menu(0, array(
     array('', 'Home'),
@@ -27,9 +27,9 @@ $main_menu = create_menu(0, array(
 <html>
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
-    <title><?= $shared['head']; ?></title>
-    <meta name="keywords" content="<?= $shared['keywords']; ?>">
-    <meta name="description" content="<?= $shared['description']; ?>">
+    <title><?= $s['head']; ?></title>
+    <meta name="keywords" content="<?= $s['keywords']; ?>">
+    <meta name="description" content="<?= $s['description']; ?>">
     <style type="text/css">
         body {
             font-family: Sans, Arial, Verdana;
@@ -204,7 +204,7 @@ $main_menu = create_menu(0, array(
             padding-right: 0px;
         }
     </style>
-    <?= $shared['analytics']; ?>
+    <?= $s['analytics']; ?>
 </head>
 <body>
         <div id="main">
@@ -217,10 +217,10 @@ $main_menu = create_menu(0, array(
             </div>
             <div class="clear"></div>
             <div id="head">
-                <h1><?= $shared['title']; ?></h1>
+                <h1><?= $s['title']; ?></h1>
             </div>
             <div id="sub-menu">
-                <?= $shared['submenu']; ?>
+                <?= $s['submenu']; ?>
             </div>
             <div id="content">
                 <?php import_page($args); ?>

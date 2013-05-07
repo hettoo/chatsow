@@ -53,7 +53,7 @@ class Pager {
     }
 
     function format() {
-        global $shared;
+        global $s;
 
         if (!$this->drawable())
             return '';
@@ -62,8 +62,8 @@ class Pager {
         $page = $this->getPage() + 1;
         $start = 1;
         $end = $pages;
-        $max_left = floor(($shared['max_pages'] - 1) / 2);
-        $max_right = ceil(($shared['max_pages'] - 1) / 2);
+        $max_left = floor(($s['max_pages'] - 1) / 2);
+        $max_right = ceil(($s['max_pages'] - 1) / 2);
         $fit_left = $page - $start;
         $fit_right = $end - $page;
         $missed_left = max(0, $max_left - $fit_left);

@@ -2,7 +2,7 @@
 
 import_lib('Table');
 
-$shared['head'] = '';
+$s['head'] = '';
 
 $table = new Table();
 $table->addColumn(array('title' => 'Map', 'size' => 'large'));
@@ -28,9 +28,9 @@ if ($row = $result->fetch_array()) {
     $time = $row['time'];
 }
 
-$shared['map_count'] = $map_count;
-$shared['player_count'] = $player_count;
-$shared['time'] = $time;
-$shared['table'] = $table;
+$s['map_count'] = $map_count;
+$s['player_count'] = $player_count;
+$s['time'] = $time;
+$s['table'] = $table;
 
 ?>

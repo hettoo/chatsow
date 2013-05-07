@@ -16,7 +16,7 @@ $table->processOrder('name');
 $search = new Search(4);
 $like = $search->get();
 
-$pager = new Pager(3, $shared['max_rows'], "`name`, `record`, UNIX_TIMESTAMP(`timestamp`) AS `timestamp` FROM `map` WHERE `player`=$id AND `name` LIKE '%$like%'" . $table->getOrder());
+$pager = new Pager(3, $s['max_rows'], "`name`, `record`, UNIX_TIMESTAMP(`timestamp`) AS `timestamp` FROM `map` WHERE `player`=$id AND `name` LIKE '%$like%'" . $table->getOrder());
 
 $search->redirect($pager);
 
@@ -32,13 +32,13 @@ foreach ($rows as $row) {
 $result = $db->query("SELECT `id`, `name` FROM `player` WHERE `id`=" . $id) or die($db->error);
 while ($row = $result->fetch_array()) {
     $formatted = format_player($row['name'], $row['id']);
-    $shared['head'] = 'Player ' . $formatted;
-    $shared['description'] = 'Record demos for ' . strip_tags($formatted) . '.';
-    $shared['player'] = $row;
+    $s['head'] = 'Player ' . $formatted;
+    $s['description'] = 'Record demos for ' . strip_tags($formatted) . '.';
+    $s['player'] = $row;
 }
 $table->setPager($pager);
 $table->setSearch($search);
 
-$shared['table'] = $table;
+$s['table'] = $table;
 
 ?>

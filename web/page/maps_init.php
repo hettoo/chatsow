@@ -4,8 +4,8 @@ import_lib('Pager');
 import_lib('Table');
 import_lib('Search');
 
-$shared['head'] = 'Maps';
-$shared['description'] = 'Racesow record demo listing for all recorded maps.';
+$s['head'] = 'Maps';
+$s['description'] = 'Racesow record demo listing for all recorded maps.';
 
 $table = new Table(1);
 $table->addColumn(array('name' => 'name', 'title' => 'Map', 'size' => 'large'));
@@ -18,7 +18,7 @@ $table->processOrder('name');
 $search = new Search(3);
 $like = $search->get();
 
-$pager = new Pager(2, $shared['max_rows'], "P.`id`, M.`name`, `record`, P.`name` AS `record_holder`, UNIX_TIMESTAMP(`timestamp`) AS `timestamp` FROM `map` M, `player` P WHERE P.`id`=M.`player` AND (M.`name` LIKE '%$like%' OR P.`name_raw` LIKE '%$like%')" . $table->getOrder());
+$pager = new Pager(2, $s['max_rows'], "P.`id`, M.`name`, `record`, P.`name` AS `record_holder`, UNIX_TIMESTAMP(`timestamp`) AS `timestamp` FROM `map` M, `player` P WHERE P.`id`=M.`player` AND (M.`name` LIKE '%$like%' OR P.`name_raw` LIKE '%$like%')" . $table->getOrder());
 
 $search->redirect($pager);
 
@@ -33,6 +33,6 @@ foreach ($rows as $row) {
 $table->setPager($pager);
 $table->setSearch($search);
 
-$shared['table'] = $table;
+$s['table'] = $table;
 
 ?>

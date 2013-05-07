@@ -1,6 +1,6 @@
 <?php
 
-$files = glob($shared['chatsow'] . 'demos/records/*.wd15');
+$files = glob($s['chatsow'] . 'demos/records/*.wd15');
 if ($files) {
     foreach ($files as $file) {
         $raw = preg_replace('/\.[^\.]*$/', '', $file);

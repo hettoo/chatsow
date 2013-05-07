@@ -13,10 +13,10 @@ Play on your own server, disconnected from the rest of the world, if you want to
 </p>
 <h2>Stats</h2>
 <p>
-A total of <b><?= $shared['map_count']; ?></b> records have been recorded from <b><?= $shared['player_count']; ?></b> different players, resulting in a total racing time of <b><?= format_time($shared['time']); ?></b>.
+A total of <b><?= $s['map_count']; ?></b> records have been recorded from <b><?= $s['player_count']; ?></b> different players, resulting in a total racing time of <b><?= format_time($s['time']); ?></b>.
 </p>
 <h2>Latest records</h2>
 <p>
 Records below are the best runs recorded by the bot, not necessarily actual records.
 </p>
-<?= $shared['table']->format(); ?>
+<?= $s['table']->format(); ?>

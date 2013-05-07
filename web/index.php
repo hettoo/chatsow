@@ -6,13 +6,13 @@ function script($script) {
 
 function import_once($script) {
     global $base, $args, $hierarchy, $db;
-    global $shared;
+    global $s;
     include_once(script($script));
 }
 
 function import($script) {
     global $base, $args, $hierarchy, $db;
-    global $shared;
+    global $s;
     include(script($script));
 }
 
@@ -44,12 +44,12 @@ function init_child_page($child) {
 }
 
 function import_child_page($child, $header = true) {
-    global $args, $shared, $hierarchy;
+    global $args, $s, $hierarchy;
     $page = real_page($args) . '/' . $child;
     $hierarchy[1] = $child;
     if ($header) {
         init_page($page);
-        echo '<h2>' . $shared['head'] . '</h2>';
+        echo '<h2>' . $s['head'] . '</h2>';
     }
     import_page($page);
 }
@@ -116,7 +116,7 @@ $args = preg_replace('/\/$/', '', $args);
 if (empty($args))
     $args = '/index';
 
-$shared = array(
+$s = array(
     'max_rows' => 20,
     'max_pages' => 8
 );

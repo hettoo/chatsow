@@ -1,2 +1,2 @@
-<?= $shared['pager']->format(); ?>
-<?= $shared['table']->format(); ?>
+<?= $s['pager']->format(); ?>
+<?= $s['table']->format(); ?>

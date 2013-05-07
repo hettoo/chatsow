@@ -1,12 +1,12 @@
 <?php
 
-$shared['user'] = '';
-$shared['password'] = '';
-$shared['database'] = 'chatsow';
-$shared['host'] = 'localhost';
+$s['user'] = '';
+$s['password'] = '';
+$s['database'] = 'chatsow';
+$s['host'] = 'localhost';
 
-$shared['chatsow'] = '/home/user/.chatsow/';
-$shared['project'] = 'Chatsow bot page';
-$shared['analytics'] = '';
+$s['chatsow'] = '/home/user/.chatsow/';
+$s['project'] = 'Chatsow bot page';
+$s['analytics'] = '';
 
 ?>
