@@ -29,7 +29,7 @@ foreach ($rows as $row) {
     $table->addField(format_date($row['timestamp']));
 }
 
-$result = $s['db']->query("SELECT `id`, `name` FROM `player` WHERE `id`=" . $id) or die($s['db']->error);
+$result = $s['db']->query("SELECT P.`id`, P.`name`, COUNT(M.`record`) AS `records`, SUM(M.`record`) AS `time` FROM `player` P, `map` M WHERE M.`player` = P.`id` AND P.`id`=" . $id . ' LIMIT 1') or die($s['db']->error);
 while ($row = $result->fetch_array()) {
     $formatted = format_player($row['name'], $row['id']);
     $s['head'] = 'Player ' . $formatted;
