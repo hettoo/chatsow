@@ -52,7 +52,7 @@ void frame() {
                         if (trap->get_playernum(i) != j) {
                             char *name = player_name(cs, j);
                             if (name && *name)
-                                fprintf(fp, "%s\n", name);
+                                fprintf(fp, "%s\n%d\n%d\n", name, trap->get_stat(i, j, STAT_SCORE), trap->get_stat(i, j, STAT_TEAM));
                         }
                     }
                     fprintf(fp, "\n");

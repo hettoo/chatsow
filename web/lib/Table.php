@@ -7,6 +7,7 @@ class Table {
     private $search;
     private $head;
     private $force_columns;
+    private $empty_message;
 
     private $content;
     private $x;
@@ -24,6 +25,11 @@ class Table {
         $this->order_index = $order_index;
         $this->head = true;
         $this->force_columns = 1;
+        $this->empty_message = 'No data found.';
+    }
+
+    function setEmptyMessage($message) {
+        $this->empty_message = $message;
     }
 
     function forceColumns($amount) {
@@ -123,7 +129,7 @@ class Table {
     function format() {
         global $hierarchy;
         if (empty($this->content))
-            return (isset($this->search) ? $this->search->format() : '') . '<p>No data found.</p>';
+            return (isset($this->search) ? $this->search->format() : '') . '<p>' . $this->empty_message . '</p>';
         $result = '';
         if (isset($this->search))
             $result .= $this->search->format($this->pager);

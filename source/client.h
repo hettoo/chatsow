@@ -63,5 +63,7 @@ char *get_level(int id);
 void set_level(int id, char *new_level);
 char *get_host(int id);
 int get_port(int id);
+void set_stat(int id, int player, int index, short value);
+short get_stat(int id, int player, int index);
 
 #endif

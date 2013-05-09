@@ -291,9 +291,8 @@ static void record_string(parser_t *parser, msg_t *msg, qbyte *targets) {
     record(parser, msg, i - msg->readcount + 1, targets);
 }
 
-static int parse_player_state(msg_t *msg, int old) {
+static void parse_player_state(parser_t *parser, msg_t *msg, int index) {
 	int i, b;
-    int result = old;
 
 	int flags = read_byte(msg);
 	if(flags & PS_MOREBITS1) {
@@ -370,7 +369,7 @@ static int parse_player_state(msg_t *msg, int old) {
         read_byte(msg);
 
 	if( flags & PS_PLAYERNUM )
-		result = read_byte(msg);
+		parser->playernums[index] = read_byte(msg);
 
 	if( flags & PS_VIEWHEIGHT )
         read_char(msg);
@@ -407,10 +406,8 @@ static int parse_player_state(msg_t *msg, int old) {
 
 	for( i = 0; i < PS_MAX_STATS; i++ ) {
 		if( statbits[i>>5] & ( 1<<(i&31) ) )
-			read_short( msg );
+			set_stat(parser->client, index, i, read_short( msg ));
 	}
-
-    return result;
 }
 
 static void parse_delta_gamestate(msg_t *msg) {
@@ -522,7 +519,7 @@ static void parse_frame(parser_t *parser, msg_t *msg) {
     int players = 0;
     while ((cmd = read_byte(msg)) != 0) { // svc_playerinfo
         start = msg->readcount - 1;
-        parser->playernums[players] = parse_player_state(msg, parser->playernums[players]);
+        parse_player_state(parser, msg, players);
         backup = msg->readcount;
         msg->readcount = start;
         record_wrapped(parser, msg, backup - start, players);

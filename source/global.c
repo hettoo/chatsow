@@ -77,6 +77,7 @@ void init(char *location) {
     trap.get_level = get_level;
     trap.get_host = get_host;
     trap.get_port = get_port;
+    trap.get_stat = get_stat;
     trap.client_record = client_record;
     trap.client_stop_record = client_stop_record;
     trap.client_terminate_record = client_terminate_record;

@@ -96,6 +96,8 @@ typedef struct client_s {
 
     command_buffer_t buffers[COMMAND_BUFFER];
     int buffer_count;
+
+    short stats[MAX_CLIENTS][PS_MAX_STATS];
 } client_t;
 
 static client_t clients[CLIENT_SCREENS];
@@ -124,6 +126,13 @@ static void reset(client_t *c) {
     c->demo = -1;
 
     c->buffer_count = 0;
+
+    int i;
+    int j;
+    for (i = 0; i < MAX_CLIENTS; i++) {
+        for (j = 0; j < PS_MAX_STATS; j++)
+            c->stats[i][j] = 0;
+    }
 
     parser_reset(&c->parser);
     cs_init(&c->cs);
@@ -198,6 +207,14 @@ void set_level(int id, char *new_level) {
 
 void set_bitflags(int id, int new_bitflags) {
     clients[id].bitflags = new_bitflags;
+}
+
+void set_stat(int id, int player, int index, short value) {
+    clients[id].stats[player][index] = value;
+}
+
+short get_stat(int id, int player, int index) {
+    return clients[id].stats[player][index];
 }
 
 char *get_host(int id) {
