@@ -110,7 +110,7 @@ function format_map_external($name) {
         $name = $s['db']->real_escape_string($name);
         $res = $s['db']->query("SELECT `record`, P.`name` FROM `map` M, `player` P WHERE M.`name`='$name' AND P.`id`=M.`player`") or die($s['db']->error);
         if ($row = $res->fetch_array())
-            $result .= ' (' . format_time($row['record'], $name) . ' by ' . format_player($row['name'], -1) . ')';
+            $result .= ' (' . format_time($row['record'], $name) . ' by ' . format_player($row['name'], -1, -1) . ')';
     }
     return $result;
 }
