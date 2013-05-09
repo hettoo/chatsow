@@ -11,12 +11,12 @@ In my opinion, race should be a collaboration of players trying to approach the 
 Eventually routes will be stolen anyway, if people really want to do this.
 Play on your own server, disconnected from the rest of the world, if you want to be sure.
 </p>
+<p>
+Records on this website refer to the best runs recorded by the bot, not necessarily actual records.
+</p>
 <h2>Stats</h2>
 <p>
 A total of <b><?= $s['map_count']; ?></b> records have been recorded from <b><?= $s['player_count']; ?></b> different players, resulting in a total racing time of <b><?= format_time($s['time']); ?></b>.
 </p>
 <h2>Latest records</h2>
-<p>
-Records below are the best runs recorded by the bot, not necessarily actual records.
-</p>
 <?= $s['table']->format(); ?>
