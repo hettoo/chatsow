@@ -169,7 +169,7 @@ void irc_recv() {
             if (!strncmp(command, "001", 3)) {
                 irc_send("JOIN %s", channel);
             } else if (!strncmp(command, "JOIN", 4)) {
-            } else if (!strncmp(command, "PRIVMSG", 7) || !strncmp(command, "NOTICE", 6)) {
+            } else if (!strncmp(command, "PRIVMSG", 7)) {
                 if (where == NULL || message == NULL)
                     return;
                 char *sep;
