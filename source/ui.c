@@ -32,6 +32,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "columnifier.h"
 #include "serverlist.h"
 #include "client.h"
+#include "irc.h"
 #include "ui.h"
 
 #define MAX_BUFFER_SIZE 2048
@@ -132,6 +133,7 @@ static bool stopped = FALSE;
 
 void ui_stop() {
     int i;
+    irc_disconnect();
     for (i = 0; i < CLIENT_SCREENS; i++)
         disconnect(i);
     if (mainwin)
@@ -859,6 +861,7 @@ void ui_run() {
     }
 
     serverlist_init();
+    irc_init();
 
     qboolean alt = qfalse;
     int last_cols = 0;
@@ -887,6 +890,7 @@ void ui_run() {
         serverlist_frame();
         for (i = 0; i < CLIENT_SCREENS; i++)
             client_frame(i);
+        irc_recv();
         plugin_frame();
         int c = wgetch(inwin);
         if (c == -1)

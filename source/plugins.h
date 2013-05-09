@@ -30,6 +30,8 @@ typedef struct plugin_interface_s {
     int (*ui_client)();
     void (*ui_output)(int client, char *format, ...);
 
+    void (*irc_say)(char *to, char *format, ...);
+
     void (*client_say)(int id, char *format, ...);
     cs_t *(*client_cs)(int id);
     qboolean (*client_active)(int id);

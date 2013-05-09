@@ -53,9 +53,12 @@ void vwrite_string(msg_t *msg, const char *format, va_list argptr);
 
 void sock_init(sock_t *sock);
 msg_t *sock_init_send(sock_t *sock, qboolean sequenced);
+msg_t *sock_init_send_raw(sock_t *sock);
 void sock_send(sock_t *sock);
 void sock_connect(sock_t *sock, char *host, int port);
+void sock_connect_tcp(sock_t *sock, char *host, int port);
 void sock_disconnect(sock_t *sock);
 msg_t *sock_recv(sock_t *sock);
+msg_t *sock_recv_raw(sock_t *sock);
 
 #endif

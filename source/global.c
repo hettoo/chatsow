@@ -32,6 +32,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "cmd.h"
 #include "ui.h"
 #include "client.h"
+#include "irc.h"
 #include "global.h"
 
 #define MAX_PLUGINS 64
@@ -68,6 +69,8 @@ void init(char *location) {
 
     trap.ui_client = ui_client;
     trap.ui_output = ui_output;
+
+    trap.irc_say = irc_say;
 
     trap.client_say = client_say;
     trap.client_cs = client_cs;

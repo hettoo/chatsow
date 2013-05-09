@@ -74,6 +74,12 @@ msg_t *sock_init_send(sock_t *sock, qboolean sequenced) {
     return &sock->smsg;
 }
 
+msg_t *sock_init_send_raw(sock_t *sock) {
+    sock->sequenced = qfalse;
+    msg_clear(&sock->smsg);
+    return &sock->smsg;
+}
+
 void sock_send(sock_t *sock) {
     if (!sock->connected)
         return;
@@ -104,6 +110,34 @@ void sock_connect(sock_t *sock, char *host, int port) {
         sock->sockfd = -1;
         return;
     }
+    sock->connected = qtrue;
+}
+
+void sock_connect_tcp(sock_t *sock, char *host, int port) {
+    sock->host = host;
+    sock->port = port;
+
+    if ((sock->sockfd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)) == -1) {
+        ui_output(-2, "Unable to create socket for %s:%d\n", sock->host, sock->port);
+        return;
+    }
+
+    bzero(&sock->serv_addr, sock->slen);
+
+    sock->serv_addr.sin_family = AF_INET;
+    sock->serv_addr.sin_port = htons(port);
+
+    if (inet_aton(host, &sock->serv_addr.sin_addr) == 0) {
+        ui_output(-2, "Invalid hostname %s\n", sock->host);
+        sock->sockfd = -1;
+        return;
+    }
+
+    if (connect(sock->sockfd, (const struct sockaddr *)&sock->serv_addr, sizeof(sock->serv_addr)) == -1) {
+        ui_output(-2, "Failed to connect\n");
+        return;
+    }
+
     sock->connected = qtrue;
 }
 
@@ -177,6 +211,19 @@ msg_t *sock_recv(sock_t *sock) {
         memcpy(sock->rmsg.data, temp, new_size);
         sock->rmsg.readcount = 0;
         sock->rmsg.cursize = new_size;
+    }
+    return &sock->rmsg;
+}
+
+msg_t *sock_recv_raw(sock_t *sock) {
+    if (!sock->connected)
+        return NULL;
+
+    msg_clear(&sock->rmsg);
+    if ((sock->rmsg.cursize = recvfrom(sock->sockfd, sock->rmsg.data, sock->rmsg.maxsize, MSG_DONTWAIT, (struct sockaddr*)&sock->serv_addr, &sock->slen)) == -1) {
+        if (errno == EAGAIN)
+            return NULL;
+        die("recvfrom failed");
     }
     return &sock->rmsg;
 }
