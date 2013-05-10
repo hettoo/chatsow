@@ -406,7 +406,7 @@ static void parse_player_state(parser_t *parser, msg_t *msg, int index) {
 
 	for( i = 0; i < PS_MAX_STATS; i++ ) {
 		if( statbits[i>>5] & ( 1<<(i&31) ) )
-			set_stat(parser->client, index, i, read_short( msg ));
+			set_stat(parser->client, index + 1, i, read_short(msg));
 	}
 }
 
