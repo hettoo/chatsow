@@ -171,7 +171,7 @@ void irc_recv() {
             } else if (!strncmp(command, "JOIN", 4)) {
             } else if (!strncmp(command, "PRIVMSG", 7)) {
                 if (where == NULL || message == NULL)
-                    return;
+                    continue;
                 char *sep;
                 if ((sep = strchr(user, '!')) != NULL)
                     *sep = '\0';
