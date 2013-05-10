@@ -65,7 +65,7 @@ static void cmd_ircrecv() {
             if (trap->cmd_argc() < 4) {
                 trap->irc_say(trap->cmd_argv(1), "Usage: %s mapname\n", trap->cmd_argv(2));
             } else {
-                strcpy(message, "top 3 ");
+                strcpy(message, "top nopj 3 ");
                 strcat(message, trap->cmd_argv(3));
                 trap->cmd_execute(0, message);
                 query = millis();
