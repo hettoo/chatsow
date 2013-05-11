@@ -51,8 +51,10 @@ void frame() {
                     for (j = 1; j <= MAX_CLIENTS; j++) {
                         if (trap->get_playernum(i) != j) {
                             char *name = player_name(cs, j);
-                            if (name && *name)
-                                fprintf(fp, "%s\n%d\n%d\n", name, trap->get_stat(i, j, STAT_SCORE), trap->get_stat(i, j, STAT_TEAM));
+                            if (name && *name) {
+                                int team = trap->get_stat(i, j, STAT_TEAM);
+                                fprintf(fp, "%s\n%d\n%d\n", name, team == TEAM_SPECTATOR ? -9999 : trap->get_stat(i, j, STAT_SCORE), team);
+                            }
                         }
                     }
                     fprintf(fp, "\n");

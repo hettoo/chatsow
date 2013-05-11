@@ -529,6 +529,10 @@ static void parse_frame(parser_t *parser, msg_t *msg) {
         msg->readcount = backup;
         players++;
     }
+    while (players < MAX_CLIENTS) {
+        set_stat(parser->client, players == 0 ? 1 : parser->playernums[players] + 1, STAT_TEAM, 0);
+        players++;
+    }
     msg->readcount -= 1;
     record(parser, msg, 1, NULL);
     msg->readcount += 1;
