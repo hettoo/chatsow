@@ -217,6 +217,10 @@ short get_stat(int id, int player, int index) {
     return clients[id].stats[player][index];
 }
 
+short *get_stats(int id) {
+    return &clients[id].stats[0][0];
+}
+
 char *get_host(int id) {
     return clients[id].host;
 }

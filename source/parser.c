@@ -291,7 +291,7 @@ static void record_string(parser_t *parser, msg_t *msg, qbyte *targets) {
     record(parser, msg, i - msg->readcount + 1, targets);
 }
 
-static void parse_player_state(parser_t *parser, msg_t *msg, int index) {
+static void parse_player_state(parser_t *parser, msg_t *msg, short *old_stats, int index) {
 	int i, b;
 
 	int flags = read_byte(msg);
@@ -406,7 +406,9 @@ static void parse_player_state(parser_t *parser, msg_t *msg, int index) {
 
 	for( i = 0; i < PS_MAX_STATS; i++ ) {
 		if( statbits[i>>5] & ( 1<<(i&31) ) )
-			set_stat(parser->client, index + 1, i, read_short(msg));
+			set_stat(parser->client, parser->playernums[index] + 1, i, read_short(msg));
+        else
+			set_stat(parser->client, parser->playernums[index] + 1, i, old_stats[i]);
 	}
 }
 
@@ -515,11 +517,12 @@ static void parse_frame(parser_t *parser, msg_t *msg) {
     record(parser, msg, backup - start, NULL);
     msg->readcount = backup;
 
+    short *old_stats = get_stats(parser->client);
     int cmd;
     int players = 0;
     while ((cmd = read_byte(msg)) != 0) { // svc_playerinfo
         start = msg->readcount - 1;
-        parse_player_state(parser, msg, players);
+        parse_player_state(parser, msg, old_stats + (parser->playernums[players] + 1) * PS_MAX_STATS, players);
         backup = msg->readcount;
         msg->readcount = start;
         record_wrapped(parser, msg, backup - start, players);

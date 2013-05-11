@@ -65,5 +65,6 @@ char *get_host(int id);
 int get_port(int id);
 void set_stat(int id, int player, int index, short value);
 short get_stat(int id, int player, int index);
+short *get_stats(int id);
 
 #endif
