@@ -28,7 +28,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #define RECBUFFER 5
 #define POSTRUN_TIME 8000
-#define MAX_TIME 600000
+#define MAX_TIME 1200000
 
 typedef struct recdemo_s {
     int id;
