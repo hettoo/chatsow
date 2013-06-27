@@ -109,8 +109,10 @@ $main_menu = create_menu(0, array(
             margin-left: 128px;
         }
         #head, #content {
-            width: 620px;
             padding-left: 24px;
+        }
+        #head, #content p, #content h1, #content h2 {
+            width: 620px;
         }
         #content {
             padding-bottom: 20px;
