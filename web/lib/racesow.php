@@ -15,7 +15,7 @@ function rs_diff($map, $time) {
     $rec = rs_get_record($map);
     if ($rec == null)
         return 'N/A';
-    return format_time($rec - $time);
+    return format_time($time - $rec);
 }
 
 ?>
