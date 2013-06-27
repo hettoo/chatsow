@@ -116,7 +116,7 @@ function format_map_external($name) {
 }
 
 function format_date_relative($time) {
-    return '<span class="time">' . relative_time($time) . ($time == 0 ? '' : ' <span class="exacttime">' . exact_datetime($time) . '</span>') . '</span>';
+    return '<span class="time">' . relative_time($time) . ($time == 0 ? '' : '<span class="exacttime">' . exact_datetime($time) . '</span>') . '</span>';
 }
 
 function format_date($time) {
