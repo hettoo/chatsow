@@ -128,17 +128,20 @@ function format_server($server) {
 }
 
 function format_time($time, $map) {
+    $negative = $time < 0;
+    $time = abs($time);
     $result = '.' . sprintf('%03d', $time % 1000);
     $time = floor($time / 1000);
-    $result = sprintf('%02d', $time % 60) . $result;
+    $result = sprintf('%' . ($time >= 60 ? '02' : '') . 'd', $time % 60) . $result;
     $time = floor($time / 60);
     if ($time > 0) {
-        $result = sprintf('%02d', $time % 60) . ':' . $result;
+        $result = sprintf('%' . ($time >= 60 ? '02' : '') . 'd', $time % 60) . ':' . $result;
         $time = floor($time / 60);
-        if ($time > 0) {
+        if ($time > 0)
             $result = $time . ':' . $result;
-        }
     }
+    if ($negative)
+        $result = '-' . $result;
     if (!file_exists("./demos/$map.wd15"))
         return $result;
     return '<a href="' . resource_url("demos/$map.wd15") . '" target="_blank">' . $result . '</a>';
