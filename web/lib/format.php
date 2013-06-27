@@ -108,9 +108,9 @@ function format_map_external($name) {
     $result = format_map($name);
     if (file_exists("./demos/$name.wd15")) {
         $name = $s['db']->real_escape_string($name);
-        $res = $s['db']->query("SELECT `record`, P.`name` FROM `map` M, `player` P WHERE M.`name`='$name' AND P.`id`=M.`player`") or die($s['db']->error);
+        $res = $s['db']->query("SELECT `record`, P.`name`, UNIX_TIMESTAMP(`timestamp`) AS `timestamp` FROM `map` M, `player` P WHERE M.`name`='$name' AND P.`id`=M.`player`") or die($s['db']->error);
         if ($row = $res->fetch_array())
-            $result .= ' (' . format_time($row['record'], $name) . ' by ' . format_player($row['name'], -1, -1) . ')';
+            $result .= ' (' . format_time($row['record'], $name) . ' by ' . format_player($row['name'], -1, -1) . ' ' . format_date_relative($row['timestamp']) . ')';
     }
     return $result;
 }
