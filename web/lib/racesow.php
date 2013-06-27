@@ -1,6 +1,6 @@
 <?php
 
-if (isset($s['rs_name']))
+if (!empty($s['rs_name']))
     $s['rs'] = new mysqli($s['rs_host'], $s['rs_user'], $s['rs_password'], $s['rs_database']) or die("Unable to connect to the database.");
 
 function rs_get_record($map) {
