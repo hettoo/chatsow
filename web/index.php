@@ -96,18 +96,8 @@ function import_page($page) {
     import(page_file(real_page($page)));
 }
 
-$base = $_GET['base'];
-$args = $_GET['args'];
-
-if (!isset($base)) {
-    $request = $_SERVER['REQUEST_URI'];
-    $request = preg_replace('/[^\/]*.php$/', '', $request);
-    if (empty($request)) {
-        $request = '/';
-    }
-    header('Location: http://' . $_SERVER['HTTP_HOST'] . $request . '/');
-    exit;
-}
+$base = substr($_SERVER['SCRIPT_NAME'], 0, -10);
+$args = substr($_SERVER['REQUEST_URI'], strlen($base));
 
 header('Content-Type: text/html; charset=iso-8859-1');
 
