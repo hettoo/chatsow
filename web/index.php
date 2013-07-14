@@ -56,7 +56,7 @@ function import_child_page($child, $header = true) {
 
 function resource_url($target) {
     global $base;
-    return $base . $target;
+    return $base . (substr($base, -1) == '/' ? '' : '/') . $target;
 }
 
 function url($target, $level = 0, $rootify = true) {
@@ -96,12 +96,10 @@ function import_page($page) {
     import(page_file(real_page($page)));
 }
 
-$base = substr($_SERVER['SCRIPT_NAME'], 0, -10);
-$args = substr($_SERVER['REQUEST_URI'], strlen($base));
-
 header('Content-Type: text/html; charset=iso-8859-1');
 
-$args = preg_replace('/\/$/', '', $args);
+$base = substr($_SERVER['SCRIPT_NAME'], 0, -10);
+$args = preg_replace('/\/$/', '', substr($_SERVER['REQUEST_URI'], strlen($base)));
 
 if (empty($args))
     $args = '/index';
