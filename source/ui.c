@@ -956,6 +956,7 @@ void ui_run() {
                 delete(qtrue);
                 break;
             case 330:
+            case 263:
             case 8:
                 delete(qfalse);
                 break;
@@ -969,7 +970,6 @@ void ui_run() {
                 update_history();
                 break;
             case 260:
-            case 263:
                 move_cursor(-1);
                 break;
             case 261:
