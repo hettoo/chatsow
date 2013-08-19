@@ -952,12 +952,13 @@ void ui_run() {
             case 27:
                 alt = qtrue;
                 continue;
+            case 263:
             case 127:
+            case 8:
                 delete(qtrue);
                 break;
             case 330:
-            case 263:
-            case 8:
+            case 46:
                 delete(qfalse);
                 break;
             case 258:
