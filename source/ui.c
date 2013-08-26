@@ -470,8 +470,11 @@ static void schedule_next_line() {
 
 static void reserve_space(int places, int visual_places) {
     check_next_line();
-    if (ui_output_screen->output_length + places >= MAX_OUTPUT_LENGTH - 1 || ui_output_screen->visual_output_length + visual_places > COLS)
+    if (ui_output_screen->output_length + places >= MAX_OUTPUT_LENGTH - 1 || ui_output_screen->visual_output_length + visual_places > COLS) {
         schedule_next_line();
+        if (visual_places > 0)
+            check_next_line();
+    }
 }
 
 static void add_char(char c) {
