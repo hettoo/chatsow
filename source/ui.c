@@ -958,7 +958,6 @@ void ui_run() {
                 delete(qtrue);
                 break;
             case 330:
-            case 46:
                 delete(qfalse);
                 break;
             case 258:
