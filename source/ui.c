@@ -869,7 +869,7 @@ void ui_run() {
     int last_status = 0;
     qboolean first = qtrue;
     for (;;) {
-        if (last_cols != COLS && last_lines != LINES) {
+        if (last_cols != COLS || last_lines != LINES) {
             redesign();
             last_cols = COLS;
             last_lines = LINES;
