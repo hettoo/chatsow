@@ -26,19 +26,20 @@ plugin_interface_t *trap;
 static int cmd_index;
 
 static void cmd_help() {
+    char *name = player_name(trap->client_cs(trap->cmd_client()), atoi(trap->cmd_argv(1)));
     char *text = trap->cmd_argv(2);
     if (partial_match("?", text)) {
         if (partial_match("how", text) && (partial_match("restart", text) || partial_match("respawn", text)))
-            trap->client_say(trap->cmd_client(), "Use F3 to restart or bind kill or racerestart to a key");
+            trap->client_say(trap->cmd_client(), "%s^7, use F3 to restart", name);
         else if (partial_match("how", text) && (partial_match("start", text)
                     || partial_match("join", text) || partial_match("begin", text)))
-            trap->client_say(trap->cmd_client(), "Press escape and choose join to start");
+            trap->client_say(trap->cmd_client(), "%s^7, press escape and choose join to start", name);
         if ((partial_match("how", text) || partial_match("help", text) || partial_match("why", text))
                 && (partial_match("run", text) || partial_match("jump", text)
                     || partial_match("move", text) || partial_match("fast", text)
                     || partial_match("speed", text) || partial_match("race", text)
                     || partial_match("strafe", text)))
-            trap->client_say(trap->cmd_client(), "Please have a look at this: http://warsowrace.webs.com/");
+            trap->client_say(trap->cmd_client(), "%s^7, please have a look at http://warsowrace.webs.com/", name);
     } else if (!partial_match("can", text) && !partial_match("shall", text) && !partial_match("want", text)) {
         if (partial_match("go", text) && partial_match("next", text) && partial_match("map", text))
             trap->client_say(trap->cmd_client(), "Fuck off");
