@@ -1,5 +1,3 @@
 build/
 release/chatsow
 release/plugins/*.so
-web/config.php
-web/favicon.ico
