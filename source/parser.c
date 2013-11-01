@@ -462,7 +462,7 @@ static void parse_frame(parser_t *parser, msg_t *msg) {
         qboolean record_valid = valid;
         int pos = msg->readcount;
         char *cmd = read_string(msg);
-        if (partial_match("private message", cmd))
+        if (partial_match("private message", cmd) || partial_match(">>>", cmd) || partial_match("<<<", cmd))
             record_valid = qfalse;
         int numtargets = 0;
         int i;
