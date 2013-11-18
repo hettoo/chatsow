@@ -30,16 +30,16 @@ static void cmd_help() {
     char *text = trap->cmd_argv(2);
     if (partial_match("?", text)) {
         if (partial_match("how", text) && (partial_match("restart", text) || partial_match("respawn", text)))
-            trap->client_say(trap->cmd_client(), "%s^7, use F3 to restart", name);
+            trap->client_say(trap->cmd_client(), "%s^2, use F3 to restart", name);
         else if (partial_match("how", text) && (partial_match("start", text)
                     || partial_match("join", text) || partial_match("begin", text)))
-            trap->client_say(trap->cmd_client(), "%s^7, press escape and choose join to start", name);
+            trap->client_say(trap->cmd_client(), "%s^2, press escape and choose join to start", name);
         if ((partial_match("how", text) || partial_match("help", text) || partial_match("why", text))
                 && (partial_match("run", text) || partial_match("jump", text)
                     || partial_match("move", text) || partial_match("fast", text)
                     || partial_match("speed", text) || partial_match("race", text)
                     || partial_match("strafe", text)))
-            trap->client_say(trap->cmd_client(), "%s^7, please have a look at http://warsowrace.webs.com/", name);
+            trap->client_say(trap->cmd_client(), "%s^2, please have a look at http://warsowrace.webs.com/", name);
     } else if (!partial_match("can", text) && !partial_match("shall", text) && !partial_match("want", text)) {
         if (partial_match("go", text) && partial_match("next", text) && partial_match("map", text))
             trap->client_say(trap->cmd_client(), "Fuck off");
