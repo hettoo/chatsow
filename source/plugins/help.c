@@ -18,6 +18,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 */
 
+#include <stdlib.h>
 #include "../plugins.h"
 #include "../utils.h"
 
@@ -39,7 +40,7 @@ static void cmd_help() {
                     || partial_match("move", text) || partial_match("fast", text)
                     || partial_match("speed", text) || partial_match("race", text)
                     || partial_match("strafe", text)))
-            trap->client_say(trap->cmd_client(), "%s^2, please have a look at http://warsowrace.webs.com/", name);
+            trap->client_say(trap->cmd_client(), "%s^2, please have a look at http://race.shishigami.eu/race", name);
     } else if (!partial_match("can", text) && !partial_match("shall", text) && !partial_match("want", text)) {
         if (partial_match("go", text) && partial_match("next", text) && partial_match("map", text))
             trap->client_say(trap->cmd_client(), "Fuck off");

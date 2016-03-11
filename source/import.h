@@ -92,11 +92,12 @@ enum
 
 #define   MAX_STRING_CHARS                        1024
 
-#define MAX_GAMECOMMANDS	64		// command names for command completion
-#define MAX_LOCATIONS		64
+#define MAX_GAMECOMMANDS	256		// command names for command completion
+#define MAX_LOCATIONS		256
 #define MAX_WEAPONDEFS		MAX_ITEMS
+#define MAX_HELPMESSAGES	256
 
-#define   MAX_CONFIGSTRINGS       ( CS_GENERAL+MAX_GENERAL )
+#define   MAX_CONFIGSTRINGS       ( CS_HELPMESSAGES+MAX_HELPMESSAGES )
 #define MAX_CONFIGSTRING_CHARS            MAX_QPATH       // max length of a configstring string
 
 #define   PS_MAX_STATS                    64
@@ -154,9 +155,11 @@ enum
 	, MAX_STATS = PS_MAX_STATS //64
 };
 
-#define SV_BITFLAGS_PURE		( 1<<0 )
+#define SV_BITFLAGS_PURE			( 1<<0 )
 #define SV_BITFLAGS_RELIABLE		( 1<<1 )
 #define SV_BITFLAGS_TVSERVER		( 1<<2 )
+#define SV_BITFLAGS_HTTP			( 1<<3 )
+#define SV_BITFLAGS_HTTP_BASEURL	( 1<<4 )
 
 #define FRAMESNAP_FLAG_DELTA		( 1<<0 )
 #define FRAMESNAP_FLAG_ALLENTITIES	( 1<<1 )
@@ -197,8 +200,7 @@ enum
 #define PM_VECTOR_SNAP 16
 #define MAX_PM_STATS 16
 
-enum
-{
+enum {
 	PM_STAT_FEATURES,
 	PM_STAT_NOUSERCONTROL,
 	PM_STAT_KNOCKBACK,
@@ -250,6 +252,9 @@ enum
 #define CS_MATCHSCORE		23
 #define CS_MATCHUUID		24
 
+#define CS_ACTIVE_CALLVOTE	25
+#define CS_ACTIVE_CALLVOTE_VOTES 26
+
 #define CS_WORLDMODEL		30
 #define	CS_MAPCHECKSUM		31		// for catching cheater maps
 
@@ -265,14 +270,15 @@ enum
 #define CS_LOCATIONS		( CS_GAMECOMMANDS+MAX_GAMECOMMANDS )
 #define CS_WEAPONDEFS		( CS_LOCATIONS+MAX_LOCATIONS )
 #define CS_GENERAL			( CS_WEAPONDEFS+MAX_WEAPONDEFS )
+#define CS_HELPMESSAGES		( CS_GENERAL+MAX_GENERAL )
 
-#define	MAX_CONFIGSTRINGS	( CS_GENERAL+MAX_GENERAL )
+#define	MAX_CONFIGSTRINGS	( CS_HELPMESSAGES+MAX_HELPMESSAGES )
 
 #define	MAX_CLIENTS					256			// absolute limit
 #define	MAX_EDICTS					1024		// must change protocol to increase more
 #define	MAX_LIGHTSTYLES				256
-#define	MAX_MODELS					256			// these are sent over the net as bytes
-#define	MAX_SOUNDS					256			// so they cannot be blindly increased
+#define	MAX_MODELS					1024			// these are sent over the net as bytes
+#define	MAX_SOUNDS					1024			// so they cannot be blindly increased
 #define	MAX_IMAGES					256
 #define MAX_SKINFILES				256
 #define MAX_ITEMS					64			// 16x4
@@ -303,8 +309,11 @@ typedef struct entity_state_s {
 	unsigned int svflags;
 
 	int type;							// ET_GENERIC, ET_BEAM, etc
-	qboolean linearProjectile;			// is sent inside "type" as ET_INVERSE flag
-	vec3_t linearProjectileVelocity;	// this is transmitted instead of origin when linearProjectile is true
+	qboolean linearMovement;				// is sent inside "type" as ET_INVERSE flag
+	union {
+		vec3_t linearMovementVelocity;		// this is transmitted instead of origin when linearProjectile is true
+		vec3_t linearMovementEnd;			// the end movement point for brush models
+	};
 
 	vec3_t origin;
 	vec3_t angles;
@@ -312,6 +321,7 @@ typedef struct entity_state_s {
 	union {
 		vec3_t old_origin;				// for lerping
 		vec3_t origin2;					// ET_BEAM, ET_PORTALSURFACE, ET_EVENT specific
+		vec3_t linearMovementBegin;		// the starting movement point for brush models
 	};
 
 	unsigned int modelindex;
@@ -335,11 +345,17 @@ typedef struct entity_state_s {
 		int targetNum;					// ET_EVENT specific
 		int colorRGBA;					// ET_BEAM, ET_EVENT specific
 		int range;						// ET_LASERBEAM, ET_CURVELASERBEAM specific
-		int attenuation;				// ET_SOUNDEVENT
+		unsigned int linearMovementDuration;
 	};
 
+	float attenuation;					// should be <= 255/16.0 as this is sent as byte
+
+										// server will use this for sound culling in case
+										// the entity has an event attached to it (along with
+										// PVS culling)
+
 	int weapon;							// WEAP_ for players
-	qboolean teleported;				// the entity was teleported this snap (sent inside "weapon" as ET_INVERSE flag)
+	qboolean teleported;					// the entity was teleported this snap (sent inside "weapon" as ET_INVERSE flag)
 
 	unsigned int effects;
 
@@ -360,7 +376,7 @@ typedef struct entity_state_s {
 	int eventParms[2];
 
 	union {
-		unsigned int linearProjectileTimeStamp;
+		unsigned int linearMovementTimeStamp;
 		int light;						// constant light glow
 	};
 
@@ -400,7 +416,7 @@ typedef struct entity_state_s {
 // fourth byte
 #define	U_SKIN16	( 1<<24 )
 #define	U_ANGLE3	( 1<<25 )     // for multiview, info need for culling
-#define	U_____UNUSED1	( 1<<26 )
+#define	U_ATTENUATION	( 1<<26 )
 #define	U_EFFECTS16	( 1<<27 )
 #define U_____UNUSED2	( 1<<28 )
 #define	U_FRAME16	( 1<<29 )     // frame is a short
