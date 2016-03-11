@@ -60,10 +60,10 @@ static void save_demo(int id, int c, int t, qboolean terminated) {
         if (demo->id == id) {
             if (demo->record && !terminated) {
                 static char old[1024];
-                strcpy(old, trap->path("demos/runs/%d_%d_%d.wd%d", c, t, i, PROTOCOL));
-                rename(old, trap->path("demos/records/%s.wd%d", trap->get_level(c), PROTOCOL));
+                strcpy(old, trap->path("demos/runs/%d_%d_%d.wdz%d", c, t, i, DEMO_PROTOCOL));
+                rename(old, trap->path("demos/records/%s.wdz%d", trap->get_level(c), DEMO_PROTOCOL));
             } else {
-                unlink(trap->path("demos/runs/%d_%d_%d.wd%d", c, t, i, PROTOCOL));
+                unlink(trap->path("demos/runs/%d_%d_%d.wdz%d", c, t, i, DEMO_PROTOCOL));
             }
             demo->id = -1;
         }

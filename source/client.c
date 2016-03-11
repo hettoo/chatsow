@@ -544,9 +544,9 @@ void cmd_clc() {
 void cmd_record() {
     client_t *c = clients + cmd_client();
     if (c->demo < 0) {
-        char *name = path("demos/%s.wd%d", cmd_argv(1), PROTOCOL);
+        char *name = path("demos/%s.wdz%d", cmd_argv(1), DEMO_PROTOCOL);
         ui_output(c->id, "Recording to %s\n", name);
-        FILE *fp = fopen(name, "w");
+        FILE *fp = fopen(name, "w"); // TODO: compression
         c->demo = parser_record(&c->parser, fp, cmd_argc() > 2 ? atoi(cmd_argv(2)) : -1, NULL);
     }
 }
@@ -671,7 +671,7 @@ static void cmd_connect() {
 static void cmd_replay() {
     client_t *c = clients + cmd_client();
     set_server(c, NULL, NULL);
-    FILE *fp = fopen(path("demos/%s.wd%d", cmd_argv(1), PROTOCOL), "r");
+    FILE *fp = fopen(path("demos/%s.wdz%d", cmd_argv(1), DEMO_PROTOCOL), "r");
     if (fp) {
         force_disconnect(c);
         c->playernum = atoi(cmd_argv(2));
