@@ -793,14 +793,23 @@ void client_register_commands() {
     cmd_add_from_server("reconnect", cmd_reconnect);
 
     cmd_add_from_server("mm", cmd_nop);
+    cmd_add_from_server("mapmsg", cmd_nop);
     cmd_add_from_server("plstats", cmd_nop);
     cmd_add_from_server("scb", cmd_nop);
     cmd_add_from_server("cvarinfo", cmd_nop);
     cmd_add_from_server("obry", cmd_nop);
     cmd_add_from_server("ti", cmd_nop);
+    cmd_add_from_server("demoget", cmd_nop);
+    cmd_add_from_server("cha", cmd_nop);
+    cmd_add_from_server("chr", cmd_nop);
+    cmd_add_from_server("mecu", cmd_nop);
+    cmd_add_from_server("meop", cmd_nop);
+    cmd_add_from_server("memo", cmd_nop);
     cmd_add_from_server("changing", cmd_nop);
     cmd_add_from_server("cp", cmd_nop);
+    cmd_add_from_server("cpf", cmd_nop);
     cmd_add_from_server("aw", cmd_nop);
+    cmd_add_from_server("qm", cmd_nop);
 
     cmd_add_from_server("dstart", cmd_nop);
     cmd_add_from_server("dstop", cmd_nop);
