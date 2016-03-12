@@ -562,7 +562,7 @@ void parse_message(parser_t *parser, msg_t *msg) {
                     demoinfo_key(parser->client, read_string(msg));
                     demoinfo_value(parser->client, read_string(msg));
                 }
-                skip_data(msg, meta_data_maxsize - meta_data_realsize);
+                skip_data(msg, meta_data_maxsize - meta_data_realsize + end - msg->readcount);
                 break;
             case svc_clcack:
                 ack = read_long(msg); // reliable ack
