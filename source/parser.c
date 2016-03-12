@@ -643,15 +643,15 @@ void parse_message(parser_t *parser, msg_t *msg) {
     }
 }
 
-static qboolean read_demo_message(parser_t *parser, FILE *fp) {
+static qboolean read_demo_message(parser_t *parser, gzFile fp) {
     int length;
-    if (!fread(&length, 4, 1, fp))
+    if (!gzread(fp, &length, 4))
         return qfalse;
     length = LittleLong(length);
     if (length < 0)
         return qfalse;
     static msg_t msg;
-    if (!fread(msg.data, length, 1, fp))
+    if (!gzread(fp, msg.data, length))
         return qfalse;
     msg.readcount = 0;
     msg.cursize = length;
@@ -661,7 +661,7 @@ static qboolean read_demo_message(parser_t *parser, FILE *fp) {
     return qtrue;
 }
 
-void parse_demo(parser_t *parser, FILE *fp) {
+void parse_demo(parser_t *parser, gzFile fp) {
     while (read_demo_message(parser, fp))
         ;
 }

@@ -22,6 +22,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define WRLC_PARSER_H
 
 #include <stdio.h>
+#include "zlib.h"
 
 #include "import.h"
 
@@ -52,7 +53,7 @@ typedef struct parser_s {
 
 void parser_reset(parser_t *parser);
 void parse_message(parser_t *parser, msg_t *msg);
-void parse_demo(parser_t *parser, FILE *fp);
+void parse_demo(parser_t *parser, gzFile fp);
 int parser_record(parser_t *parser, FILE *fp, int target, void (*save)(int id, int client, int target, qboolean terminated));
 void parser_stop_record(parser_t *parser, int id);
 void parser_terminate_record(parser_t *parser, int id);

@@ -671,11 +671,12 @@ static void cmd_connect() {
 static void cmd_replay() {
     client_t *c = clients + cmd_client();
     set_server(c, NULL, NULL);
-    FILE *fp = fopen(path("demos/%s.wdz%d", cmd_argv(1), DEMO_PROTOCOL), "rb");
+    gzFile fp = gzopen(path("demos/%s.wdz%d", cmd_argv(1), DEMO_PROTOCOL), "rb");
     if (fp) {
         force_disconnect(c);
         c->playernum = atoi(cmd_argv(2));
         parse_demo(&c->parser, fp);
+        gzclose(fp);
         reset(c);
     } else {
         ui_output(c->id, "Demo not found\n");
