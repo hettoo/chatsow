@@ -135,8 +135,6 @@ int parser_record(parser_t *parser, FILE *fp, int target, void (*save)(int id, i
             long pos_meta_start = ftell(fp);
             x = LittleLong(4);
             fwrite(&x, 4, 1, fp); // metadata offset
-            x = LittleLong(parser->server_time);
-            fwrite(&x, 4, 1, fp); // time
             long pos_meta_keys_length = ftell(fp);
             x = 0;
             fwrite(&x, 4, 1, fp); // size
@@ -557,7 +555,6 @@ void parse_message(parser_t *parser, msg_t *msg) {
             case svc_demoinfo:
                 read_long(msg); // length
                 read_long(msg); // meta data offset
-                read_long(msg); // basetime
                 size_t meta_data_realsize = read_long(msg);
                 size_t meta_data_maxsize = read_long(msg);
                 size_t end = msg->readcount + meta_data_realsize;
