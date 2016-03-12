@@ -546,7 +546,7 @@ void cmd_record() {
     if (c->demo < 0) {
         char *name = path("demos/%s.wdz%d", cmd_argv(1), DEMO_PROTOCOL);
         ui_output(c->id, "Recording to %s\n", name);
-        FILE *fp = fopen(name, "w"); // TODO: compression
+        FILE *fp = fopen(name, "wb"); // TODO: compression
         c->demo = parser_record(&c->parser, fp, cmd_argc() > 2 ? atoi(cmd_argv(2)) : -1, NULL);
     }
 }
@@ -671,7 +671,7 @@ static void cmd_connect() {
 static void cmd_replay() {
     client_t *c = clients + cmd_client();
     set_server(c, NULL, NULL);
-    FILE *fp = fopen(path("demos/%s.wdz%d", cmd_argv(1), DEMO_PROTOCOL), "r");
+    FILE *fp = fopen(path("demos/%s.wdz%d", cmd_argv(1), DEMO_PROTOCOL), "rb");
     if (fp) {
         force_disconnect(c);
         c->playernum = atoi(cmd_argv(2));
@@ -868,12 +868,8 @@ void client_start(int id) {
     set_status(c->id, c->name, cs_get(&c->cs, 0));
 }
 
-void demoinfo_key(int id, char *key) {
-    ui_output(id, "demoinfo key %s\n", key);
-}
-
-void demoinfo_value(int id, char *value) {
-    ui_output(id, "demoinfo value %s\n", value);
+void demoinfo(int id, char *key, char *value) {
+    ui_output(id, "demoinfo %s %s\n", value, key);
 }
 
 void execute(int id, char *cmd, qbyte *targets) {

@@ -48,8 +48,7 @@ int client_record(int id, FILE *fp, int target, void (*save)(int id, int client,
 void client_stop_record(int id, int demo_id);
 void client_terminate_record(int id, int demo_id);
 
-void demoinfo_key(int id, char *key);
-void demoinfo_value(int id, char *value);
+void demoinfo(int id, char *key, char *value);
 void execute(int id, char *cmd, qbyte *targets);
 
 void set_protocol(int id, int new_protocol);

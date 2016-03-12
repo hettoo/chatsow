@@ -558,10 +558,8 @@ void parse_message(parser_t *parser, msg_t *msg) {
                 size_t meta_data_realsize = read_long(msg);
                 size_t meta_data_maxsize = read_long(msg);
                 size_t end = msg->readcount + meta_data_realsize;
-                while (msg->readcount < end) {
-                    demoinfo_key(parser->client, read_string(msg));
-                    demoinfo_value(parser->client, read_string(msg));
-                }
+                while (msg->readcount < end)
+                    demoinfo(parser->client, read_string(msg), read_string(msg));
                 skip_data(msg, meta_data_maxsize - meta_data_realsize + end - msg->readcount);
                 break;
             case svc_clcack:

@@ -169,20 +169,22 @@ int read_int3(msg_t *msg)
 
 char *read_string(msg_t *msg) {
 	int l, c;
-	static char string[MAX_MSG_STRING_CHARS];
+	static char string[2][MAX_MSG_STRING_CHARS];
+    static int i = 1;
 
+    i = (i + 1) % 2;
 	l = 0;
 	do {
 		c = read_byte(msg);
 		if (c == -1 || c == '\0')
             break;
 
-		string[l] = c;
+		string[i][l] = c;
 		l++;
-	} while ((unsigned int)l < sizeof(string) - 1);
-	string[l] = '\0';
+	} while ((unsigned int)l < sizeof(string[i]) - 1);
+	string[i][l] = '\0';
 
-	return string;
+	return string[i];
 }
 
 void read_data(msg_t *msg, void *data, size_t length) {

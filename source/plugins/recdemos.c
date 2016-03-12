@@ -135,7 +135,7 @@ static void start(int c, int t) {
     demo->stopped = qfalse;
     demo->finished = qfalse;
     demo->record = qfalse;
-    FILE *fp = fopen(trap->path("demos/runs/%d_%d_%d.wd%d", c, t, manager->current, PROTOCOL), "w");
+    FILE *fp = fopen(trap->path("demos/runs/%d_%d_%d.wd%d", c, t, manager->current, PROTOCOL), "wb");
     demo->id = trap->client_record(trap->cmd_client(), fp, t, save_demo);
 }
 
