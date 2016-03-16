@@ -22,7 +22,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define WRLC_SERVERLIST_H
 
 void serverlist_init();
-void serverlist_query();
 void serverlist_frame();
 
 #endif

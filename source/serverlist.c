@@ -54,6 +54,7 @@ typedef struct server_s {
 } server_t;
 
 static char filter[MAX_TOKEN_SIZE];
+static qboolean interesting;
 
 static server_t serverlist[MAX_SERVERS];
 static int server_count = 0;
@@ -102,17 +103,6 @@ int serverlist_connect_complete(int arg, char suggestions[][MAX_SUGGESTION_SIZE]
     return count;
 }
 
-void serverlist_init() {
-    master_t *master;
-    for (master = masters; master->address; master++) {
-        sock_init(&master->sock);
-        sock_connect(&master->sock, master->address, PORT_MASTER);
-    }
-    cmd_add_global("list", serverlist_query);
-    int c = cmd_add_global("c", serverlist_connect);
-    cmd_complete(c, serverlist_connect_complete);
-}
-
 static void ping_server(server_t *server) {
     sock_connect(&server->sock, server->address, server->port);
 
@@ -123,7 +113,7 @@ static void ping_server(server_t *server) {
     server->ping_retries--;
 }
 
-void serverlist_query() {
+static void serverlist_query() {
     output_client = cmd_client();
     strcpy(filter, cmd_argv(1));
     int i;
@@ -139,6 +129,25 @@ void serverlist_query() {
         write_string(msg, "getservers %s %d full empty", GAME, PROTOCOL);
         sock_send(&master->sock);
     }
+
+    interesting = qfalse;
+}
+
+static void serverlist_query_interesting() {
+    serverlist_query();
+    interesting = qtrue;
+}
+
+void serverlist_init() {
+    master_t *master;
+    for (master = masters; master->address; master++) {
+        sock_init(&master->sock);
+        sock_connect(&master->sock, master->address, PORT_MASTER);
+    }
+    cmd_add_global("list", serverlist_query);
+    cmd_add_global("listi", serverlist_query_interesting);
+    int c = cmd_add_global("c", serverlist_connect);
+    cmd_complete(c, serverlist_connect_complete);
 }
 
 static server_t *find_server(char *address, int port) {
@@ -199,8 +208,16 @@ void serverlist_frame() {
             serverlist[i].ping_end = millis();
             skip_data(msg, strlen("info\n"));
             read_server(serverlist + i, read_string(msg));
-            if (partial_match(filter, serverlist[i].name) || partial_match(filter, serverlist[i].map)
-                    || partial_match(filter, serverlist[i].mod) || partial_match(filter, serverlist[i].gametype))
+
+            char *p = serverlist[i].players;
+            long players = strtol(p, &p, 10);
+            if (*p)
+                p++;
+            long capacity = strtol(p, &p, 10);
+
+            if ((partial_match(filter, serverlist[i].name) || partial_match(filter, serverlist[i].map)
+                    || partial_match(filter, serverlist[i].mod) || partial_match(filter, serverlist[i].gametype)) &&
+                (!interesting || (players != 0 && players != capacity)))
                 ui_output(output_client, "^5%i ^7(%i) %s %s ^5[^7%s^5] [^7%s:%s^5]\n", i, serverlist[i].ping_end - serverlist[i].ping_start,
                         serverlist[i].players, serverlist[i].name, serverlist[i].map, serverlist[i].mod, serverlist[i].gametype);
             serverlist[i].received = qtrue;
