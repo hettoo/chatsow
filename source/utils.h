@@ -25,7 +25,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #define GAME "Warsow"
 #define BASEMOD "basewsw"
-#define PROTOCOL 21
+#define PROTOCOL 22
 #define DEMO_PROTOCOL 20
 
 typedef struct parse_state_s {
