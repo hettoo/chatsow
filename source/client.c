@@ -300,20 +300,20 @@ static char string[MAX_MSGLEN];
 
 void client_say(int id, char *format, ...) {
     strcpy(string, "say \"");
-	va_list	argptr;
-	va_start(argptr, format);
+    va_list    argptr;
+    va_start(argptr, format);
     vsprintf(string + strlen(string), format, argptr);
-	va_end(argptr);
+    va_end(argptr);
     strcat(string, "\"");
     cmd_execute(id, string);
 }
 
 void client_say_team(int id, char *format, ...) {
     strcpy(string, "say_team \"");
-	va_list	argptr;
-	va_start(argptr, format);
+    va_list    argptr;
+    va_start(argptr, format);
     vsprintf(string + strlen(string), format, argptr);
-	va_end(argptr);
+    va_end(argptr);
     strcat(string, "\"");
     cmd_execute(id, string);
 }
@@ -360,10 +360,10 @@ void client_command(int id, char *format, ...) {
     int seq = c->command_seq++;
     if (!(c->bitflags & SV_BITFLAGS_RELIABLE))
         write_long(&msg, seq);
-	va_list	argptr;
-	va_start(argptr, format);
+    va_list    argptr;
+    va_start(argptr, format);
     vwrite_string(&msg, format, argptr);
-	va_end(argptr);
+    va_end(argptr);
     buffer(c, &msg, seq);
 }
 
@@ -774,7 +774,7 @@ static void cmd_reject() {
     client_t *c = clients + cmd_client();
     if (c->state > CA_CONNECTING)
         return;
-    ui_output(c->id, "Rejected: %s %s\n", cmd_argv(3), cmd_argv(4));
+    ui_output(c->id, "Rejected: %s %s %s %s %s %s\n", cmd_argv(3), cmd_argv(4), cmd_argv(5), cmd_argv(6), cmd_argv(7), cmd_argv(8));
     if (atoi(cmd_argv(2)) & DROP_FLAG_AUTORECONNECT || c->auto_reconnect)
         reconnect(c);
     else
@@ -801,6 +801,9 @@ void client_register_commands() {
     cmd_add_from_server("changing", cmd_nop);
     cmd_add_from_server("cp", cmd_nop);
     cmd_add_from_server("aw", cmd_nop);
+
+    cmd_add_from_server("qm", cmd_nop);
+    cmd_add_from_server("meop", cmd_nop);
 
     cmd_add_from_server("dstart", cmd_nop);
     cmd_add_from_server("dstop", cmd_nop);

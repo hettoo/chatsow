@@ -92,11 +92,12 @@ enum
 
 #define   MAX_STRING_CHARS                        1024
 
-#define MAX_GAMECOMMANDS	64		// command names for command completion
-#define MAX_LOCATIONS		64
+#define MAX_GAMECOMMANDS	256		// command names for command completion
+#define MAX_LOCATIONS		256
 #define MAX_WEAPONDEFS		MAX_ITEMS
+#define MAX_HELPMESSAGES		256
 
-#define   MAX_CONFIGSTRINGS       ( CS_GENERAL+MAX_GENERAL )
+#define	MAX_CONFIGSTRINGS	( CS_HELPMESSAGES+MAX_HELPMESSAGES )
 #define MAX_CONFIGSTRING_CHARS            MAX_QPATH       // max length of a configstring string
 
 #define   PS_MAX_STATS                    64
@@ -265,18 +266,20 @@ enum
 #define CS_LOCATIONS		( CS_GAMECOMMANDS+MAX_GAMECOMMANDS )
 #define CS_WEAPONDEFS		( CS_LOCATIONS+MAX_LOCATIONS )
 #define CS_GENERAL			( CS_WEAPONDEFS+MAX_WEAPONDEFS )
-
-#define	MAX_CONFIGSTRINGS	( CS_GENERAL+MAX_GENERAL )
+#define CS_MMPLAYERINFOS 	( CS_GENERAL+MAX_GENERAL )
+#define CS_HELPMESSAGES		( CS_MMPLAYERINFOS+MAX_MMPLAYERINFOS ) // for localizable messages, that got a special place on the HUD
 
 #define	MAX_CLIENTS					256			// absolute limit
 #define	MAX_EDICTS					1024		// must change protocol to increase more
 #define	MAX_LIGHTSTYLES				256
-#define	MAX_MODELS					256			// these are sent over the net as bytes
-#define	MAX_SOUNDS					256			// so they cannot be blindly increased
+#define	MAX_MODELS					1024			// these are sent over the net as bytes
+#define	MAX_SOUNDS					1024			// so they cannot be blindly increased
 #define	MAX_IMAGES					256
 #define MAX_SKINFILES				256
 #define MAX_ITEMS					64			// 16x4
-#define MAX_GENERAL					( MAX_CLIENTS )	// general config strings
+#define MAX_GENERAL					128	// general config strings
+#define MAX_MMPLAYERINFOS 			128
+
 
 #define	MAX_GAME_STATS	16
 #define MAX_GAME_LONGSTATS 8
